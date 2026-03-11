@@ -14,7 +14,7 @@ import (
 	"github.com/illwill/cardbot/internal/detect"
 )
 
-const version = "0.1.3-dev"
+const version = "0.1.3"
 
 // UX delays — remove in 0.4.0 when real startup and analysis timings replace them.
 const (
