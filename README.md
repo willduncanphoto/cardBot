@@ -9,7 +9,7 @@ CardBot generates a concise overview of your memory card and provides modern cop
 **Current capabilities:**
 - Detect CFexpress, XQD, and SD cards on macOS and Linux
 - Quickly analyze a cards content and technical information
-- Show starred image count for future quick copy opteration
+- Show starred image count for future quick copy operation
 - Copy all files to dated folders with basic verification
 - Track copy history via `.cardbot` dotfile written to the card
 - Queue multiple cards
@@ -23,7 +23,7 @@ CardBot generates a concise overview of your memory card and provides modern cop
 | macOS (with Xcode) | [OK] Working | Native DiskArbitration, instant detection |
 | macOS (no Xcode) | [OK] Working | Polling fallback, 1s interval |
 | Linux | [WIP] Experimental | Polling-based, needs real-world testing |
-| Windows | [--] Not supported | Future goal |
+| Windows | [--] Not supported | Not Planned |
 
 ## Installation
 

@@ -529,15 +529,38 @@ func (a *app) handleRemoval(path string) {
 }
 
 func (a *app) handleInput(input string) {
+	cmd := strings.ToLower(input)
+
+	// Help works regardless of card state.
+	if cmd == "?" {
+		a.showHelp()
+		a.mu.Lock()
+		hasCard := a.currentCard != nil
+		invalid := a.cardInvalid
+		a.mu.Unlock()
+		if !hasCard {
+			return
+		}
+		if invalid {
+			a.printInvalidPrompt()
+		} else {
+			a.printPrompt()
+		}
+		return
+	}
+
 	a.mu.Lock()
 	card := a.currentCard
 	a.mu.Unlock()
 
 	if card == nil {
+		if input != "" {
+			fmt.Printf("\nNo card inserted. Waiting for a memory card...\n")
+		}
 		return
 	}
 
-	switch strings.ToLower(input) {
+	switch cmd {
 	case "a":
 		a.mu.Lock()
 		alreadyCopied := a.copied
@@ -561,16 +584,6 @@ func (a *app) handleInput(input string) {
 		a.showHardwareInfo(card)
 	case "t":
 		a.runSpeedTest(card)
-	case "?":
-		a.showHelp()
-		a.mu.Lock()
-		invalid := a.cardInvalid
-		a.mu.Unlock()
-		if invalid {
-			a.printInvalidPrompt()
-		} else {
-			a.printPrompt()
-		}
 	default:
 		if input != "" {
 			fmt.Printf("\nUnknown command %q. Press [?] for help.\n", input)
