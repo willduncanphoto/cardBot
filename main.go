@@ -166,6 +166,12 @@ func main() {
 
 	a.printf("[%s] Starting CardBot %s...\n", ts(), version)
 
+	destDisplay, err := config.ExpandPath(cfg.Destination.Path)
+	if err != nil {
+		destDisplay = cfg.Destination.Path
+	}
+	a.printf("[%s] Copy location is set to %s\n", ts(), destDisplay)
+
 	if a.dryRun {
 		a.printf("[%s] Dry-run mode — no files will be copied\n", ts())
 	}
