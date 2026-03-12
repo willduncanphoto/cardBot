@@ -62,21 +62,6 @@ func Run(opts Options, onProgress ProgressFunc) (*Result, error) {
 		return nil, fmt.Errorf("no DCIM folder found on card")
 	}
 
-	// Verify destination is writable before scanning.
-	// Skip the probe if the directory already exists (we've written here before).
-	if _, err := os.Stat(opts.DestBase); os.IsNotExist(err) {
-		if err := os.MkdirAll(opts.DestBase, 0755); err != nil {
-			return nil, fmt.Errorf("cannot create destination %s: %w", opts.DestBase, err)
-		}
-		probe := filepath.Join(opts.DestBase, ".cardbot_probe")
-		if f, err := os.Create(probe); err != nil {
-			return nil, fmt.Errorf("destination %s is not writable: %w", opts.DestBase, err)
-		} else {
-			f.Close()
-			os.Remove(probe)
-		}
-	}
-
 	// Build EXIF date lookup from analyze result if available.
 	var exifDates map[string]string
 	if opts.AnalyzeResult != nil {
@@ -137,6 +122,21 @@ func Run(opts Options, onProgress ProgressFunc) (*Result, error) {
 			BytesCopied: totalBytes,
 			DestPath:    opts.DestBase,
 		}, nil
+	}
+
+	// Verify destination is writable.
+	// Skip the probe if the directory already exists (we've written here before).
+	if _, err := os.Stat(opts.DestBase); os.IsNotExist(err) {
+		if err := os.MkdirAll(opts.DestBase, 0755); err != nil {
+			return nil, fmt.Errorf("cannot create destination %s: %w", opts.DestBase, err)
+		}
+		probe := filepath.Join(opts.DestBase, ".cardbot_probe")
+		if f, err := os.Create(probe); err != nil {
+			return nil, fmt.Errorf("destination %s is not writable: %w", opts.DestBase, err)
+		} else {
+			f.Close()
+			os.Remove(probe)
+		}
 	}
 
 	// --- Phase 2: Copy ---

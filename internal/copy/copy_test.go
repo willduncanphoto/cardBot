@@ -148,6 +148,27 @@ func TestCopy_DryRun(t *testing.T) {
 	}
 }
 
+func TestCopy_DryRun_NoDirCreation(t *testing.T) {
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: make([]byte, 100), mtime: date(2026, 3, 8)},
+	})
+	// Destination that doesn't exist yet — dry-run should NOT create it.
+	dest := filepath.Join(t.TempDir(), "nonexistent", "deep", "path")
+
+	result, err := Run(Options{CardPath: card, DestBase: dest, DryRun: true}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.FilesCopied != 1 {
+		t.Errorf("FilesCopied = %d, want 1", result.FilesCopied)
+	}
+
+	if _, err := os.Stat(dest); !os.IsNotExist(err) {
+		t.Error("dry-run should not create destination directory")
+	}
+}
+
 func TestCopy_ContentVerification(t *testing.T) {
 	data := []byte("hello world, this is test content for verification")
 	card := createTestCard(t, map[string]testFileSpec{

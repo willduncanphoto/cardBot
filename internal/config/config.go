@@ -152,7 +152,13 @@ func ContractPath(path string) string {
 	if err != nil {
 		return path
 	}
-	if strings.HasPrefix(path, home) {
+	// Clean trailing slashes for consistent comparison.
+	path = filepath.Clean(path)
+	home = filepath.Clean(home)
+	if path == home {
+		return "~"
+	}
+	if strings.HasPrefix(path, home+string(filepath.Separator)) {
 		return "~" + path[len(home):]
 	}
 	return path

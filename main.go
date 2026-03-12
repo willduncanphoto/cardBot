@@ -44,6 +44,7 @@ type app struct {
 	logger       *cblog.Logger
 	inputChan    chan string // buffered input from stdin
 	dryRun       bool
+	copied       bool // true after successful copy of current card
 }
 
 // drainInput discards any buffered input keystrokes.
@@ -179,8 +180,7 @@ func main() {
 		a.printf("[%s] Warning: %s\n", ts(), w)
 	}
 
-	fmt.Printf("[%s] Starting CardBot %s...\n", ts(), version)
-	a.logf("Starting CardBot %s", version)
+	a.printf("[%s] Starting CardBot %s...\n", ts(), version)
 	time.Sleep(150 * time.Millisecond)
 	a.printf("[%s] Copy location is set to %s\n", ts(), cfg.Destination.Path)
 	time.Sleep(150 * time.Millisecond)
@@ -371,11 +371,15 @@ func (a *app) printCardInfo(card *detect.Card, result *analyze.Result) {
 		detect.FormatBytes(card.UsedBytes),
 		detect.FormatBytes(card.TotalBytes),
 		pct)
-	color := ui.BrandColor(card.Brand)
+	color, reset := "", ""
+	if a.cfg.Output.Color {
+		color = ui.BrandColor(card.Brand)
+		reset = ui.Reset
+	}
 	if result != nil && result.Gear != "" {
-		fmt.Printf("  Camera:   %s%s%s\n", color, result.Gear, ui.Reset)
+		fmt.Printf("  Camera:   %s%s%s\n", color, result.Gear, reset)
 	} else {
-		fmt.Printf("  Camera:   %s%s (unknown model)%s\n", color, card.Brand, ui.Reset)
+		fmt.Printf("  Camera:   %s%s (unknown model)%s\n", color, card.Brand, reset)
 	}
 
 	if result != nil && result.Starred > 0 {
@@ -435,6 +439,7 @@ func (a *app) finishCard() {
 	a.mu.Lock()
 	a.currentCard = nil
 	a.lastResult = nil
+	a.copied = false
 
 	if len(a.cardQueue) > 0 {
 		nextCard := a.cardQueue[0]
@@ -455,6 +460,8 @@ func (a *app) handleRemoval(path string) {
 
 	if wasCurrent {
 		a.currentCard = nil
+		a.lastResult = nil
+		a.copied = false
 		hasQueue := len(a.cardQueue) > 0
 		var nextCard *detect.Card
 		if hasQueue {
@@ -499,6 +506,13 @@ func (a *app) handleInput(input string) {
 
 	switch strings.ToLower(input) {
 	case "a":
+		a.mu.Lock()
+		alreadyCopied := a.copied
+		a.mu.Unlock()
+		if alreadyCopied {
+			fmt.Printf("\n[%s] Already copied. [e] Eject  [c] Done  > ", ts())
+			return
+		}
 		a.copyAll(card)
 	case "e":
 		a.ejectCard(card)
@@ -622,9 +636,13 @@ func (a *app) copyAll(card *detect.Card) {
 		a.logf("Dotfile written to %s", card.Path)
 	}
 
+	a.mu.Lock()
+	a.copied = true
+	a.mu.Unlock()
+
 	fmt.Println()
 	a.drainInput()
-	a.printPrompt()
+	fmt.Print("[e] Eject  [c] Done  > ")
 }
 
 func (a *app) showHardwareInfo(card *detect.Card) {

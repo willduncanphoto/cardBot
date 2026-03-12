@@ -226,6 +226,7 @@ func TestContractPath(t *testing.T) {
 	}{
 		{filepath.Join(home, "Pictures"), "~/Pictures"},
 		{filepath.Join(home, ""), "~"},
+		{home + "/", "~"},               // trailing slash normalized
 		{"/other/path", "/other/path"},
 	}
 
