@@ -582,6 +582,12 @@ func (a *app) handleInput(input string) {
 	case "s":
 		fmt.Println("\nCopy Selects is not yet available.")
 		a.printPrompt()
+	case "p":
+		fmt.Println("\nCopy Photos is not yet available.")
+		a.printPrompt()
+	case "v":
+		fmt.Println("\nCopy Videos is not yet available.")
+		a.printPrompt()
 	default:
 		if input != "" {
 			fmt.Printf("\nUnknown command %q. Press [?] for help.\n", input)
@@ -899,6 +905,8 @@ func (a *app) showHelp() {
 	fmt.Println("  Commands:")
 	fmt.Println("  [a]  Copy All     copy all files to destination")
 	fmt.Println("  \033[9m[s]  Copy Selects  copy starred/picked files only\033[0m")
+	fmt.Println("  \033[9m[p]  Copy Photos   copy photos only\033[0m")
+	fmt.Println("  \033[9m[v]  Copy Videos   copy videos only\033[0m")
 	fmt.Println("  [e]  Eject        safely eject this card")
 	fmt.Println("  [x]  Exit         skip this card, move to next")
 	fmt.Println("  [i]  Card Info    show hardware details")
