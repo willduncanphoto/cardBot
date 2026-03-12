@@ -573,12 +573,15 @@ func (a *app) handleInput(input string) {
 		a.copyAll(card)
 	case "e":
 		a.ejectCard(card)
-	case "c":
+	case "q":
 		a.cancelCard()
 	case "i":
 		a.showHardwareInfo(card)
 	case "t":
 		a.runSpeedTest(card)
+	case "s":
+		fmt.Println("\nCopy Selects is not yet available.")
+		a.printPrompt()
 	default:
 		if input != "" {
 			fmt.Printf("\nUnknown command %q. Press [?] for help.\n", input)
@@ -629,7 +632,7 @@ func (a *app) copyAll(card *detect.Card) {
 	}
 
 	fmt.Printf("\n[%s] Copying all files to %s\n", ts(), a.cfg.Destination.Path)
-	fmt.Printf("[%s] Press [q] to cancel\n", ts())
+	fmt.Printf("[%s] Press [\\] to cancel\n", ts())
 	a.logf("Copy starting: %s → %s", card.Path, destBase)
 
 	a.mu.Lock()
@@ -781,7 +784,7 @@ func (a *app) copyAll(card *detect.Card) {
 			a.printMu.Unlock()
 
 		case input := <-a.inputChan:
-			if strings.ToLower(input) == "q" {
+			if strings.ToLower(input) == "\\" {
 				cancel()
 			}
 			// All other input is silently ignored during copy.
@@ -857,11 +860,11 @@ func (a *app) printPrompt() {
 
 	switch {
 	case invalid:
-		fmt.Print("[e] Eject  [c] Cancel  [?]  > ")
+		fmt.Print("[e] Eject  [q] Quit  [?]  > ")
 	case copied:
-		fmt.Print("[e] Eject  [c] Done  [?]  > ")
+		fmt.Print("[e] Eject  [q] Done  [?]  > ")
 	default:
-		fmt.Print("[a] Copy All  [e] Eject  [c] Cancel  [?]  > ")
+		fmt.Print("[a] Copy All  [e] Eject  [q] Quit  [?]  > ")
 	}
 }
 
@@ -895,11 +898,12 @@ func (a *app) showHelp() {
 	fmt.Println()
 	fmt.Println("  Commands:")
 	fmt.Println("  [a]  Copy All     copy all files to destination")
+	fmt.Println("  \033[9m[s]  Copy Selects  copy starred/picked files only\033[0m")
 	fmt.Println("  [e]  Eject        safely eject this card")
-	fmt.Println("  [c]  Cancel       skip this card, move to next")
+	fmt.Println("  [q]  Quit         skip this card, move to next")
 	fmt.Println("  [i]  Card Info    show hardware details")
 	fmt.Println("  [t]  Speed Test   benchmark read/write speed")
-	fmt.Println("  [q]  (during copy) cancel the copy in progress")
+	fmt.Println("  [\\]  (during copy) cancel the copy in progress")
 	fmt.Println("  [?]  Help         show this help")
 	fmt.Println()
 }
