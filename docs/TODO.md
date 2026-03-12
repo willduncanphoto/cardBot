@@ -24,7 +24,7 @@ These are "nice to have" features that aren't on the immediate roadmap:
 - Network destination support
 - Windows support
 - JSON output mode for scripting
-- Star rating filters: `[2]` Copy 2★, `[3]` Copy 3★, `[4]` Copy 4★, `[5]` Copy 5★
+- Star rating filters: `[2]` Copy 2★+, `[3]` Copy 3★+, `[4]` Copy 4★+, `[5]` Copy 5★ only
 
 ---
 
