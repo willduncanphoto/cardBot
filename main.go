@@ -573,7 +573,7 @@ func (a *app) handleInput(input string) {
 		a.copyAll(card)
 	case "e":
 		a.ejectCard(card)
-	case "q":
+	case "x":
 		a.cancelCard()
 	case "i":
 		a.showHardwareInfo(card)
@@ -860,11 +860,11 @@ func (a *app) printPrompt() {
 
 	switch {
 	case invalid:
-		fmt.Print("[e] Eject  [q] Quit  [?]  > ")
+		fmt.Print("[e] Eject  [x] Exit  [?]  > ")
 	case copied:
-		fmt.Print("[e] Eject  [q] Done  [?]  > ")
+		fmt.Print("[e] Eject  [x] Done  [?]  > ")
 	default:
-		fmt.Print("[a] Copy All  [e] Eject  [q] Quit  [?]  > ")
+		fmt.Print("[a] Copy All  [e] Eject  [x] Exit  [?]  > ")
 	}
 }
 
@@ -900,7 +900,7 @@ func (a *app) showHelp() {
 	fmt.Println("  [a]  Copy All     copy all files to destination")
 	fmt.Println("  \033[9m[s]  Copy Selects  copy starred/picked files only\033[0m")
 	fmt.Println("  [e]  Eject        safely eject this card")
-	fmt.Println("  [q]  Quit         skip this card, move to next")
+	fmt.Println("  [x]  Exit         skip this card, move to next")
 	fmt.Println("  [i]  Card Info    show hardware details")
 	fmt.Println("  [t]  Speed Test   benchmark read/write speed")
 	fmt.Println("  [\\]  (during copy) cancel the copy in progress")
