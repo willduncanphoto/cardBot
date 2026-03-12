@@ -13,6 +13,7 @@ import (
 
 	"github.com/illwill/cardbot/internal/analyze"
 	"github.com/illwill/cardbot/internal/config"
+	cardcopy "github.com/illwill/cardbot/internal/copy"
 	"github.com/illwill/cardbot/internal/detect"
 	"github.com/illwill/cardbot/internal/dotfile"
 	cblog "github.com/illwill/cardbot/internal/log"
@@ -21,7 +22,7 @@ import (
 	"github.com/illwill/cardbot/internal/ui"
 )
 
-const version = "0.1.4"
+const version = "0.1.5"
 
 // UX delays — remove in 0.4.0 when real startup and analysis timings replace them.
 const (
@@ -399,7 +400,7 @@ func (a *app) printCardInfo(card *detect.Card, result *analyze.Result) {
 	}
 
 	fmt.Println("────────────────────────────────────────")
-	fmt.Print("[e] Eject  [c] Cancel  > ")
+	fmt.Print("[a] Copy All  [e] Eject  [c] Cancel  > ")
 }
 
 func (a *app) finishCard() {
@@ -468,6 +469,8 @@ func (a *app) handleInput(input string) {
 	}
 
 	switch strings.ToLower(input) {
+	case "a":
+		a.copyAll(card)
 	case "e":
 		a.ejectCard(card)
 	case "c":
@@ -497,6 +500,96 @@ func (a *app) cancelCard() {
 	fmt.Println("\nCancelled.")
 	a.logf("Card cancelled")
 	a.finishCard()
+}
+
+func (a *app) copyAll(card *detect.Card) {
+	destBase, err := config.ExpandPath(a.cfg.Destination.Path)
+	if err != nil {
+		fmt.Printf("\nError: could not expand destination path: %v\n", err)
+		a.printPrompt()
+		return
+	}
+
+	if a.dryRun {
+		fmt.Printf("\n[%s] Dry-run: would copy all files to %s\n", ts(), a.cfg.Destination.Path)
+		a.printPrompt()
+		return
+	}
+
+	fmt.Printf("\n[%s] Copying all files to %s\n", ts(), a.cfg.Destination.Path)
+	a.logf("Copy starting: %s → %s", card.Path, destBase)
+
+	lastUpdate := time.Now()
+	opts := cardcopy.Options{
+		CardPath: card.Path,
+		DestBase: destBase,
+		BufferKB: a.cfg.Advanced.BufferSizeKB,
+	}
+
+	result, err := cardcopy.Run(opts, func(p cardcopy.Progress) {
+		now := time.Now()
+		if now.Sub(lastUpdate) < 2*time.Second && p.FilesDone < p.FilesTotal {
+			return
+		}
+		lastUpdate = now
+
+		pct := int64(0)
+		if p.BytesTotal > 0 {
+			pct = (p.BytesDone * 100) / p.BytesTotal
+		}
+		fmt.Printf("\r[%s] Copying... %d/%d files  %s/%s (%d%%)    ",
+			ts(),
+			p.FilesDone, p.FilesTotal,
+			detect.FormatBytes(p.BytesDone),
+			detect.FormatBytes(p.BytesTotal),
+			pct)
+	})
+
+	if err != nil {
+		fmt.Printf("\n[%s] Copy failed: %v\n", ts(), err)
+		a.logf("Copy failed: %v", err)
+		a.printPrompt()
+		return
+	}
+
+	elapsed := result.Elapsed.Round(time.Second)
+	speed := float64(0)
+	if result.Elapsed.Seconds() > 0 {
+		speed = float64(result.BytesCopied) / result.Elapsed.Seconds() / (1024 * 1024)
+	}
+
+	fmt.Printf("\r[%s] Copy complete ✓                                          \n", ts())
+	fmt.Printf("[%s] %d files, %s copied in %s (%.1f MB/s)\n",
+		ts(),
+		result.FilesCopied,
+		detect.FormatBytes(result.BytesCopied),
+		elapsed,
+		speed)
+	a.logf("Copy complete: %d files, %s in %s (%.1f MB/s)",
+		result.FilesCopied,
+		detect.FormatBytes(result.BytesCopied),
+		elapsed,
+		speed)
+
+	// Write .cardbot dotfile to card
+	dotErr := dotfile.Write(dotfile.WriteOptions{
+		CardPath:       card.Path,
+		Destination:    destBase,
+		Mode:           "all",
+		FilesCopied:    result.FilesCopied,
+		BytesCopied:    result.BytesCopied,
+		Verified:       true,
+		CardbotVersion: version,
+	})
+	if dotErr != nil {
+		fmt.Printf("[%s] Warning: could not write .cardbot to card: %v\n", ts(), dotErr)
+		a.logf("Dotfile write failed: %v", dotErr)
+	} else {
+		a.logf("Dotfile written to %s", card.Path)
+	}
+
+	fmt.Println()
+	a.printPrompt()
 }
 
 func (a *app) showHardwareInfo(card *detect.Card) {
@@ -535,7 +628,7 @@ func (a *app) runSpeedTest(card *detect.Card) {
 }
 
 func (a *app) printPrompt() {
-	fmt.Print("[e] Eject  [c] Cancel  > ")
+	fmt.Print("[a] Copy All  [e] Eject  [c] Cancel  > ")
 }
 
 func readInput(ch chan<- string) {
