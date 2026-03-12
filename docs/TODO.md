@@ -19,14 +19,15 @@ Detection, card analysis, EXIF, and star ratings complete.
 
 ## 0.1.4 — UI Polish
 
-- [ ] Merge brand + camera lines
-- [ ] Clean up repetitive brand names ("Nikon NIKON Z 9" → "Nikon Z 9")
-- [ ] Brand colors (ANSI): Nikon yellow, Canon red, Sony white, etc.
+- [x] Merge brand + camera lines
+- [x] Clean up repetitive brand names ("Nikon NIKON Z 9" → "Nikon Z 9")
+- [x] Brand colors (ANSI): Nikon yellow, Canon red, Sony white, etc.
+- [x] Performance: parallel EXIF workers (4 default, 3.7x faster)
+- [x] Card status line (New / Copied via .cardbot dotfile)
 - [ ] Handle "no DCIM" case with warning
 - [ ] Handle read-only cards
 - [ ] File collision logic (skip, rename, overwrite)
 - [ ] Better error messages
-- [ ] Performance: handle 50k+ files gracefully
 
 ---
 

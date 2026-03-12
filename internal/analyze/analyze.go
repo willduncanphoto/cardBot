@@ -335,7 +335,8 @@ func readExif(path string, xmpBuf []byte) (date time.Time, gear string, rating i
 		return time.Time{}, "", 0, false
 	}
 
-	// Camera model: combine Make + Model, dedup if Model already contains Make.
+	// Camera model: combine Make + Model, dedup if Model already contains Make,
+	// and normalize brand casing for clean display (e.g. "NIKON Z 9" → "Nikon Z 9").
 	cameraMake := strings.TrimSpace(exif.Make)
 	model := strings.TrimSpace(exif.Model)
 	if cameraMake != "" && model != "" {
@@ -347,6 +348,7 @@ func readExif(path string, xmpBuf []byte) (date time.Time, gear string, rating i
 	} else if model != "" {
 		gear = model
 	}
+	gear = cleanGear(gear)
 
 	// Star rating: check EXIF tag first, then scan XMP from the already-read buffer.
 	rating = int(exif.Rating)
@@ -422,4 +424,35 @@ func normalizeExt(ext string) string {
 		return ""
 	}
 	return strings.ToUpper(ext[1:])
+}
+
+// brandAliases maps uppercase EXIF brand prefixes to clean display names.
+var brandAliases = map[string]string{
+	"NIKON":     "Nikon",
+	"CANON":     "Canon",
+	"SONY":      "Sony",
+	"FUJIFILM":  "Fujifilm",
+	"PANASONIC": "Panasonic",
+	"OLYMPUS":   "Olympus",
+	"OM DIGITAL": "OM System",
+	"HASSELBLAD": "Hasselblad",
+	"LEICA":     "Leica",
+	"RICOH":     "Ricoh",
+	"PENTAX":    "Pentax",
+	"SIGMA":     "Sigma",
+}
+
+// cleanGear normalizes camera brand casing in the gear string.
+// "NIKON Z 9" → "Nikon Z 9", "Canon EOS R5" stays as-is.
+func cleanGear(gear string) string {
+	if gear == "" {
+		return gear
+	}
+	upper := strings.ToUpper(gear)
+	for prefix, clean := range brandAliases {
+		if strings.HasPrefix(upper, prefix) {
+			return clean + gear[len(prefix):]
+		}
+	}
+	return gear
 }

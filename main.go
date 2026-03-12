@@ -18,6 +18,7 @@ import (
 	cblog "github.com/illwill/cardbot/internal/log"
 	"github.com/illwill/cardbot/internal/pick"
 	"github.com/illwill/cardbot/internal/speedtest"
+	"github.com/illwill/cardbot/internal/ui"
 )
 
 const version = "0.1.4"
@@ -341,9 +342,11 @@ func (a *app) printCardInfo(card *detect.Card, result *analyze.Result) {
 		detect.FormatBytes(card.UsedBytes),
 		detect.FormatBytes(card.TotalBytes),
 		pct)
-	fmt.Printf("  Brand:    %s\n", card.Brand)
+	color := ui.BrandColor(card.Brand)
 	if result != nil && result.Gear != "" {
-		fmt.Printf("  Camera:   %s\n", result.Gear)
+		fmt.Printf("  Camera:   %s%s%s\n", color, result.Gear, ui.Reset)
+	} else {
+		fmt.Printf("  Camera:   %s%s (unknown model)%s\n", color, card.Brand, ui.Reset)
 	}
 
 	if result != nil && result.Starred > 0 {
