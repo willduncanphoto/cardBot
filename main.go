@@ -126,10 +126,13 @@ func main() {
 		fmt.Println()
 	} else if *flagDest == "" {
 		// Destination already configured — confirm before scanning.
-		cfg.Destination.Path = config.ContractPath(confirmDestination(cfg.Destination.Path))
-		if cfgPath != "" {
-			if saveErr := config.Save(cfg, cfgPath); saveErr != nil {
-				fmt.Fprintf(os.Stderr, "Warning: could not save config: %v\n", saveErr)
+		newPath := config.ContractPath(confirmDestination(cfg.Destination.Path))
+		if newPath != cfg.Destination.Path {
+			cfg.Destination.Path = newPath
+			if cfgPath != "" {
+				if saveErr := config.Save(cfg, cfgPath); saveErr != nil {
+					fmt.Fprintf(os.Stderr, "Warning: could not save config: %v\n", saveErr)
+				}
 			}
 		}
 		fmt.Println()
@@ -319,7 +322,9 @@ func (a *app) displayCard(card *detect.Card) {
 	scanStart := time.Now()
 	analyzer := analyze.New(card.Path)
 	analyzer.OnProgress(func(count int) {
-		fmt.Printf("\r[%s] Scanning %s... %d files", ts(), card.Path, count)
+		if count%100 == 0 {
+			fmt.Printf("\r[%s] Scanning %s... %d files", ts(), card.Path, count)
+		}
 	})
 
 	result, err := analyzer.Analyze()
