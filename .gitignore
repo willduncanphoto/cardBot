@@ -57,3 +57,4 @@ config.local.json
 
 # Documentation (agent logs, decisions, etc.)
 AGENT.md
+agent/
