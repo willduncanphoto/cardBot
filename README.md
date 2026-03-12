@@ -184,17 +184,17 @@ Run `cardbot --setup` to change the destination. Run `cardbot --reset` to clear 
 - Bug fixes: race conditions, input drain, path escaping, log formatting
 - Test suite: 81 tests across 6 packages
 
-### 🔧 0.1.6 — Copy Robustness (Next)
+### 🔧 0.1.6 — Copy Stuff (Next)
 - Handle card removal during copy, disk full, cancel with cleanup
 - Read-only card warnings
 - Output mutex for concurrent progress/scan output
 - Better error messages
 
-### 📋 0.1.7 — Polish
+### 📋 0.1.7 — Cleanup
 - Single-key input (no Enter required)
 - Startup under 100ms, ETA during copy
 
-**Later:** Windows support, Linux testing, file renaming, starred-only copy mode, resume interrupted copies, video metadata, auto-update
+**Later:** Windows support, Linux testing, file renaming, starred-only copy mode, resume interrupted copies, video metadata, auto-update, copyright/personal data injection on copy
 
 ## Project Structure
 
