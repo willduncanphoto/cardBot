@@ -119,18 +119,44 @@ Work items grouped by milestone.
 - [ ] Status line reflects partial copy (`Selects copied on ...`)
 - [ ] Re-copy guard per mode (don't skip if previous copy was a different mode)
 
+### 0.1.9 — Code Health
+- [ ] Split `main.go` into `app.go`, `display.go`, `copy_cmd.go`
+- [ ] Add `context.Context` to `displayCard` and analyzer
+- [ ] Remove startup `time.Sleep` calls
+- [ ] Standardize error handling — `friendlyErr` everywhere user-facing
+- [ ] Move `FormatBytes` to platform-agnostic file
+- [ ] Add `df.Sync()` before close in `copyFile`
+- [ ] Test coverage pass — target 80%+ across all packages
+- [ ] `go build -ldflags="-s -w"` for binary size reduction
+
+---
+
+### 0.2.0 — Daily Driver
+**The "I am willing to use this in my workflow" release.**
+
+Everything from 0.1.x is solid, tested, and feels intentional. This is the version
+you hand to another photographer and say "try this."
+
+- [ ] All 0.1.7, 0.1.8, 0.1.9 items complete
+- [ ] Single-key input working reliably across macOS and Linux
+- [ ] Selective copy (`[s]`, `[p]`, `[v]`) fully implemented with correct status tracking
+- [ ] Partial copy state in dotfile — multi-mode copy history
+- [ ] No known crashes or data loss scenarios
+- [ ] Tested on at least 2 real cards from different cameras
+- [ ] README reflects actual current behaviour (no aspirational features listed as present)
+- [ ] First public-facing release candidate
+
 ---
 
 ## Later
 
-- Windows support
-- Linux testing (Ubuntu, Fedora, Debian), mount point docs, stable build
 - File renaming on copy (date-based, camera+date, sequence numbering)
-- Incremental copy (only new/changed files)
 - Resume interrupted copies
 - Video metadata (duration, resolution)
+- Linux testing (Ubuntu, Fedora, Debian), mount point docs, stable build
+- Windows support
 - Network destinations
+- Auto-update: check GitHub Releases for new version at startup, `--update` flag to self-upgrade
 - TOML/YAML config
 - JSON output mode
 - Toggle flat vs preserve DCIM structure
-- Auto-update: check GitHub Releases for new version at startup, `--update` flag to self-upgrade

@@ -4,6 +4,8 @@
 
 Detection, analysis, EXIF, config, UI polish, copy with robustness, and UX improvements complete.
 
+**Target: 0.2.0 — Daily Driver.** The version you hand to another photographer and say "try this."
+
 ---
 
 ## 0.1.7 — Polish (Next Up)
