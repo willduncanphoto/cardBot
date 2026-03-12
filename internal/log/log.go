@@ -53,6 +53,19 @@ func (l *Logger) Printf(format string, args ...any) {
 	l.written += int64(n)
 }
 
+// Raw writes a pre-formatted line to the log (no timestamp added).
+func (l *Logger) Raw(line string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.written >= maxSize {
+		l.rotate()
+	}
+
+	n, _ := l.f.WriteString(line + "\n")
+	l.written += int64(n)
+}
+
 // Close flushes and closes the log file.
 func (l *Logger) Close() {
 	l.mu.Lock()

@@ -1,0 +1,126 @@
+package log
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestOpen_CreatesFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.log")
+	logger, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer logger.Close()
+
+	if _, err := os.Stat(path); err != nil {
+		t.Error("log file should exist after Open")
+	}
+}
+
+func TestOpen_CreatesParentDirs(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "a", "b", "test.log")
+	logger, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer logger.Close()
+
+	if _, err := os.Stat(path); err != nil {
+		t.Error("log file should exist after Open")
+	}
+}
+
+func TestPrintf_WritesTimestampedLine(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.log")
+	logger, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	logger.Printf("hello %s", "world")
+	logger.Close()
+
+	data, _ := os.ReadFile(path)
+	line := string(data)
+	if !strings.Contains(line, "hello world") {
+		t.Errorf("log line missing message: %q", line)
+	}
+	if !strings.HasPrefix(line, "[") {
+		t.Errorf("log line missing timestamp prefix: %q", line)
+	}
+}
+
+func TestRaw_NoTimestamp(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.log")
+	logger, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	logger.Raw("raw message here")
+	logger.Close()
+
+	data, _ := os.ReadFile(path)
+	line := strings.TrimSpace(string(data))
+	if line != "raw message here" {
+		t.Errorf("Raw() = %q, want exact 'raw message here'", line)
+	}
+}
+
+func TestRotation(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.log")
+
+	logger, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Write enough data to exceed maxSize (5 MB).
+	// Each line is ~50 bytes, so 110K lines ≈ 5.5 MB.
+	bigLine := strings.Repeat("x", 100)
+	for i := 0; i < 55000; i++ {
+		logger.Printf(bigLine)
+	}
+	logger.Close()
+
+	// After rotation, .old file should exist.
+	oldPath := path + ".old"
+	if _, err := os.Stat(oldPath); err != nil {
+		t.Error("expected .old file after rotation")
+	}
+
+	// Current log should be smaller than maxSize (it was rotated).
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Size() >= maxSize {
+		t.Errorf("current log size %d should be < maxSize %d after rotation", info.Size(), maxSize)
+	}
+}
+
+func TestWrittenTracksSizeAcrossRestart(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.log")
+
+	// First session: write some data.
+	logger1, _ := Open(path)
+	logger1.Printf("first session")
+	logger1.Close()
+
+	info, _ := os.Stat(path)
+	size1 := info.Size()
+
+	// Second session: Open should seed `written` from existing file size.
+	logger2, _ := Open(path)
+	logger2.Printf("second session")
+	logger2.Close()
+
+	info, _ = os.Stat(path)
+	if info.Size() <= size1 {
+		t.Error("second session should have appended to the file")
+	}
+}

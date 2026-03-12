@@ -19,6 +19,18 @@ var (
 	reProtocol   = regexp.MustCompile(`Protocol:\s*(.+)`)
 	reVolumeUUID = regexp.MustCompile(`Volume UUID:\s*(\S+)`)
 	reParentDisk = regexp.MustCompile(`^(disk\d+)s\d+$`)
+	reContent    = regexp.MustCompile(`Content \(IOContent\):\s*(.+)`)
+	reFS         = regexp.MustCompile(`File System Personality:\s*(.+)`)
+	reRO         = regexp.MustCompile(`Volume Read-Only:\s*(\w+)`)
+
+	// system_profiler NVMe fields
+	reNVMeModel    = regexp.MustCompile(`Model:\s*(.+)`)
+	reNVMeSerial   = regexp.MustCompile(`Serial Number:\s*(.+)`)
+	reNVMeFirmware = regexp.MustCompile(`Revision:\s*(.+)`)
+	reNVMeSpeed    = regexp.MustCompile(`Link Speed:\s*(.+)`)
+	reNVMeWidth    = regexp.MustCompile(`Link Width:\s*(.+)`)
+	reNVMeSmart    = regexp.MustCompile(`S\.M\.A\.R\.T\. status:\s*(.+)`)
+	reNVMeTrim     = regexp.MustCompile(`TRIM Support:\s*(.+)`)
 )
 
 // HardwareInfo contains device-level information about the card/reader.
@@ -139,7 +151,6 @@ func getDiskUtilInfo(deviceID, parentDisk string) (*diskUtilInfo, error) {
 		info.Protocol = strings.TrimSpace(m[1])
 	}
 
-	reContent := regexp.MustCompile(`Content \(IOContent\):\s*(.+)`)
 	if m := reContent.FindStringSubmatch(output); len(m) >= 2 {
 		info.PartitionScheme = strings.TrimSpace(m[1])
 	}
@@ -155,12 +166,10 @@ func getDiskUtilInfo(deviceID, parentDisk string) (*diskUtilInfo, error) {
 		info.VolumeUUID = m[1]
 	}
 
-	reFS := regexp.MustCompile(`File System Personality:\s*(.+)`)
 	if m := reFS.FindStringSubmatch(output); len(m) >= 2 {
 		info.FileSystem = strings.TrimSpace(m[1])
 	}
 
-	reRO := regexp.MustCompile(`Volume Read-Only:\s*(\w+)`)
 	if m := reRO.FindStringSubmatch(output); len(m) >= 2 {
 		info.ReadOnly = m[1] == "Yes"
 	}
@@ -203,22 +212,22 @@ func getNVMeInfo(bsdName string) (*nvmeInfo, error) {
 
 	info := &nvmeInfo{}
 
-	re := func(pattern string) string {
-		m := regexp.MustCompile(pattern).FindStringSubmatch(target)
+	re := func(pattern *regexp.Regexp) string {
+		m := pattern.FindStringSubmatch(target)
 		if len(m) >= 2 {
 			return strings.TrimSpace(m[1])
 		}
 		return ""
 	}
 
-	info.Model = re(`Model:\s*(.+)`)
-	info.Serial = re(`Serial Number:\s*(.+)`)
-	info.Firmware = re(`Revision:\s*(.+)`)
-	info.LinkSpeed = re(`Link Speed:\s*(.+)`)
-	info.LinkWidth = re(`Link Width:\s*(.+)`)
-	info.SmartStatus = re(`S\.M\.A\.R\.T\. status:\s*(.+)`)
+	info.Model = re(reNVMeModel)
+	info.Serial = re(reNVMeSerial)
+	info.Firmware = re(reNVMeFirmware)
+	info.LinkSpeed = re(reNVMeSpeed)
+	info.LinkWidth = re(reNVMeWidth)
+	info.SmartStatus = re(reNVMeSmart)
 
-	trim := re(`TRIM Support:\s*(.+)`)
+	trim := re(reNVMeTrim)
 	info.TrimSupport = strings.EqualFold(trim, "yes")
 
 	return info, nil

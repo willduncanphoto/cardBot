@@ -42,7 +42,21 @@ type app struct {
 	mu           sync.Mutex
 	cfg          *config.Config
 	logger       *cblog.Logger
+	inputChan    chan string // buffered input from stdin
 	dryRun       bool
+}
+
+// drainInput discards any buffered input keystrokes.
+// Called after blocking operations (copy, speed test) to prevent
+// queued commands from firing on the next prompt.
+func (a *app) drainInput() {
+	for {
+		select {
+		case <-a.inputChan:
+		default:
+			return
+		}
+	}
 }
 
 // logf writes to the log file if logging is enabled, and is a no-op otherwise.
@@ -52,12 +66,13 @@ func (a *app) logf(format string, args ...any) {
 	}
 }
 
-// printf prints to stdout and mirrors to the log file.
+// printf prints to stdout and mirrors to the log file (without adding a second timestamp).
 func (a *app) printf(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	fmt.Print(msg)
 	if a.logger != nil {
-		a.logger.Printf(strings.TrimRight(msg, "\n"))
+		// Caller already includes [timestamp] in the message, so write raw.
+		a.logger.Raw(strings.TrimRight(msg, "\n"))
 	}
 }
 
@@ -150,10 +165,12 @@ func main() {
 	}
 
 	// --- Build app ---
+	inputChan := make(chan string, 10)
 	a := &app{
 		cardQueue: make([]*detect.Card, 0),
 		cfg:       cfg,
 		logger:    logger,
+		inputChan: inputChan,
 		dryRun:    *flagDryRun,
 	}
 
@@ -187,7 +204,6 @@ func main() {
 	}
 	defer a.detector.Stop()
 
-	inputChan := make(chan string, 10)
 	go readInput(inputChan)
 
 	for {
@@ -198,7 +214,7 @@ func main() {
 		case path := <-a.detector.Removals():
 			a.handleRemoval(path)
 
-		case input := <-inputChan:
+		case input := <-a.inputChan:
 			a.handleInput(input)
 
 		case <-sigChan:
@@ -607,6 +623,7 @@ func (a *app) copyAll(card *detect.Card) {
 	}
 
 	fmt.Println()
+	a.drainInput()
 	a.printPrompt()
 }
 
@@ -645,6 +662,7 @@ func (a *app) runSpeedTest(card *detect.Card) {
 		fmt.Println()
 	}
 
+	a.drainInput()
 	a.printPrompt()
 }
 

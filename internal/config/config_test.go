@@ -1,0 +1,250 @@
+package config
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestDefaults(t *testing.T) {
+	cfg := Defaults()
+	if cfg.Schema != schemaVersion {
+		t.Errorf("Schema = %q, want %q", cfg.Schema, schemaVersion)
+	}
+	if cfg.Destination.Path != "~/Pictures/CardBot" {
+		t.Errorf("Destination.Path = %q, want ~/Pictures/CardBot", cfg.Destination.Path)
+	}
+	if cfg.Advanced.BufferSizeKB != 256 {
+		t.Errorf("BufferSizeKB = %d, want 256", cfg.Advanced.BufferSizeKB)
+	}
+	if cfg.Advanced.ExifWorkers != 4 {
+		t.Errorf("ExifWorkers = %d, want 4", cfg.Advanced.ExifWorkers)
+	}
+	if !cfg.Output.Color {
+		t.Error("Color should default to true")
+	}
+}
+
+func TestSaveLoad_RoundTrip(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	cfg := Defaults()
+	cfg.Destination.Path = "~/Photos/Test"
+
+	if err := Save(cfg, path); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, warnings, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 0 {
+		t.Errorf("unexpected warnings: %v", warnings)
+	}
+	if loaded.Destination.Path != "~/Photos/Test" {
+		t.Errorf("Destination.Path = %q, want ~/Photos/Test", loaded.Destination.Path)
+	}
+	if loaded.Schema != schemaVersion {
+		t.Errorf("Schema = %q, want %q", loaded.Schema, schemaVersion)
+	}
+}
+
+func TestLoad_MissingFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nonexistent.json")
+	cfg, warnings, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 0 {
+		t.Errorf("unexpected warnings: %v", warnings)
+	}
+	// Should return defaults.
+	if cfg.Destination.Path != "~/Pictures/CardBot" {
+		t.Errorf("expected defaults, got path %q", cfg.Destination.Path)
+	}
+}
+
+func TestLoad_MalformedJSON(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	os.WriteFile(path, []byte("{not valid json"), 0600)
+
+	cfg, warnings, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 1 {
+		t.Fatalf("expected 1 warning, got %d", len(warnings))
+	}
+	if cfg.Destination.Path != "~/Pictures/CardBot" {
+		t.Error("should return defaults for malformed JSON")
+	}
+}
+
+func TestLoad_WrongSchema(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	os.WriteFile(path, []byte(`{"$schema": "cardbot-config-v99"}`), 0600)
+
+	_, warnings, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 1 {
+		t.Fatalf("expected 1 warning, got %d", len(warnings))
+	}
+}
+
+func TestLoad_ClampBufferSizeKB(t *testing.T) {
+	tests := []struct {
+		name    string
+		json    string
+		want    int
+		wantWarn bool
+	}{
+		{"too small", `{"$schema":"cardbot-config-v1","advanced":{"buffer_size_kb":10}}`, 64, true},
+		{"too large", `{"$schema":"cardbot-config-v1","advanced":{"buffer_size_kb":9999}}`, 4096, true},
+		{"valid", `{"$schema":"cardbot-config-v1","advanced":{"buffer_size_kb":512}}`, 512, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.json")
+			os.WriteFile(path, []byte(tt.json), 0600)
+
+			cfg, warnings, err := Load(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cfg.Advanced.BufferSizeKB != tt.want {
+				t.Errorf("BufferSizeKB = %d, want %d", cfg.Advanced.BufferSizeKB, tt.want)
+			}
+			if tt.wantWarn && len(warnings) == 0 {
+				t.Error("expected a warning")
+			}
+			if !tt.wantWarn && len(warnings) != 0 {
+				t.Errorf("unexpected warnings: %v", warnings)
+			}
+		})
+	}
+}
+
+func TestLoad_ClampExifWorkers(t *testing.T) {
+	tests := []struct {
+		name    string
+		json    string
+		want    int
+		wantWarn bool
+	}{
+		{"too small", `{"$schema":"cardbot-config-v1","advanced":{"exif_workers":0}}`, 1, true},
+		{"too large", `{"$schema":"cardbot-config-v1","advanced":{"exif_workers":99}}`, 16, true},
+		{"valid", `{"$schema":"cardbot-config-v1","advanced":{"exif_workers":8}}`, 8, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.json")
+			os.WriteFile(path, []byte(tt.json), 0600)
+
+			cfg, warnings, err := Load(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cfg.Advanced.ExifWorkers != tt.want {
+				t.Errorf("ExifWorkers = %d, want %d", cfg.Advanced.ExifWorkers, tt.want)
+			}
+			if tt.wantWarn && len(warnings) == 0 {
+				t.Error("expected a warning")
+			}
+		})
+	}
+}
+
+func TestLoad_PartialConfig(t *testing.T) {
+	// Only override destination; everything else should use defaults.
+	path := filepath.Join(t.TempDir(), "config.json")
+	os.WriteFile(path, []byte(`{"$schema":"cardbot-config-v1","destination":{"path":"~/Custom"}}`), 0600)
+
+	cfg, warnings, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(warnings) != 0 {
+		t.Errorf("unexpected warnings: %v", warnings)
+	}
+	if cfg.Destination.Path != "~/Custom" {
+		t.Errorf("Destination.Path = %q, want ~/Custom", cfg.Destination.Path)
+	}
+	// Defaults preserved for unset fields.
+	if cfg.Advanced.BufferSizeKB != 256 {
+		t.Errorf("BufferSizeKB = %d, want 256 (default)", cfg.Advanced.BufferSizeKB)
+	}
+}
+
+func TestExpandPath(t *testing.T) {
+	home, _ := os.UserHomeDir()
+
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"~/Pictures", filepath.Join(home, "Pictures")},
+		{"~/", home},
+		{"/absolute/path", "/absolute/path"},
+		{"relative/path", "relative/path"},
+	}
+
+	for _, tt := range tests {
+		got, err := ExpandPath(tt.input)
+		if err != nil {
+			t.Errorf("ExpandPath(%q) error: %v", tt.input, err)
+			continue
+		}
+		if got != tt.want {
+			t.Errorf("ExpandPath(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestContractPath(t *testing.T) {
+	home, _ := os.UserHomeDir()
+
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{filepath.Join(home, "Pictures"), "~/Pictures"},
+		{filepath.Join(home, ""), "~"},
+		{"/other/path", "/other/path"},
+	}
+
+	for _, tt := range tests {
+		got := ContractPath(tt.input)
+		if got != tt.want {
+			t.Errorf("ContractPath(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestExpandContractRoundTrip(t *testing.T) {
+	original := "~/Pictures/CardBot"
+	expanded, err := ExpandPath(original)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contracted := ContractPath(expanded)
+	if contracted != original {
+		t.Errorf("round-trip: %q → %q → %q", original, expanded, contracted)
+	}
+}
+
+func TestSave_CreatesParentDirs(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "a", "b", "c", "config.json")
+	cfg := Defaults()
+
+	if err := Save(cfg, path); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(path); err != nil {
+		t.Error("config file should exist after Save")
+	}
+}
