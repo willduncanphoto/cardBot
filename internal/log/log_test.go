@@ -8,6 +8,7 @@ import (
 )
 
 func TestOpen_CreatesFile(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "test.log")
 	logger, err := Open(path)
 	if err != nil {
@@ -21,6 +22,7 @@ func TestOpen_CreatesFile(t *testing.T) {
 }
 
 func TestOpen_CreatesParentDirs(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "a", "b", "test.log")
 	logger, err := Open(path)
 	if err != nil {
@@ -34,6 +36,7 @@ func TestOpen_CreatesParentDirs(t *testing.T) {
 }
 
 func TestPrintf_WritesTimestampedLine(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "test.log")
 	logger, err := Open(path)
 	if err != nil {
@@ -54,6 +57,7 @@ func TestPrintf_WritesTimestampedLine(t *testing.T) {
 }
 
 func TestRaw_NoTimestamp(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "test.log")
 	logger, err := Open(path)
 	if err != nil {
@@ -71,6 +75,7 @@ func TestRaw_NoTimestamp(t *testing.T) {
 }
 
 func TestRotation(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.log")
 
@@ -104,6 +109,7 @@ func TestRotation(t *testing.T) {
 }
 
 func TestWrittenTracksSizeAcrossRestart(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "test.log")
 
 	// First session: write some data.

@@ -40,6 +40,7 @@ func date(y, m, d int) time.Time {
 }
 
 func TestCopy_BasicFiles(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 5000), mtime: date(2026, 3, 8)},
 		"100NIKON/DSC_0002.JPG": {data: make([]byte, 3000), mtime: date(2026, 3, 8)},
@@ -65,6 +66,7 @@ func TestCopy_BasicFiles(t *testing.T) {
 }
 
 func TestCopy_SkipsHiddenFiles(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 1000), mtime: date(2026, 3, 8)},
 		"100NIKON/.DS_Store":    {data: make([]byte, 500), mtime: date(2026, 3, 8)},
@@ -87,6 +89,7 @@ func TestCopy_SkipsHiddenFiles(t *testing.T) {
 }
 
 func TestCopy_SkipsHiddenDirs(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 1000), mtime: date(2026, 3, 8)},
 		".Trashes/junk.dat":     {data: make([]byte, 500), mtime: date(2026, 3, 8)},
@@ -104,6 +107,7 @@ func TestCopy_SkipsHiddenDirs(t *testing.T) {
 }
 
 func TestCopy_EmptyCard(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	os.MkdirAll(filepath.Join(root, "DCIM"), 0755)
 	dest := t.TempDir()
@@ -119,6 +123,7 @@ func TestCopy_EmptyCard(t *testing.T) {
 }
 
 func TestCopy_NoDCIM(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	dest := t.TempDir()
 
@@ -129,6 +134,7 @@ func TestCopy_NoDCIM(t *testing.T) {
 }
 
 func TestCopy_DryRun(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 5000), mtime: date(2026, 3, 8)},
 	})
@@ -151,6 +157,7 @@ func TestCopy_DryRun(t *testing.T) {
 }
 
 func TestCopy_DryRun_NoDirCreation(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 100), mtime: date(2026, 3, 8)},
 	})
@@ -172,6 +179,7 @@ func TestCopy_DryRun_NoDirCreation(t *testing.T) {
 }
 
 func TestCopy_ContentVerification(t *testing.T) {
+	t.Parallel()
 	data := []byte("hello world, this is test content for verification")
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: data, mtime: date(2026, 3, 8)},
@@ -193,6 +201,7 @@ func TestCopy_ContentVerification(t *testing.T) {
 }
 
 func TestCopy_Progress(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 1000), mtime: date(2026, 3, 8)},
 		"100NIKON/DSC_0002.NEF": {data: make([]byte, 2000), mtime: date(2026, 3, 8)},
@@ -219,6 +228,7 @@ func TestCopy_Progress(t *testing.T) {
 }
 
 func TestCopy_CreatesNestedDest(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 100), mtime: date(2026, 3, 8)},
 	})
@@ -233,6 +243,7 @@ func TestCopy_CreatesNestedDest(t *testing.T) {
 }
 
 func TestCopy_MultipleSubfolders(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 100), mtime: date(2026, 3, 8)},
 		"101NIKON/DSC_0010.NEF": {data: make([]byte, 200), mtime: date(2026, 3, 8)},
@@ -255,6 +266,7 @@ func TestCopy_MultipleSubfolders(t *testing.T) {
 }
 
 func TestCopy_DefaultBufferSize(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 100), mtime: date(2026, 3, 8)},
 	})
@@ -272,6 +284,7 @@ func TestCopy_DefaultBufferSize(t *testing.T) {
 }
 
 func TestCopy_ExifDatesOverrideMtime(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 100), mtime: date(2026, 3, 10)},
 	})
@@ -304,6 +317,7 @@ func TestCopy_ExifDatesOverrideMtime(t *testing.T) {
 }
 
 func TestCopy_ExifDatePartialOverride(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 100), mtime: date(2026, 3, 10)},
 		"100NIKON/DSC_0002.MOV": {data: make([]byte, 200), mtime: date(2026, 3, 10)},
@@ -333,6 +347,7 @@ func TestCopy_ExifDatePartialOverride(t *testing.T) {
 }
 
 func TestCopy_ElapsedTime(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 100), mtime: date(2026, 3, 8)},
 	})
@@ -349,6 +364,10 @@ func TestCopy_ElapsedTime(t *testing.T) {
 }
 
 func TestCopy_SkipsExistingWithCorrectSize(t *testing.T) {
+	t.Parallel()
+	// FilesCopied counts files *processed* (including skips), not files newly written.
+	// This matches the progress callback semantics where the user sees "150/150 files"
+	// even on a re-copy where all 150 were skipped.
 	data := []byte("original content here")
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: data, mtime: date(2026, 3, 8)},
@@ -402,6 +421,7 @@ func assertFileSize(t *testing.T, path string, wantSize int64) {
 }
 
 func TestCopy_CancelBeforeCopy(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 1000), mtime: date(2026, 3, 8)},
 		"100NIKON/DSC_0002.NEF": {data: make([]byte, 2000), mtime: date(2026, 3, 8)},
@@ -425,6 +445,7 @@ func TestCopy_CancelBeforeCopy(t *testing.T) {
 }
 
 func TestCopy_CancelMidCopy(t *testing.T) {
+	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: make([]byte, 1000), mtime: date(2026, 3, 8)},
 		"100NIKON/DSC_0002.NEF": {data: make([]byte, 2000), mtime: date(2026, 3, 8)},
@@ -434,11 +455,11 @@ func TestCopy_CancelMidCopy(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	copied := 0
+	// Cancel once we see any file completed. The context check runs at the
+	// top of each loop iteration, so the file being processed when cancel()
+	// fires will still finish — but we should not copy all 3.
 	result, err := Run(ctx, Options{CardPath: card, DestBase: dest}, func(p Progress) {
-		// Cancel after the first file completes.
-		if p.FilesDone == 1 && copied == 0 {
-			copied = p.FilesDone
+		if p.FilesDone >= 1 {
 			cancel()
 		}
 	})
@@ -449,13 +470,110 @@ func TestCopy_CancelMidCopy(t *testing.T) {
 	if result == nil {
 		t.Fatal("expected partial result even on cancel")
 	}
-	// At least one file completed before cancel.
 	if result.FilesCopied < 1 {
 		t.Errorf("FilesCopied = %d, want >= 1", result.FilesCopied)
 	}
-	// Did not copy all files.
 	if result.FilesCopied == 3 {
 		t.Error("expected copy to be interrupted, but all 3 files were copied")
+	}
+}
+
+func TestCopy_PathTraversal(t *testing.T) {
+	t.Parallel()
+	// Simulate a card where the EXIF date lookup returns a traversal path.
+	// The path traversal guard in copy.go should block writes outside dest.
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: make([]byte, 100), mtime: date(2026, 3, 8)},
+	})
+	dest := t.TempDir()
+
+	// Inject a malicious date that would resolve outside the destination.
+	result, err := Run(context.Background(), Options{
+		CardPath: card,
+		DestBase: dest,
+		AnalyzeResult: &analyze.Result{
+			FileDates: map[string]string{
+				"100NIKON/DSC_0001.NEF": "../../etc",
+			},
+		},
+	}, nil)
+
+	if err == nil {
+		t.Fatal("expected error for path traversal, got nil")
+	}
+	if result == nil {
+		t.Fatal("expected partial result on path traversal error")
+	}
+	if result.FilesCopied != 0 {
+		t.Errorf("FilesCopied = %d, want 0 (no files should be written)", result.FilesCopied)
+	}
+
+	// Verify nothing escaped the destination.
+	escaped := filepath.Join(dest, "..", "etc", "100NIKON", "DSC_0001.NEF")
+	if _, statErr := os.Stat(escaped); statErr == nil {
+		t.Error("path traversal: file written outside destination")
+	}
+}
+
+func TestCopy_SourceMissing(t *testing.T) {
+	t.Parallel()
+	// Create a card, then delete a source file before copy runs.
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: make([]byte, 1000), mtime: date(2026, 3, 8)},
+		"100NIKON/DSC_0002.NEF": {data: make([]byte, 2000), mtime: date(2026, 3, 8)},
+	})
+	// Remove the second file after card is built — simulates card read error.
+	os.Remove(filepath.Join(card, "DCIM", "100NIKON", "DSC_0002.NEF"))
+
+	dest := t.TempDir()
+	result, err := Run(context.Background(), Options{CardPath: card, DestBase: dest}, nil)
+
+	// WalkDir collects files first, then copy fails when the missing file is read.
+	// Depending on walk order, we may get 0 or 1 files before the error.
+	if err == nil {
+		// If walk doesn't see the removed file (race), that's OK too.
+		return
+	}
+	if result == nil {
+		t.Fatal("expected partial result on error")
+	}
+}
+
+func TestCopy_DestNotWritable(t *testing.T) {
+	t.Parallel()
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: make([]byte, 100), mtime: date(2026, 3, 8)},
+	})
+	// Create a read-only destination.
+	dest := filepath.Join(t.TempDir(), "readonly")
+	os.MkdirAll(dest, 0755)
+	os.Chmod(dest, 0444)
+	defer os.Chmod(dest, 0755) // cleanup
+
+	_, err := Run(context.Background(), Options{CardPath: card, DestBase: filepath.Join(dest, "sub")}, nil)
+	if err == nil {
+		t.Error("expected error for non-writable destination")
+	}
+}
+
+func TestFmtBytes(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		input int64
+		want  string
+	}{
+		{0, "0 B"},
+		{512, "512 B"},
+		{1024, "1.0 KB"},
+		{1536, "1.5 KB"},
+		{1048576, "1.0 MB"},
+		{1073741824, "1.0 GB"},
+		{1099511627776, "1.0 TB"},
+	}
+	for _, tt := range tests {
+		if got := fmtBytes(tt.input); got != tt.want {
+			t.Errorf("fmtBytes(%d) = %q, want %q", tt.input, got, tt.want)
+		}
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 )
 
 func TestFormatBytes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input int64
 		want  string
@@ -34,6 +35,7 @@ func TestFormatBytes(t *testing.T) {
 }
 
 func TestDetectBrand(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		folders []string
@@ -74,6 +76,7 @@ func TestDetectBrand(t *testing.T) {
 }
 
 func TestDetectBrand_NoDCIM(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	got := detectBrand(root)
 	if got != "Unknown" {
@@ -82,6 +85,7 @@ func TestDetectBrand_NoDCIM(t *testing.T) {
 }
 
 func TestContainsNDModel(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  bool

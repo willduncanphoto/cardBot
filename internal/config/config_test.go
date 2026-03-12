@@ -7,6 +7,7 @@ import (
 )
 
 func TestDefaults(t *testing.T) {
+	t.Parallel()
 	cfg := Defaults()
 	if cfg.Schema != schemaVersion {
 		t.Errorf("Schema = %q, want %q", cfg.Schema, schemaVersion)
@@ -26,6 +27,7 @@ func TestDefaults(t *testing.T) {
 }
 
 func TestSaveLoad_RoundTrip(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "config.json")
 	cfg := Defaults()
 	cfg.Destination.Path = "~/Photos/Test"
@@ -50,6 +52,7 @@ func TestSaveLoad_RoundTrip(t *testing.T) {
 }
 
 func TestLoad_MissingFile(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "nonexistent.json")
 	cfg, warnings, err := Load(path)
 	if err != nil {
@@ -65,6 +68,7 @@ func TestLoad_MissingFile(t *testing.T) {
 }
 
 func TestLoad_MalformedJSON(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "config.json")
 	os.WriteFile(path, []byte("{not valid json"), 0600)
 
@@ -81,6 +85,7 @@ func TestLoad_MalformedJSON(t *testing.T) {
 }
 
 func TestLoad_WrongSchema(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "config.json")
 	os.WriteFile(path, []byte(`{"$schema": "cardbot-config-v99"}`), 0600)
 
@@ -94,6 +99,7 @@ func TestLoad_WrongSchema(t *testing.T) {
 }
 
 func TestLoad_ClampBufferSizeKB(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		json    string
@@ -128,6 +134,7 @@ func TestLoad_ClampBufferSizeKB(t *testing.T) {
 }
 
 func TestLoad_ClampExifWorkers(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		json    string
@@ -159,6 +166,7 @@ func TestLoad_ClampExifWorkers(t *testing.T) {
 }
 
 func TestLoad_PartialConfig(t *testing.T) {
+	t.Parallel()
 	// Only override destination; everything else should use defaults.
 	path := filepath.Join(t.TempDir(), "config.json")
 	os.WriteFile(path, []byte(`{"$schema":"cardbot-config-v1","destination":{"path":"~/Custom"}}`), 0600)
@@ -193,6 +201,7 @@ func TestLoad_PartialConfig(t *testing.T) {
 }
 
 func TestExpandPath(t *testing.T) {
+	t.Parallel()
 	home, _ := os.UserHomeDir()
 
 	tests := []struct {
@@ -219,6 +228,7 @@ func TestExpandPath(t *testing.T) {
 }
 
 func TestContractPath(t *testing.T) {
+	t.Parallel()
 	home, _ := os.UserHomeDir()
 
 	tests := []struct {
@@ -240,6 +250,7 @@ func TestContractPath(t *testing.T) {
 }
 
 func TestExpandContractRoundTrip(t *testing.T) {
+	t.Parallel()
 	original := "~/Pictures/CardBot"
 	expanded, err := ExpandPath(original)
 	if err != nil {
@@ -252,6 +263,7 @@ func TestExpandContractRoundTrip(t *testing.T) {
 }
 
 func TestSave_CreatesParentDirs(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "a", "b", "c", "config.json")
 	cfg := Defaults()
 

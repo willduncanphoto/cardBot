@@ -37,6 +37,7 @@ func date(y, m, d int) time.Time {
 }
 
 func TestAnalyze_MultiDay(t *testing.T) {
+	t.Parallel()
 	root := createTestCard(t, map[string]testFile{
 		"100NIKON/DSC_0001.NEF": {size: 50000, mtime: date(2025, 3, 8)},
 		"100NIKON/DSC_0002.NEF": {size: 30000, mtime: date(2025, 3, 8)},
@@ -111,6 +112,7 @@ func TestAnalyze_MultiDay(t *testing.T) {
 }
 
 func TestAnalyze_SkipsHiddenFiles(t *testing.T) {
+	t.Parallel()
 	root := createTestCard(t, map[string]testFile{
 		"100NIKON/DSC_0001.NEF":    {size: 1000, mtime: date(2025, 3, 8)},
 		"100NIKON/.DS_Store":       {size: 500, mtime: date(2025, 3, 8)},
@@ -131,6 +133,7 @@ func TestAnalyze_SkipsHiddenFiles(t *testing.T) {
 }
 
 func TestAnalyze_EmptyCard(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	dcim := filepath.Join(root, "DCIM")
 	if err := os.MkdirAll(dcim, 0o755); err != nil {
@@ -157,6 +160,7 @@ func TestAnalyze_EmptyCard(t *testing.T) {
 }
 
 func TestAnalyze_NoDCIM(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 
 	_, err := New(root).Analyze()
@@ -166,6 +170,7 @@ func TestAnalyze_NoDCIM(t *testing.T) {
 }
 
 func TestAnalyze_HiddenDirectory(t *testing.T) {
+	t.Parallel()
 	root := createTestCard(t, map[string]testFile{
 		"100NIKON/DSC_0001.NEF": {size: 1000, mtime: date(2025, 3, 8)},
 		".Trashes/junk.dat":     {size: 500, mtime: date(2025, 3, 8)},
@@ -182,6 +187,7 @@ func TestAnalyze_HiddenDirectory(t *testing.T) {
 }
 
 func TestAnalyze_ExtensionNormalization(t *testing.T) {
+	t.Parallel()
 	root := createTestCard(t, map[string]testFile{
 		"100NIKON/photo.nef":  {size: 100, mtime: date(2025, 3, 8)},
 		"100NIKON/photo.Nef":  {size: 100, mtime: date(2025, 3, 8)},
@@ -203,6 +209,7 @@ func TestAnalyze_ExtensionNormalization(t *testing.T) {
 }
 
 func TestAnalyze_FileDates(t *testing.T) {
+	t.Parallel()
 	root := createTestCard(t, map[string]testFile{
 		"100NIKON/DSC_0001.NEF": {size: 100, mtime: date(2025, 3, 8)},
 		"100NIKON/DSC_0002.MOV": {size: 200, mtime: date(2025, 3, 9)},
@@ -235,6 +242,7 @@ func TestAnalyze_FileDates(t *testing.T) {
 }
 
 func TestAnalyze_MultipleSubfolders(t *testing.T) {
+	t.Parallel()
 	root := createTestCard(t, map[string]testFile{
 		"100NIKON/DSC_0001.NEF": {size: 100, mtime: date(2025, 3, 8)},
 		"101NIKON/DSC_0010.NEF": {size: 200, mtime: date(2025, 3, 8)},
@@ -255,6 +263,7 @@ func TestAnalyze_MultipleSubfolders(t *testing.T) {
 }
 
 func TestAnalyze_UnsupportedExtensionsSkipped(t *testing.T) {
+	t.Parallel()
 	root := createTestCard(t, map[string]testFile{
 		"100NIKON/DSC_0001.NEF": {size: 100, mtime: date(2025, 3, 8)},
 		"100NIKON/readme.txt":   {size: 50, mtime: date(2025, 3, 8)},
@@ -275,6 +284,7 @@ func TestAnalyze_UnsupportedExtensionsSkipped(t *testing.T) {
 }
 
 func TestNormalizeExt(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  string
@@ -293,6 +303,7 @@ func TestNormalizeExt(t *testing.T) {
 }
 
 func TestIsHidden(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		want bool
@@ -309,5 +320,58 @@ func TestIsHidden(t *testing.T) {
 		if got != tt.want {
 			t.Errorf("isHidden(%q) = %v, want %v", tt.name, got, tt.want)
 		}
+	}
+}
+
+func TestCleanGear(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"NIKON Z 9", "Nikon Z 9"},
+		{"NIKON CORPORATION NIKON Z 9", "Nikon CORPORATION NIKON Z 9"},
+		{"Canon EOS R5", "Canon EOS R5"},
+		{"SONY ILCE-7RM5", "Sony ILCE-7RM5"},
+		{"FUJIFILM X-T5", "Fujifilm X-T5"},
+		{"PANASONIC DC-GH6", "Panasonic DC-GH6"},
+		{"OLYMPUS E-M1MarkIII", "Olympus E-M1MarkIII"},
+		{"OM DIGITAL SOLUTIONS OM-1", "OM System SOLUTIONS OM-1"},
+		{"HASSELBLAD X2D", "Hasselblad X2D"},
+		{"LEICA Q3", "Leica Q3"},
+		{"RICOH GR IIIx", "Ricoh GR IIIx"},
+		{"Unknown Brand X", "Unknown Brand X"}, // passthrough
+		{"", ""},
+	}
+	for _, tt := range tests {
+		if got := cleanGear(tt.input); got != tt.want {
+			t.Errorf("cleanGear(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestScanXMPRating(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name  string
+		input []byte
+		want  int
+	}{
+		{"rating 3", []byte(`<xmp:Rating>3</xmp:Rating>`), 3},
+		{"rating 5", []byte(`<xmp:Rating>5</xmp:Rating>`), 5},
+		{"rating 1", []byte(`<xmp:Rating>1</xmp:Rating>`), 1},
+		{"rating 0", []byte(`<xmp:Rating>0</xmp:Rating>`), 0},
+		{"no rating", []byte(`<xmp:Title>test</xmp:Title>`), 0},
+		{"empty", []byte{}, 0},
+		{"truncated at prefix", []byte(`<xmp:Rating>`), 0},
+		{"rating 6 out of range", []byte(`<xmp:Rating>6</xmp:Rating>`), 0},
+		{"embedded in larger buffer", append(make([]byte, 1000), []byte(`<xmp:Rating>4</xmp:Rating>`)...), 4},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := scanXMPRating(tt.input); got != tt.want {
+				t.Errorf("scanXMPRating() = %d, want %d", got, tt.want)
+			}
+		})
 	}
 }

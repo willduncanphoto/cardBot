@@ -8,6 +8,7 @@ import (
 )
 
 func TestWriteRead_RoundTrip(t *testing.T) {
+	t.Parallel()
 	card := t.TempDir()
 
 	err := Write(WriteOptions{
@@ -36,6 +37,7 @@ func TestWriteRead_RoundTrip(t *testing.T) {
 }
 
 func TestRead_MissingFile(t *testing.T) {
+	t.Parallel()
 	status := Read(t.TempDir())
 	if status.Copied {
 		t.Error("expected Copied=false for missing dotfile")
@@ -43,6 +45,7 @@ func TestRead_MissingFile(t *testing.T) {
 }
 
 func TestRead_MalformedJSON(t *testing.T) {
+	t.Parallel()
 	card := t.TempDir()
 	os.WriteFile(filepath.Join(card, ".cardbot"), []byte("{bad json"), 0644)
 
@@ -53,6 +56,7 @@ func TestRead_MalformedJSON(t *testing.T) {
 }
 
 func TestRead_MissingTimestamp(t *testing.T) {
+	t.Parallel()
 	card := t.TempDir()
 	os.WriteFile(filepath.Join(card, ".cardbot"), []byte(`{"$schema":"cardbot-dotfile-v1"}`), 0644)
 
@@ -63,6 +67,7 @@ func TestRead_MissingTimestamp(t *testing.T) {
 }
 
 func TestWrite_AtomicRename(t *testing.T) {
+	t.Parallel()
 	card := t.TempDir()
 
 	err := Write(WriteOptions{
@@ -95,6 +100,7 @@ func TestWrite_AtomicRename(t *testing.T) {
 }
 
 func TestWrite_Schema(t *testing.T) {
+	t.Parallel()
 	card := t.TempDir()
 
 	Write(WriteOptions{CardPath: card, Destination: "/dest", Mode: "all", CardbotVersion: "0.1.5"})
@@ -112,6 +118,7 @@ func TestWrite_Schema(t *testing.T) {
 }
 
 func TestWrite_Overwrite(t *testing.T) {
+	t.Parallel()
 	card := t.TempDir()
 
 	// First write.
@@ -126,6 +133,7 @@ func TestWrite_Overwrite(t *testing.T) {
 }
 
 func TestFormatStatus(t *testing.T) {
+	t.Parallel()
 	t.Run("new", func(t *testing.T) {
 		s := FormatStatus(Status{})
 		if s != "New" {
