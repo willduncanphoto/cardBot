@@ -59,7 +59,7 @@ Work items grouped by milestone.
 - [x] `~` shorthand for paths (display and storage)
 - [x] `[t]` hidden speed test command
 
-### 0.1.5 — Copy (Current)
+### 0.1.5 — Copy & Hardening
 - [x] `[a] Copy All` mode
 - [x] Dated folders: `YYYY-MM-DD/<original-structure>`
 - [x] Buffered copy with configurable buffer size
@@ -68,7 +68,20 @@ Work items grouped by milestone.
 - [x] `.cardbot` dotfile written on success
 - [x] "Copied on" status on re-insert
 - [x] Destination write probe on first creation
-- [x] Dry-run aware
+- [x] Dry-run aware (no side effects)
+- [x] Post-copy prompt: `[e] Eject  [c] Done`
+- [x] File collision skip (same size = skip)
+- [x] Color output respects `config.output.color`
+- [x] Input drain after blocking operations (copy, speed test)
+- [x] Pre-compiled regexes for hardware detection
+- [x] Fixed double-timestamp in log output
+- [x] AppleScript path escaping in folder picker
+- [x] `ExpandPath` rejects `~user/` syntax
+- [x] `ContractPath` handles trailing slashes
+- [x] `displayCard` race fix — re-checks current card after analysis
+- [x] Eject error re-shows prompt
+- [x] Stale `lastResult` cleared on card removal
+- [x] Test suite: 81 tests across 6 packages
 
 ---
 
@@ -78,11 +91,8 @@ Work items grouped by milestone.
 - [ ] Handle card removed during copy
 - [ ] Handle destination disk full
 - [ ] Cancel copy in progress (with cleanup)
-- [ ] File collision logic (skip existing)
-- [ ] Handle "no DCIM" case with warning
 - [ ] Handle read-only cards (warn before copy)
 - [ ] Output mutex for concurrent progress/scan output
-- [ ] Cancel in-flight scan on card removal
 - [ ] Better error messages
 
 ### 0.1.7 — Polish
