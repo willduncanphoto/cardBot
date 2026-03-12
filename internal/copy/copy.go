@@ -60,6 +60,18 @@ func Run(opts Options, onProgress ProgressFunc) (*Result, error) {
 		return nil, fmt.Errorf("no DCIM folder found on card")
 	}
 
+	// Verify destination is writable before scanning.
+	if err := os.MkdirAll(opts.DestBase, 0755); err != nil {
+		return nil, fmt.Errorf("cannot create destination %s: %w", opts.DestBase, err)
+	}
+	probe := filepath.Join(opts.DestBase, ".cardbot_probe")
+	if f, err := os.Create(probe); err != nil {
+		return nil, fmt.Errorf("destination %s is not writable: %w", opts.DestBase, err)
+	} else {
+		f.Close()
+		os.Remove(probe)
+	}
+
 	// --- Phase 1: Collect files ---
 	var files []fileEntry
 	var totalBytes int64
