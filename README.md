@@ -2,9 +2,16 @@
 
 A CLI tool for camera memory card ingestion.
 
-## What It Does
+## DISCLAIMER: Built with AI Coding Tools
 
-CardBot watches for memory card insertion, analyzes the contents, and copies your work safely. It's designed for photographers and videographers who want a fast, no-nonsense ingest workflow from the terminal.
+CardBot was built with the help of human guided AI coding models and open source code. There is no way in hell I could do this alone. A special thanks goes out to **[Pi](https://shittycodingagent.ai)** — a terminal-based coding agent.
+
+- Website: [shittycodingagent.ai](https://shittycodingagent.ai)
+- GitHub: [github.com/badlogic/pi-mono](https://github.com/badlogic/pi-mono)
+
+## What CardBot Does
+
+CardBot scans the contents of your camera's memory cards to generate a quick overview, allowin you to have clear varification if you have ingested your work.
 
 **Current capabilities:**
 - Detect CFexpress, XQD, and SD cards on macOS and Linux
@@ -14,7 +21,6 @@ CardBot watches for memory card insertion, analyzes the contents, and copies you
 - Track copy history via `.cardbot` dotfile on the card
 - Queue multiple cards
 - Eject cards cleanly
-- First-run setup with native macOS folder picker
 
 ## Platform Support
 
@@ -249,13 +255,6 @@ cardbot/
 ## License
 
 TBD — will be added before public release
-
-## Built With AI
-
-CardBot was built with the help of human guided AI coding models. No way in hell I could do this shit alone. Special thanks to **[Pi](https://shittycodingagent.ai)** — a terminal-based coding agent.
-
-- Website: [shittycodingagent.ai](https://shittycodingagent.ai)
-- GitHub: [github.com/badlogic/pi-mono](https://github.com/badlogic/pi-mono)
 
 ## Notes
 
