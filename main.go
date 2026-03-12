@@ -158,15 +158,11 @@ func main() {
 		a.printf("[%s] Warning: %s\n", ts(), w)
 	}
 
-	fmt.Printf("[%s] Starting CardBot %s", ts(), version)
-	for i := 0; i < 3; i++ {
-		time.Sleep(400 * time.Millisecond)
-		fmt.Print(".")
-	}
-	fmt.Println()
+	fmt.Printf("[%s] Starting CardBot %s...\n", ts(), version)
 	a.logf("Starting CardBot %s", version)
+	time.Sleep(150 * time.Millisecond)
 	a.printf("[%s] Copy location is set to %s\n", ts(), cfg.Destination.Path)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(150 * time.Millisecond)
 
 	if a.dryRun {
 		a.printf("[%s] Dry-run mode — no files will be copied\n", ts())
