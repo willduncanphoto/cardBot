@@ -266,7 +266,13 @@ func copyFile(dst, src string, srcSize int64, buf []byte, madeDir map[string]boo
 		return fmt.Errorf("size mismatch: wrote %d, expected %d", n, srcSize)
 	}
 
-	return err
+	// Flush to stable storage before reporting success.
+	if err := df.Sync(); err != nil {
+		os.Remove(dst)
+		return fmt.Errorf("sync: %w", err)
+	}
+
+	return nil
 }
 
 // fmtBytes formats a byte count as a human-readable string (e.g. "12.3 GB").

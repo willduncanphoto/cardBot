@@ -344,9 +344,6 @@ func (a *app) displayCard(path string) {
 	}
 
 	if err != nil {
-		if !a.isCurrentCard(path) {
-			return
-		}
 		if os.IsNotExist(err) {
 			a.mu.Lock()
 			a.cardInvalid = true
@@ -495,6 +492,7 @@ func (a *app) handleRemoval(path string) {
 		a.currentCard = nil
 		a.lastResult = nil
 		a.copied = false
+		a.cardInvalid = false
 		hasQueue := len(a.cardQueue) > 0
 		var nextCard *detect.Card
 		if hasQueue {
@@ -509,8 +507,10 @@ func (a *app) handleRemoval(path string) {
 		if hasQueue {
 			go a.displayCard(nextCard.Path)
 		} else {
-			time.Sleep(removalDelay)
-			fmt.Printf("\n[%s] Scanning for memory cards...", ts())
+			go func() {
+				time.Sleep(removalDelay)
+				fmt.Printf("\n[%s] Scanning for memory cards...", ts())
+			}()
 		}
 		return
 	}
