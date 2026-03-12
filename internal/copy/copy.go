@@ -148,6 +148,11 @@ func Run(opts Options, onProgress ProgressFunc) (*Result, error) {
 	for i := range files {
 		f := &files[i]
 		destPath := filepath.Join(opts.DestBase, f.date, f.relPath)
+		// Guard against path traversal via malicious card paths.
+		destPath = filepath.Clean(destPath)
+		if !strings.HasPrefix(destPath, filepath.Clean(opts.DestBase)+string(filepath.Separator)) {
+			return nil, fmt.Errorf("refusing to write outside destination: %s", destPath)
+		}
 
 		if onProgress != nil {
 			onProgress(Progress{
@@ -210,12 +215,13 @@ func copyFile(dst, src string, srcSize int64, buf []byte, madeDir map[string]boo
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if closeErr := df.Close(); err == nil {
+			err = closeErr
+		}
+	}()
 
 	n, err := io.CopyBuffer(df, sf, buf)
-	if closeErr := df.Close(); err == nil {
-		err = closeErr
-	}
-
 	if err != nil {
 		os.Remove(dst)
 		return err
@@ -226,5 +232,5 @@ func copyFile(dst, src string, srcSize int64, buf []byte, madeDir map[string]boo
 		return fmt.Errorf("size mismatch: wrote %d, expected %d", n, srcSize)
 	}
 
-	return nil
+	return err
 }

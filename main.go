@@ -196,6 +196,7 @@ func main() {
 	// --- Signal handling ---
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	inputDone := make(chan struct{})
 
 	a.detector = detect.NewDetector()
 	if err := a.detector.Start(); err != nil {
@@ -204,7 +205,7 @@ func main() {
 	}
 	defer a.detector.Stop()
 
-	go readInput(inputChan)
+	go readInput(inputChan, inputDone)
 
 	for {
 		select {
@@ -220,6 +221,7 @@ func main() {
 		case <-sigChan:
 			fmt.Println("\nShutting down...")
 			a.logf("Shutting down")
+			close(inputDone)
 			return
 		}
 	}
@@ -273,9 +275,10 @@ func (a *app) handleCardEvent(card *detect.Card) {
 		a.currentCard = card
 		fmt.Println("card found.")
 		a.logf("Card detected: %s", card.Path)
+		cardPath := card.Path // capture by value before releasing lock
 		go func() {
 			time.Sleep(500 * time.Millisecond)
-			a.displayCard(card)
+			a.displayCard(cardPath)
 		}()
 	} else {
 		a.cardQueue = append(a.cardQueue, card)
@@ -308,32 +311,32 @@ func (a *app) printQueueNotice(card *detect.Card) {
 	a.logf("%s detected (%d card%s in queue)", card.Brand, len(a.cardQueue), plural)
 }
 
-func (a *app) displayCard(card *detect.Card) {
-	if !a.isCurrentCard(card.Path) {
+func (a *app) displayCard(path string) {
+	if !a.isCurrentCard(path) {
 		return // Card was cancelled or removed while starting
 	}
 
-	fmt.Printf("[%s] Scanning %s... ", ts(), card.Path)
-	a.logf("Scanning %s", card.Path)
+	fmt.Printf("[%s] Scanning %s... ", ts(), path)
+	a.logf("Scanning %s", path)
 	scanStart := time.Now()
-	analyzer := analyze.New(card.Path)
+	analyzer := analyze.New(path)
 	analyzer.SetWorkers(a.cfg.Advanced.ExifWorkers)
 	analyzer.OnProgress(func(count int) {
 		if count%100 == 0 {
-			fmt.Printf("\r[%s] Scanning %s... %d files", ts(), card.Path, count)
+			fmt.Printf("\r[%s] Scanning %s... %d files", ts(), path, count)
 		}
 	})
 
 	result, err := analyzer.Analyze()
 
 	// Re-check: card may have been removed or cancelled during analysis.
-	if !a.isCurrentCard(card.Path) {
+	if !a.isCurrentCard(path) {
 		return
 	}
 
 	if err != nil {
 		fmt.Printf("\nError analyzing card: %v\n", err)
-		a.logf("Error analyzing card %s: %v", card.Path, err)
+		a.logf("Error analyzing card %s: %v", path, err)
 		a.finishCard()
 		return
 	}
@@ -345,16 +348,17 @@ func (a *app) displayCard(card *detect.Card) {
 	if result != nil {
 		total = result.FileCount
 	}
-	fmt.Printf("\r[%s] Scanning %s... %d files ✓\n", ts(), card.Path, total)
+	fmt.Printf("\r[%s] Scanning %s... %d files ✓\n", ts(), path, total)
 	secWord := "seconds"
 	if secs == 1 {
 		secWord = "second"
 	}
 	fmt.Printf("[%s] Scan completed in %d %s\n", ts(), secs, secWord)
-	a.logf("Scan completed: %s — %d files in %d %s", card.Path, total, secs, secWord)
+	a.logf("Scan completed: %s — %d files in %d %s", path, total, secs, secWord)
 	fmt.Println()
 	a.mu.Lock()
 	a.lastResult = result
+	card := a.currentCard
 	a.mu.Unlock()
 	a.printCardInfo(card, result)
 }
@@ -452,7 +456,7 @@ func (a *app) finishCard() {
 		a.cardQueue = a.cardQueue[1:]
 		a.currentCard = nextCard
 		a.mu.Unlock()
-		go a.displayCard(nextCard)
+		go a.displayCard(nextCard.Path)
 		return
 	}
 	a.mu.Unlock()
@@ -480,7 +484,7 @@ func (a *app) handleRemoval(path string) {
 		fmt.Printf("\n[%s] Card removed: %s\n", ts(), path)
 		a.logf("Card removed: %s", path)
 		if hasQueue {
-			go a.displayCard(nextCard)
+			go a.displayCard(nextCard.Path)
 		} else {
 			time.Sleep(removalDelay)
 			fmt.Printf("\n[%s] Scanning for memory cards...", ts())
@@ -695,13 +699,17 @@ func (a *app) printPrompt() {
 	fmt.Print("[a] Copy All  [e] Eject  [c] Cancel  > ")
 }
 
-func readInput(ch chan<- string) {
+func readInput(ch chan<- string, done <-chan struct{}) {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			return
 		}
-		ch <- strings.TrimSpace(line)
+		select {
+		case ch <- strings.TrimSpace(line):
+		case <-done:
+			return
+		}
 	}
 }
