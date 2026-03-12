@@ -124,6 +124,15 @@ func main() {
 			}
 		}
 		fmt.Println()
+	} else if *flagDest == "" {
+		// Destination already configured — confirm before scanning.
+		cfg.Destination.Path = confirmDestination(cfg.Destination.Path)
+		if cfgPath != "" {
+			if saveErr := config.Save(cfg, cfgPath); saveErr != nil {
+				fmt.Fprintf(os.Stderr, "Warning: could not save config: %v\n", saveErr)
+			}
+		}
+		fmt.Println()
 	}
 
 	// --- Set up logger ---
@@ -194,6 +203,26 @@ func main() {
 			return
 		}
 	}
+}
+
+// confirmDestination shows the saved destination and lets the user confirm or change it.
+func confirmDestination(savedPath string) string {
+	expanded, err := config.ExpandPath(savedPath)
+	if err != nil {
+		expanded = savedPath
+	}
+
+	fmt.Printf("Destination: %s\n", expanded)
+	fmt.Print("[Enter] Continue  [c] Change  > ")
+
+	reader := bufio.NewReader(os.Stdin)
+	line, _ := reader.ReadString('\n')
+	line = strings.TrimSpace(strings.ToLower(line))
+
+	if line == "c" {
+		return promptDestination(savedPath)
+	}
+	return savedPath
 }
 
 // promptDestination asks the user to pick a destination path.
