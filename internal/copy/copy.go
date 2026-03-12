@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/illwill/cardbot/internal/analyze"
 )
 
 // ProgressFunc is called periodically during the copy with current stats.
@@ -15,10 +17,10 @@ type ProgressFunc func(stats Progress)
 
 // Progress holds real-time copy stats for the callback.
 type Progress struct {
-	FilesDone  int
-	FilesTotal int
-	BytesDone  int64
-	BytesTotal int64
+	FilesDone   int
+	FilesTotal  int
+	BytesDone   int64
+	BytesTotal  int64
 	CurrentFile string // relative path being copied
 }
 
@@ -32,13 +34,14 @@ type Result struct {
 
 // Options configures the copy operation.
 type Options struct {
-	CardPath string // Source card mount point
-	DestBase string // Base destination directory (e.g. ~/Pictures/CardBot)
-	BufferKB int    // Copy buffer size in KB (default 256)
-	DryRun   bool   // If true, walk and report but don't copy
+	CardPath    string           // Source card mount point
+	DestBase    string           // Base destination directory (e.g. ~/Pictures/CardBot)
+	BufferKB    int              // Copy buffer size in KB (default 256)
+	DryRun      bool             // If true, walk and report but don't copy
+	AnalyzeResult *analyze.Result // If provided, use EXIF dates for folder grouping
 }
 
-// fileEntry holds a file to be copied with its resolved destination.
+// fileEntry holds a file to be copied.
 type fileEntry struct {
 	srcPath string // absolute source path on card
 	relPath string // relative path from DCIM (e.g. "100NIKON/DSC_0001.NEF")
@@ -74,6 +77,12 @@ func Run(opts Options, onProgress ProgressFunc) (*Result, error) {
 		}
 	}
 
+	// Build EXIF date lookup from analyze result if available.
+	var exifDates map[string]string
+	if opts.AnalyzeResult != nil {
+		exifDates = opts.AnalyzeResult.FileDates
+	}
+
 	// --- Phase 1: Collect files ---
 	var files []fileEntry
 	var totalBytes int64
@@ -98,7 +107,12 @@ func Run(opts Options, onProgress ProgressFunc) (*Result, error) {
 		}
 
 		rel, _ := filepath.Rel(dcim, path)
+
+		// Use EXIF date if available, fall back to mtime.
 		date := info.ModTime().Format("2006-01-02")
+		if exifDate, ok := exifDates[rel]; ok {
+			date = exifDate
+		}
 
 		files = append(files, fileEntry{
 			srcPath: path,
@@ -125,11 +139,11 @@ func Run(opts Options, onProgress ProgressFunc) (*Result, error) {
 		}, nil
 	}
 
-	// --- Phase 3: Copy ---
+	// --- Phase 2: Copy ---
 	buf := make([]byte, opts.BufferKB*1024)
 	var bytesDone int64
 	start := time.Now()
-	madeDir := make(map[string]bool, 32) // cache of already-created directories
+	madeDir := make(map[string]bool, 32)
 
 	for i := range files {
 		f := &files[i]
@@ -198,7 +212,7 @@ func copyFile(dst, src string, srcSize int64, buf []byte, madeDir map[string]boo
 	}
 
 	if err != nil {
-		os.Remove(dst) // Clean up partial file
+		os.Remove(dst)
 		return err
 	}
 

@@ -50,15 +50,16 @@ type DateGroup struct {
 
 // Result contains analysis data for a memory card.
 type Result struct {
-	Groups     []DateGroup // Newest first
-	TotalSize  int64       // Sum of all file sizes
-	FileCount  int         // Total number of files
-	PhotoSize  int64       // Total bytes of photo files
-	PhotoCount int         // Number of photo files
-	VideoSize  int64       // Total bytes of video files
-	VideoCount int         // Number of video files
-	Gear       string      // Camera make + model (e.g. "Nikon Z 9"), empty if unknown
-	Starred    int         // Count of files with star rating > 0
+	Groups     []DateGroup       // Newest first
+	FileDates  map[string]string // Per-file date map: relative path from DCIM → "YYYY-MM-DD"
+	TotalSize  int64             // Sum of all file sizes
+	FileCount  int               // Total number of files
+	PhotoSize  int64             // Total bytes of photo files
+	PhotoCount int               // Number of photo files
+	VideoSize  int64             // Total bytes of video files
+	VideoCount int               // Number of video files
+	Gear       string            // Camera make + model (e.g. "Nikon Z 9"), empty if unknown
+	Starred    int               // Count of files with star rating > 0
 }
 
 // videoExts lists extensions classified as video.
@@ -130,10 +131,11 @@ func (a *Analyzer) OnProgress(fn ProgressFunc) {
 
 // fileEntry holds metadata collected during the fast directory walk.
 type fileEntry struct {
-	path  string
-	size  int64
-	ext   string // uppercase, no dot
-	mtime time.Time
+	path    string
+	relPath string // relative to DCIM directory
+	size    int64
+	ext     string // uppercase, no dot
+	mtime   time.Time
 }
 
 // exifResult holds the output from a single EXIF worker.
@@ -184,10 +186,12 @@ func (a *Analyzer) Analyze() (*Result, error) {
 			return nil
 		}
 
+		rel, _ := filepath.Rel(dcim, path)
 		files = append(files, fileEntry{
-			path:  path,
-			size:  info.Size(),
-			ext:   ext,
+			path:    path,
+			relPath: rel,
+			size:    info.Size(),
+			ext:     ext,
 			mtime: info.ModTime(),
 		})
 		return nil
@@ -243,6 +247,7 @@ func (a *Analyzer) Analyze() (*Result, error) {
 
 	// --- Phase 3: Merge ---
 	groups := make(map[string]*dateAccumulator)
+	fileDates := make(map[string]string, len(files))
 	var totalSize, photoSize, videoSize int64
 	var photoCount, videoCount, starred int
 	var gear string
@@ -267,6 +272,8 @@ func (a *Analyzer) Analyze() (*Result, error) {
 			}
 		}
 
+		fileDates[f.relPath] = date
+
 		acc, ok := groups[date]
 		if !ok {
 			acc = &dateAccumulator{exts: make(map[string]bool)}
@@ -288,6 +295,7 @@ func (a *Analyzer) Analyze() (*Result, error) {
 
 	return &Result{
 		Groups:     buildGroups(groups),
+		FileDates:  fileDates,
 		TotalSize:  totalSize,
 		FileCount:  totalFiles,
 		PhotoSize:  photoSize,

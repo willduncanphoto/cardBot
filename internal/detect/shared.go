@@ -35,7 +35,7 @@ func buildCard(path, name string) *Card {
 	// Fetch hardware info asynchronously — shells out to diskutil + system_profiler.
 	go func() {
 		if hw, err := GetHardwareInfo(path); err == nil {
-			card.Hardware = hw
+			card.SetHW(hw)
 		}
 	}()
 

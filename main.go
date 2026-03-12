@@ -35,13 +35,14 @@ func ts() string {
 }
 
 type app struct {
-	detector    *detect.Detector
-	currentCard *detect.Card
-	cardQueue   []*detect.Card
-	mu          sync.Mutex
-	cfg         *config.Config
-	logger      *cblog.Logger
-	dryRun      bool
+	detector     *detect.Detector
+	currentCard  *detect.Card
+	lastResult   *analyze.Result // analysis result for currentCard
+	cardQueue    []*detect.Card
+	mu           sync.Mutex
+	cfg          *config.Config
+	logger       *cblog.Logger
+	dryRun       bool
 }
 
 // logf writes to the log file if logging is enabled, and is a no-op otherwise.
@@ -53,8 +54,11 @@ func (a *app) logf(format string, args ...any) {
 
 // printf prints to stdout and mirrors to the log file.
 func (a *app) printf(format string, args ...any) {
-	fmt.Printf(format, args...)
-	a.logf(strings.TrimRight(fmt.Sprintf(format, args...), "\n"))
+	msg := fmt.Sprintf(format, args...)
+	fmt.Print(msg)
+	if a.logger != nil {
+		a.logger.Printf(strings.TrimRight(msg, "\n"))
+	}
 }
 
 func main() {
@@ -327,6 +331,9 @@ func (a *app) displayCard(card *detect.Card) {
 	fmt.Printf("[%s] Scan completed in %d %s\n", ts(), secs, secWord)
 	a.logf("Scan completed: %s — %d files in %d %s", card.Path, total, secs, secWord)
 	fmt.Println()
+	a.mu.Lock()
+	a.lastResult = result
+	a.mu.Unlock()
 	a.printCardInfo(card, result)
 }
 
@@ -411,6 +418,7 @@ func (a *app) printCardInfo(card *detect.Card, result *analyze.Result) {
 func (a *app) finishCard() {
 	a.mu.Lock()
 	a.currentCard = nil
+	a.lastResult = nil
 
 	if len(a.cardQueue) > 0 {
 		nextCard := a.cardQueue[0]
@@ -524,11 +532,16 @@ func (a *app) copyAll(card *detect.Card) {
 	fmt.Printf("\n[%s] Copying all files to %s\n", ts(), a.cfg.Destination.Path)
 	a.logf("Copy starting: %s → %s", card.Path, destBase)
 
+	a.mu.Lock()
+	analyzeResult := a.lastResult
+	a.mu.Unlock()
+
 	lastUpdate := time.Now()
 	opts := cardcopy.Options{
-		CardPath: card.Path,
-		DestBase: destBase,
-		BufferKB: a.cfg.Advanced.BufferSizeKB,
+		CardPath:      card.Path,
+		DestBase:      destBase,
+		BufferKB:      a.cfg.Advanced.BufferSizeKB,
+		AnalyzeResult: analyzeResult,
 	}
 
 	result, err := cardcopy.Run(opts, func(p cardcopy.Progress) {
@@ -599,11 +612,14 @@ func (a *app) copyAll(card *detect.Card) {
 
 func (a *app) showHardwareInfo(card *detect.Card) {
 	fmt.Println()
-	if card.Hardware == nil {
+	hw := card.GetHW()
+	if hw == nil {
 		fmt.Println("Hardware info unavailable")
+		fmt.Println()
+		a.printPrompt()
 		return
 	}
-	fmt.Println(detect.FormatHardwareInfo(card.Hardware))
+	fmt.Println(detect.FormatHardwareInfo(hw))
 	fmt.Println()
 	a.printPrompt()
 }
