@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -11,7 +12,9 @@ import (
 	"time"
 
 	"github.com/illwill/cardbot/internal/analyze"
+	"github.com/illwill/cardbot/internal/config"
 	"github.com/illwill/cardbot/internal/detect"
+	cblog "github.com/illwill/cardbot/internal/log"
 )
 
 const version = "0.1.3"
@@ -22,25 +25,160 @@ const (
 )
 
 // ts returns the current timestamp formatted for log output.
-func ts() string { return ts() }
+func ts() string {
+	return time.Now().Format("2006-01-02 15:04:05")
+}
 
 type app struct {
 	detector    *detect.Detector
 	currentCard *detect.Card
 	cardQueue   []*detect.Card
 	mu          sync.Mutex
+	cfg         *config.Config
+	logger      *cblog.Logger
+	dryRun      bool
+}
+
+// logf writes to the log file if logging is enabled, and is a no-op otherwise.
+func (a *app) logf(format string, args ...any) {
+	if a.logger != nil {
+		a.logger.Printf(format, args...)
+	}
+}
+
+// printf prints to stdout and mirrors to the log file.
+func (a *app) printf(format string, args ...any) {
+	fmt.Printf(format, args...)
+	a.logf(strings.TrimRight(fmt.Sprintf(format, args...), "\n"))
 }
 
 func main() {
-	fmt.Printf("[%s] Starting CardBot %s...\n", ts(), version)
-	fmt.Printf("[%s] Scanning for memory cards...", ts())
+	// --- CLI flags ---
+	var (
+		flagVersion = flag.Bool("version", false, "print version and exit")
+		flagDest    = flag.String("dest", "", "destination path for copied cards")
+		flagDryRun  = flag.Bool("dry-run", false, "scan cards but do not copy files")
+		flagReset   = flag.Bool("reset", false, "clear saved config and exit")
+		flagSetup   = flag.Bool("setup", false, "re-run destination setup and exit")
+	)
+	flag.Parse()
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	if *flagVersion {
+		fmt.Printf("cardbot %s\n", version)
+		os.Exit(0)
+	}
 
+	if *flagSetup {
+		cfgPath, err := config.Path()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: could not determine config path: %v\n", err)
+			os.Exit(1)
+		}
+		cfg, _, err := config.Load(cfgPath)
+		if err != nil {
+			cfg = config.Defaults()
+		}
+		cfg.Destination.Path = promptDestination(cfg.Destination.Path)
+		if err := config.Save(cfg, cfgPath); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: could not save config: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Destination saved. Please restart CardBot.\n")
+		os.Exit(0)
+	}
+
+	if *flagReset {
+		cfgPath, err := config.Path()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: could not determine config path: %v\n", err)
+			os.Exit(1)
+		}
+		if err := os.Remove(cfgPath); err != nil && !os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "Error: could not remove config: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("Config cleared. Please restart CardBot.")
+		os.Exit(0)
+	}
+
+	// --- Load config ---
+	cfgPath, err := config.Path()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: could not determine config path: %v\n", err)
+		cfgPath = ""
+	}
+
+	var cfg *config.Config
+	var cfgWarnings []string
+
+	if cfgPath != "" {
+		cfg, cfgWarnings, err = config.Load(cfgPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: %v — using defaults\n", err)
+			cfg = config.Defaults()
+		}
+	} else {
+		cfg = config.Defaults()
+	}
+
+	// --- CLI flags override config ---
+	if *flagDest != "" {
+		cfg.Destination.Path = *flagDest
+	}
+
+	// --- First-run: prompt for destination if config doesn't exist ---
+	if cfgPath != "" {
+		if _, statErr := os.Stat(cfgPath); os.IsNotExist(statErr) {
+			cfg.Destination.Path = promptDestination(cfg.Destination.Path)
+			if saveErr := config.Save(cfg, cfgPath); saveErr != nil {
+				fmt.Fprintf(os.Stderr, "Warning: could not save config: %v\n", saveErr)
+			} else {
+				fmt.Printf("Config saved to %s\n", cfgPath)
+			}
+			fmt.Println()
+		}
+	}
+
+	// --- Set up logger ---
+	var logger *cblog.Logger
+	if cfg.Advanced.LogFile != "" {
+		logPath, expandErr := config.ExpandPath(cfg.Advanced.LogFile)
+		if expandErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not expand log path: %v\n", expandErr)
+		} else {
+			logger, err = cblog.Open(logPath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: could not open log file: %v\n", err)
+			} else {
+				defer logger.Close()
+			}
+		}
+	}
+
+	// --- Build app ---
 	a := &app{
 		cardQueue: make([]*detect.Card, 0),
+		cfg:       cfg,
+		logger:    logger,
+		dryRun:    *flagDryRun,
 	}
+
+	// Print any config warnings now that logging is ready.
+	for _, w := range cfgWarnings {
+		a.printf("[%s] Warning: %s\n", ts(), w)
+	}
+
+	a.printf("[%s] Starting CardBot %s...\n", ts(), version)
+
+	if a.dryRun {
+		a.printf("[%s] Dry-run mode — no files will be copied\n", ts())
+	}
+
+	a.printf("[%s] Scanning for memory cards...", ts())
+
+	// --- Signal handling ---
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	a.detector = detect.NewDetector()
 	if err := a.detector.Start(); err != nil {
@@ -65,9 +203,27 @@ func main() {
 
 		case <-sigChan:
 			fmt.Println("\nShutting down...")
+			a.logf("Shutting down")
 			return
 		}
 	}
+}
+
+// promptDestination asks the user to enter a destination path, returning
+// defaultPath if the user presses Enter without typing anything.
+func promptDestination(defaultPath string) string {
+	fmt.Println("Welcome to CardBot!")
+	fmt.Println()
+	fmt.Printf("Where should CardBot copy your files?\n")
+	fmt.Printf("Destination [%s]: ", defaultPath)
+
+	reader := bufio.NewReader(os.Stdin)
+	line, _ := reader.ReadString('\n')
+	line = strings.TrimSpace(line)
+	if line == "" {
+		return defaultPath
+	}
+	return line
 }
 
 func (a *app) handleCardEvent(card *detect.Card) {
@@ -82,6 +238,7 @@ func (a *app) handleCardEvent(card *detect.Card) {
 	if a.currentCard == nil {
 		a.currentCard = card
 		fmt.Println("card found.")
+		a.logf("Card detected: %s", card.Path)
 		go func() {
 			time.Sleep(500 * time.Millisecond)
 			a.displayCard(card)
@@ -114,6 +271,7 @@ func (a *app) printQueueNotice(card *detect.Card) {
 		card.Brand,
 		len(a.cardQueue),
 		plural)
+	a.logf("%s detected (%d card%s in queue)", card.Brand, len(a.cardQueue), plural)
 }
 
 func (a *app) displayCard(card *detect.Card) {
@@ -122,6 +280,7 @@ func (a *app) displayCard(card *detect.Card) {
 	}
 
 	fmt.Printf("[%s] Scanning %s... ", ts(), card.Path)
+	a.logf("Scanning %s", card.Path)
 	scanStart := time.Now()
 	analyzer := analyze.New(card.Path)
 	analyzer.OnProgress(func(count int) {
@@ -131,6 +290,7 @@ func (a *app) displayCard(card *detect.Card) {
 	result, err := analyzer.Analyze()
 	if err != nil {
 		fmt.Printf("\nError analyzing card: %v\n", err)
+		a.logf("Error analyzing card %s: %v", card.Path, err)
 		a.finishCard()
 		return
 	}
@@ -148,6 +308,7 @@ func (a *app) displayCard(card *detect.Card) {
 		secWord = "second"
 	}
 	fmt.Printf("[%s] Scan completed in %d %s\n", ts(), secs, secWord)
+	a.logf("Scan completed: %s — %d files in %d %s", card.Path, total, secs, secWord)
 	fmt.Println()
 	a.printCardInfo(card, result)
 }
@@ -206,6 +367,10 @@ func (a *app) printCardInfo(card *detect.Card, result *analyze.Result) {
 		fmt.Println("  Content:  (empty)")
 	}
 
+	if a.dryRun {
+		fmt.Printf("  Dest:     %s (dry-run)\n", a.cfg.Destination.Path)
+	}
+
 	a.mu.Lock()
 	queueLen := len(a.cardQueue)
 	a.mu.Unlock()
@@ -255,6 +420,7 @@ func (a *app) handleRemoval(path string) {
 		a.mu.Unlock()
 
 		fmt.Printf("\n[%s] Card removed: %s\n", ts(), path)
+		a.logf("Card removed: %s", path)
 		if hasQueue {
 			go a.displayCard(nextCard)
 		} else {
@@ -270,6 +436,7 @@ func (a *app) handleRemoval(path string) {
 			a.cardQueue = append(a.cardQueue[:i], a.cardQueue[i+1:]...)
 			a.mu.Unlock()
 			fmt.Printf("\n[%s] Queued card removed: %s\n", ts(), path)
+			a.logf("Queued card removed: %s", path)
 			return
 		}
 	}
@@ -297,17 +464,21 @@ func (a *app) handleInput(input string) {
 
 func (a *app) ejectCard(card *detect.Card) {
 	fmt.Printf("\nEjecting %s...\n", card.Name)
+	a.logf("Ejecting %s", card.Path)
 	if err := a.detector.Eject(card.Path); err != nil {
 		fmt.Printf("Error: %v\n", err)
+		a.logf("Eject error: %v", err)
 		return
 	}
 	a.detector.Remove(card.Path)
 	fmt.Printf("\n[%s] Card ejected: %s\n", ts(), card.Path)
+	a.logf("Card ejected: %s", card.Path)
 	a.finishCard()
 }
 
 func (a *app) cancelCard() {
 	fmt.Println("\nCancelled.")
+	a.logf("Card cancelled")
 	a.finishCard()
 }
 
@@ -336,5 +507,3 @@ func readInput(ch chan<- string) {
 		ch <- strings.TrimSpace(line)
 	}
 }
-
-
