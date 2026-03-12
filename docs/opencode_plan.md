@@ -187,7 +187,7 @@ Copy starts without checking destination space availability.
   - File: `main.go`, `internal/analyze/analyze.go`
 
 - [ ] **Copy Progress Improvements**
-  - Show current filename being copied
+  - Show current filename being copied *(deferred to renaming milestone — filenames are meaningless until rename patterns are implemented)*
   - Reduce update interval to 500ms or per-file
   - Pre-scan for existing files
   - File: `main.go`, `internal/copy/copy.go`

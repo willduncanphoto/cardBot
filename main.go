@@ -51,6 +51,7 @@ type app struct {
 	inputDone   chan struct{}  // closed on shutdown to stop readInput
 	dryRun      bool
 	copied      bool // true after successful copy of current card
+	cardInvalid bool // true when current card has no DCIM directory
 }
 
 // drainInput discards any buffered input keystrokes.
@@ -343,9 +344,22 @@ func (a *app) displayCard(path string) {
 	}
 
 	if err != nil {
-		fmt.Printf("\nError analyzing card: %v\n", err)
-		a.logf("Error analyzing card %s: %v", path, err)
-		a.finishCard()
+		if !a.isCurrentCard(path) {
+			return
+		}
+		if os.IsNotExist(err) {
+			a.mu.Lock()
+			a.cardInvalid = true
+			card := a.currentCard
+			a.mu.Unlock()
+			fmt.Printf("\r[%s] Card is invalid (no DCIM found)\n", ts())
+			a.logf("Card invalid: no DCIM at %s", path)
+			a.printInvalidCardInfo(card)
+		} else {
+			fmt.Printf("\r[%s] Error scanning card: %s\n", ts(), friendlyErr(err))
+			a.logf("Error analyzing card %s: %v", path, err)
+			a.finishCard()
+		}
 		return
 	}
 
@@ -458,6 +472,7 @@ func (a *app) finishCard() {
 	a.currentCard = nil
 	a.lastResult = nil
 	a.copied = false
+	a.cardInvalid = false
 
 	if len(a.cardQueue) > 0 {
 		nextCard := a.cardQueue[0]
@@ -526,7 +541,13 @@ func (a *app) handleInput(input string) {
 	case "a":
 		a.mu.Lock()
 		alreadyCopied := a.copied
+		invalid := a.cardInvalid
 		a.mu.Unlock()
+		if invalid {
+			fmt.Printf("\n[%s] No media found on this card.\n", ts())
+			a.printInvalidPrompt()
+			return
+		}
 		if alreadyCopied {
 			fmt.Printf("\n[%s] Already copied. [e] Eject  [c] Done  > ", ts())
 			return
@@ -540,6 +561,28 @@ func (a *app) handleInput(input string) {
 		a.showHardwareInfo(card)
 	case "t":
 		a.runSpeedTest(card)
+	case "?":
+		a.showHelp()
+		a.mu.Lock()
+		invalid := a.cardInvalid
+		a.mu.Unlock()
+		if invalid {
+			a.printInvalidPrompt()
+		} else {
+			a.printPrompt()
+		}
+	default:
+		if input != "" {
+			fmt.Printf("\nUnknown command %q. Press [?] for help.\n", input)
+			a.mu.Lock()
+			invalid := a.cardInvalid
+			a.mu.Unlock()
+			if invalid {
+				a.printInvalidPrompt()
+			} else {
+				a.printPrompt()
+			}
+		}
 	}
 }
 
@@ -547,7 +590,7 @@ func (a *app) ejectCard(card *detect.Card) {
 	fmt.Printf("\nEjecting %s...\n", card.Name)
 	a.logf("Ejecting %s", card.Path)
 	if err := a.detector.Eject(card.Path); err != nil {
-		fmt.Printf("Error: %v\n", err)
+		fmt.Printf("Error: %s\n", friendlyErr(err))
 		a.logf("Eject error: %v", err)
 		a.printPrompt()
 		return
@@ -661,7 +704,7 @@ func (a *app) copyAll(card *detect.Card) {
 
 			if copyErr != nil {
 				a.printMu.Lock()
-				fmt.Printf("\n[%s] Copy failed: %v\n", ts(), copyErr)
+				fmt.Printf("\n[%s] Copy failed: %s\n", ts(), friendlyErr(copyErr))
 				if result != nil && result.FilesCopied > 0 {
 					fmt.Printf("[%s] %d files copied before failure.\n", ts(), result.FilesCopied)
 				}
@@ -806,7 +849,67 @@ func (a *app) runSpeedTest(card *detect.Card) {
 }
 
 func (a *app) printPrompt() {
-	fmt.Print("[a] Copy All  [e] Eject  [c] Cancel  > ")
+	fmt.Print("[a] Copy All  [e] Eject  [c] Cancel  [?]  > ")
+}
+
+func (a *app) printInvalidPrompt() {
+	fmt.Print("[e] Eject  [c] Cancel  [?]  > ")
+}
+
+// printInvalidCardInfo shows basic card info when a card has no DCIM directory.
+func (a *app) printInvalidCardInfo(card *detect.Card) {
+	status := dotfile.Read(card.Path)
+	fmt.Println()
+	fmt.Printf("  Status:   %s\n", dotfile.FormatStatus(status))
+	fmt.Printf("  Path:     %s\n", card.Path)
+	var pct int64
+	if card.TotalBytes > 0 {
+		pct = (card.UsedBytes * 100) / card.TotalBytes
+	}
+	fmt.Printf("  Storage:  %s / %s (%d%%)\n",
+		detect.FormatBytes(card.UsedBytes),
+		detect.FormatBytes(card.TotalBytes),
+		pct)
+	color, reset := "", ""
+	if a.cfg.Output.Color {
+		color = ui.BrandColor(card.Brand)
+		reset = ui.Reset
+	}
+	fmt.Printf("  Camera:   %s%s%s\n", color, card.Brand, reset)
+	fmt.Printf("  Content:  (no DCIM — not a camera card)\n")
+	fmt.Println("────────────────────────────────────────")
+	a.printInvalidPrompt()
+}
+
+// showHelp prints all available commands.
+func (a *app) showHelp() {
+	fmt.Println()
+	fmt.Println("  Commands:")
+	fmt.Println("  [a]  Copy All     copy all files to destination")
+	fmt.Println("  [e]  Eject        safely eject this card")
+	fmt.Println("  [c]  Cancel       skip this card, move to next")
+	fmt.Println("  [i]  Card Info    show hardware details")
+	fmt.Println("  [t]  Speed Test   benchmark read/write speed")
+	fmt.Println("  [q]  (during copy) cancel the copy in progress")
+	fmt.Println("  [?]  Help         show this help")
+	fmt.Println()
+}
+
+// friendlyErr returns a short, user-facing message for common OS-level errors.
+func friendlyErr(err error) string {
+	s := err.Error()
+	switch {
+	case strings.Contains(s, "no space left"):
+		return "destination disk is full"
+	case strings.Contains(s, "permission denied"):
+		return "permission denied — check folder permissions"
+	case strings.Contains(s, "read-only file system"):
+		return "destination is read-only"
+	case strings.Contains(s, "input/output error"):
+		return "I/O error — card may be damaged"
+	default:
+		return s
+	}
 }
 
 func readInput(ch chan<- string, done <-chan struct{}) {
