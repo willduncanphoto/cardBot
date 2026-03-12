@@ -108,7 +108,18 @@ Work items grouped by milestone.
 ### 0.1.7 — Polish
 - [ ] Estimated time remaining during copy
 - [ ] Show current filename during copy (deferred to renaming milestone)
-- [ ] Single-key input (raw terminal mode, no Enter required) — *maybe*
+
+---
+
+## Wishlist
+
+These are "nice to have" features that aren't on the immediate roadmap:
+
+- Single-key input (raw terminal mode, no Enter required)
+- Auto-update: check GitHub Releases for new version at startup, `--update` flag
+- Network destination support
+- Windows support
+- JSON output mode for scripting
 
 ### 0.1.8 — Selective Copy
 - [ ] `[s]` Copy Selects — copy starred/picked files only (XMP rating > 0)
@@ -154,9 +165,5 @@ you hand to another photographer and say "try this."
 - Resume interrupted copies
 - Video metadata (duration, resolution)
 - Linux testing (Ubuntu, Fedora, Debian), mount point docs, stable build
-- Windows support
-- Network destinations
-- Auto-update: check GitHub Releases for new version at startup, `--update` flag to self-upgrade
 - TOML/YAML config
-- JSON output mode
 - Toggle flat vs preserve DCIM structure

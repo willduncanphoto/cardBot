@@ -12,7 +12,18 @@ Detection, analysis, EXIF, config, UI polish, copy with robustness, and UX impro
 
 - [ ] Estimated time remaining during copy
 - [ ] Show current filename during copy (deferred to renaming milestone)
-- [ ] Single-key input (raw terminal mode, no Enter required) — *maybe*
+
+---
+
+## Wishlist
+
+These are "nice to have" features that aren't on the immediate roadmap:
+
+- Single-key input (raw terminal mode, no Enter required)
+- Auto-update: check GitHub Releases for new version at startup
+- Network destination support
+- Windows support
+- JSON output mode for scripting
 
 ---
 
