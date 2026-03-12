@@ -10,6 +10,7 @@ CardBot gives you a quick overview and copy tools for ingesting your photography
 - Detect CFexpress, XQD and SD cards on macOS and Linux
 - Display card overview
 - Queue multiple cards
+
 - Eject cards cleanly
 
 ## Platform Support
