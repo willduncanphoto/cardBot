@@ -185,8 +185,13 @@ func Run(opts Options, onProgress ProgressFunc) (*Result, error) {
 }
 
 // copyFile copies a single file with size verification.
+// If the destination already exists with the correct size, it is skipped.
 // madeDir caches directories already created to avoid redundant MkdirAll syscalls.
 func copyFile(dst, src string, srcSize int64, buf []byte, madeDir map[string]bool) error {
+	// Skip if destination already exists with correct size (re-copy / resume).
+	if info, err := os.Stat(dst); err == nil && info.Size() == srcSize {
+		return nil
+	}
 	dir := filepath.Dir(dst)
 	if !madeDir[dir] {
 		if err := os.MkdirAll(dir, 0755); err != nil {

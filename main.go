@@ -325,6 +325,12 @@ func (a *app) displayCard(card *detect.Card) {
 	})
 
 	result, err := analyzer.Analyze()
+
+	// Re-check: card may have been removed or cancelled during analysis.
+	if !a.isCurrentCard(card.Path) {
+		return
+	}
+
 	if err != nil {
 		fmt.Printf("\nError analyzing card: %v\n", err)
 		a.logf("Error analyzing card %s: %v", card.Path, err)
@@ -531,6 +537,7 @@ func (a *app) ejectCard(card *detect.Card) {
 	if err := a.detector.Eject(card.Path); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		a.logf("Eject error: %v", err)
+		a.printPrompt()
 		return
 	}
 	a.detector.Remove(card.Path)

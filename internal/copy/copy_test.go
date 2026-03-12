@@ -346,6 +346,46 @@ func TestCopy_ElapsedTime(t *testing.T) {
 	}
 }
 
+func TestCopy_SkipsExistingWithCorrectSize(t *testing.T) {
+	data := []byte("original content here")
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: data, mtime: date(2026, 3, 8)},
+	})
+	dest := t.TempDir()
+
+	// First copy.
+	result1, err := Run(Options{CardPath: card, DestBase: dest}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result1.FilesCopied != 1 {
+		t.Fatalf("first copy: FilesCopied = %d, want 1", result1.FilesCopied)
+	}
+
+	// Tamper with the dest file content (but keep the same size) to prove it's skipped, not re-copied.
+	destFile := filepath.Join(dest, "2026-03-08", "100NIKON", "DSC_0001.NEF")
+	tampered := make([]byte, len(data))
+	for i := range tampered {
+		tampered[i] = 'X'
+	}
+	os.WriteFile(destFile, tampered, 0644)
+
+	// Second copy — file should be skipped because size matches.
+	result2, err := Run(Options{CardPath: card, DestBase: dest}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result2.FilesCopied != 1 {
+		t.Fatalf("second copy: FilesCopied = %d, want 1", result2.FilesCopied)
+	}
+
+	// File should still have tampered content (was not overwritten).
+	got, _ := os.ReadFile(destFile)
+	if string(got) != string(tampered) {
+		t.Error("file should have been skipped (not re-copied) since size matched")
+	}
+}
+
 // assertFileSize checks that a file exists and has the expected size.
 func assertFileSize(t *testing.T, path string, wantSize int64) {
 	t.Helper()

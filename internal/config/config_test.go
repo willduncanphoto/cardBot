@@ -200,9 +200,10 @@ func TestExpandPath(t *testing.T) {
 		want  string
 	}{
 		{"~/Pictures", filepath.Join(home, "Pictures")},
-		{"~/", home},
+		{"~", home},
 		{"/absolute/path", "/absolute/path"},
 		{"relative/path", "relative/path"},
+		{"~bob/path", "~bob/path"}, // ~user syntax not expanded
 	}
 
 	for _, tt := range tests {

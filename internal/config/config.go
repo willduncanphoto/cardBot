@@ -133,16 +133,20 @@ func Save(cfg *Config, path string) error {
 	return nil
 }
 
-// ExpandPath expands a leading ~ to the user's home directory.
+// ExpandPath expands a leading ~/ to the user's home directory.
+// Only expands "~" or "~/..." — does not handle "~user/..." syntax.
 func ExpandPath(path string) (string, error) {
-	if !strings.HasPrefix(path, "~") {
+	if path == "~" {
+		return os.UserHomeDir()
+	}
+	if !strings.HasPrefix(path, "~/") {
 		return path, nil
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return path, err
 	}
-	return filepath.Join(home, path[1:]), nil
+	return filepath.Join(home, path[2:]), nil
 }
 
 // ContractPath replaces the user's home directory prefix with ~.
