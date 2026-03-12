@@ -81,6 +81,10 @@ Down the line, beef this up with real-world tests:
 - [ ] **Destination path display** — verify `~` shorthand is shown correctly at startup
       across all setup flows: first run, `--setup`, folder picker (full path returned by
       osascript should be contracted to `~/...`), and manual text entry
+- [ ] **Destination write probe** — test copy to: new directory (first run), existing directory
+      (repeat copy), read-only path, full disk, network volume. Probe only runs on first
+      creation — verify permission errors on existing dirs are caught at file copy time
+      with clear error messages
 
 - [ ] Split `main.go` — extract display/prompt/UI logic into separate package
 - [ ] Drop `app.printf()` method — use explicit `fmt.Printf` + `a.logf` instead
