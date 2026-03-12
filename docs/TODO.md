@@ -70,3 +70,13 @@ Down the line, beef this up with real-world tests:
 - [ ] Report burst speed vs sustained speed separately
 - [ ] Compare results against card's rated spec (pull from known card database or let user enter rated speed)
 - [ ] Warn if measured speed is significantly below rated speed (possible card degradation)
+- [ ] Bypass OS page cache for accurate read speeds (`F_NOCACHE` / `fcntl`) — current read
+      test hits macOS page cache and reports inflated numbers
+
+---
+
+## Code Cleanup (before 0.1.5 Copy)
+
+- [ ] Split `main.go` — extract display/prompt/UI logic into separate package
+- [ ] Drop `app.printf()` method — use explicit `fmt.Printf` + `a.logf` instead
+- [ ] Add output mutex before copy progress lands

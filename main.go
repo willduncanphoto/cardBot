@@ -20,7 +20,7 @@ import (
 	"github.com/illwill/cardbot/internal/speedtest"
 )
 
-const version = "0.1.3"
+const version = "0.1.4"
 
 // UX delays — remove in 0.4.0 when real startup and analysis timings replace them.
 const (
@@ -62,7 +62,7 @@ func main() {
 		flagDest    = flag.String("dest", "", "destination path for copied cards")
 		flagDryRun  = flag.Bool("dry-run", false, "scan cards but do not copy files")
 		flagReset   = flag.Bool("reset", false, "clear saved config and exit")
-		flagSetup   = flag.Bool("setup", false, "re-run destination setup and exit")
+		flagSetup   = flag.Bool("setup", false, "re-run destination setup")
 	)
 	flag.Parse()
 
