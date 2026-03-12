@@ -17,6 +17,7 @@ import (
 	"github.com/illwill/cardbot/internal/detect"
 	cblog "github.com/illwill/cardbot/internal/log"
 	"github.com/illwill/cardbot/internal/pick"
+	"github.com/illwill/cardbot/internal/speedtest"
 )
 
 const version = "0.1.3"
@@ -519,6 +520,8 @@ func (a *app) handleInput(input string) {
 		a.cancelCard()
 	case "i":
 		a.showHardwareInfo(card)
+	case "t":
+		a.runSpeedTest(card)
 	}
 }
 
@@ -550,6 +553,30 @@ func (a *app) showHardwareInfo(card *detect.Card) {
 	}
 	fmt.Println(detect.FormatHardwareInfo(card.Hardware))
 	fmt.Println()
+	a.printPrompt()
+}
+
+func (a *app) runSpeedTest(card *detect.Card) {
+	fmt.Println()
+	fmt.Printf("[%s] Speed test starting (256 MB)...\n", ts())
+	a.logf("Speed test starting on %s", card.Path)
+
+	result, err := speedtest.Run(card.Path, func(phase string, mbps float64) {
+		fmt.Printf("\r[%s] %s... %.1f MB/s    ", ts(), phase, mbps)
+	})
+	fmt.Println()
+
+	if err != nil {
+		fmt.Printf("Speed test failed: %v\n", err)
+		a.logf("Speed test failed: %v", err)
+	} else {
+		fmt.Println()
+		fmt.Printf("  Write:  %.1f MB/s\n", result.WriteSpeed)
+		fmt.Printf("  Read:   %.1f MB/s\n", result.ReadSpeed)
+		a.logf("Speed test complete — write: %.1f MB/s, read: %.1f MB/s", result.WriteSpeed, result.ReadSpeed)
+		fmt.Println()
+	}
+
 	a.printPrompt()
 }
 
