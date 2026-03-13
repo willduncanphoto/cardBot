@@ -124,7 +124,7 @@ Then insert a memory card.
 **Output example:**
 
 ```
-[2026-03-12T12:15:32] Starting CardBot 0.2.8...
+[2026-03-12T12:15:32] Starting CardBot 0.2.9...
 [2026-03-12T12:15:33] Copy path /Pictures/CardBot
 [2026-03-12T12:15:33] Keep original filenames
 [2026-03-12T12:15:33] Card detected
