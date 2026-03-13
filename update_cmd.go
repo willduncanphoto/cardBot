@@ -25,14 +25,6 @@ func maybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logge
 		return "", false
 	}
 
-	// Mark attempt time so failed/offline checks don't run every startup.
-	cfg.Update.LastCheck = now.Format(time.RFC3339)
-	if cfgPath != "" {
-		if err := config.Save(cfg, cfgPath); err != nil && logger != nil {
-			logger.Printf("Update check save warning: %v", err)
-		}
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), updateCheckTimeout)
 	defer cancel()
 	res, err := update.CheckLatest(ctx, nil, update.DefaultAPIBase, update.DefaultRepo, version)
@@ -41,6 +33,14 @@ func maybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logge
 			logger.Printf("Update check failed: %v", err)
 		}
 		return "", false
+	}
+
+	// Cache only successful checks. If network/API fails, we'll try again next startup.
+	cfg.Update.LastCheck = now.Format(time.RFC3339)
+	if cfgPath != "" {
+		if err := config.Save(cfg, cfgPath); err != nil && logger != nil {
+			logger.Printf("Update check save warning: %v", err)
+		}
 	}
 
 	if res.Update {
