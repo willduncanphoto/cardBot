@@ -80,7 +80,7 @@ Run CardBot and insert a memory card:
 ```
 [2026-03-12T12:15:32] Starting CardBot 0.1.7...
 [2026-03-12T12:15:33] Copy path /Pictures/CardBot
-[2026-03-12T12:15:33] Processing: None
+[2026-03-12T12:15:33] Processing: Keep original filenames
 [2026-03-12T12:15:33] Card detected
 [2026-03-12T12:15:33] Scanning /Volumes/NIKON Z 9  ... 3051 files ✓ (0s)
 
