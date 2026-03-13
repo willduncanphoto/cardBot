@@ -210,7 +210,6 @@ Run `cardbot --setup` to change the destination. Run `cardbot --reset` to clear 
 - ETA during copy
 - Auto-update check
 - Linux support (0.3.0)
-- Windows support (later)
 
 ## Project Structure
 
