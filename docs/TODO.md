@@ -108,6 +108,7 @@ Everything from 0.1.x is ready for real-world validation.
 - [x] Partial copy state in dotfile — multi-mode copy history
 - [x] No known crashes or data loss scenarios
 - [x] README reflects actual current behavior
+- [x] Safe updater flow (`cardbot self-update`) with checksum verification
 
 **Goals for this phase:**
 - Test with real Z9 cards
@@ -126,7 +127,7 @@ Not on the immediate roadmap. Nice-to-have for someday.
 - Show current filename during copy (deferred to renaming milestone)
 - Per-file copy logging (forensic/recovery audit trail)
 - Single-key input (raw terminal mode, no Enter required)
-- Auto-update plan (see `docs/AUTO-UPDATE.md`)
+- Auto-update enhancements (signed releases, optional package-manager integration)
 - Network destination support
 - Windows support
 - JSON output mode for scripting

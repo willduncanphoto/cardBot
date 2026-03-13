@@ -144,6 +144,7 @@ Work items grouped by milestone.
 - [x] Partial copy state in dotfile — multi-mode copy history
 - [x] No known crashes or data loss scenarios
 - [x] README reflects actual current behavior
+- [x] Safe updater flow (`cardbot self-update`) with checksum verification
 
 Real-world testing with the Z9. Identify workflow friction and fine-tune based on actual use.
 
@@ -156,7 +157,7 @@ Real-world testing with the Z9. Identify workflow friction and fine-tune based o
 - Estimated time remaining during copy
 - Show current filename during copy (deferred to renaming milestone)
 - Per-file copy logging (forensic/recovery audit trail)
-- Auto-update plan (see `docs/AUTO-UPDATE.md`)
+- Auto-update enhancements (signed releases, optional package-manager integration)
 - Network destination support
 - Windows support
 - JSON output mode for scripting

@@ -16,6 +16,7 @@ type Config struct {
 	Destination Destination `json:"destination"`
 	Output      Output      `json:"output"`
 	Advanced    Advanced    `json:"advanced"`
+	Update      Update      `json:"update"`
 }
 
 // Destination settings.
@@ -36,6 +37,11 @@ type Advanced struct {
 	LogFile      string `json:"log_file"`
 }
 
+// Update settings.
+type Update struct {
+	LastCheck string `json:"last_check"`
+}
+
 // Defaults returns a Config populated with built-in defaults.
 func Defaults() *Config {
 	return &Config{
@@ -51,6 +57,9 @@ func Defaults() *Config {
 			BufferSizeKB: 256,
 			ExifWorkers:  4,
 			LogFile:      "~/.cardbot/cardbot.log",
+		},
+		Update: Update{
+			LastCheck: "",
 		},
 	}
 }

@@ -1,99 +1,65 @@
-# Auto-Update Plan
+# Auto-Update
 
-Goal: make updates easy for non-technical users without adding risky silent behavior.
-
-Status: planning only (wishlist).
+CardBot update flow is designed for non-technical users while staying safe for a photo-ingest tool.
 
 ---
 
-## Principles
+## Current Behavior
 
-- Keep updates **safe and explicit**.
-- Prefer a clear prompt + one command over silent background replacement.
-- Verify downloaded binaries before replacing anything.
-- Fail gracefully with helpful instructions.
+### Startup check (implemented)
 
----
-
-## Phase 1 — Update Check (low complexity)
-
-Add startup/update-check support:
-
-- Query latest version from GitHub Releases (`/releases/latest`)
-- Compare against current `version`
-- If newer, print a friendly message:
-  - `Update available: 0.2.1 (you have 0.2.0)`
+- CardBot checks GitHub Releases for a newer version on startup.
+- Check is cached to once per 24 hours (`config.update.last_check`).
+- Network/API failures are silent (no noisy error output).
+- Timeout is short (~2s max).
+- If newer version exists, CardBot prints:
+  - `Update available: X.Y.Z (you have A.B.C)`
   - `Run: cardbot self-update`
-- Add flags:
-  - `--check-update` (manual check)
-  - `--no-update-check` (skip check)
 
-### Acceptance criteria
+### Manual update command (implemented)
 
-- Works without blocking app startup if network/API fails
-- Times out quickly (e.g. 2–3s)
-- No noisy errors for offline users
+```bash
+cardbot self-update
+```
 
----
+What it does:
 
-## Phase 2 — `self-update` Command (medium complexity)
+1. Detects platform (`darwin-arm64`, `darwin-amd64`, etc.)
+2. Reads latest release metadata from GitHub
+3. Downloads matching binary + `checksums.txt`
+4. Verifies SHA256 checksum
+5. Atomically replaces current binary
+6. Preserves executable permissions
 
-Add `cardbot self-update` command:
-
-1. Detect platform (`darwin-arm64`, `darwin-amd64`, etc.)
-2. Download matching release binary
-3. Download/verify SHA256 checksum
-4. Replace current binary atomically
-5. Keep executable permissions
-6. Print clear success/failure output
-
-### Permission behavior
-
-- If binary path is not writable, print exact `sudo` command the user can run.
-- Never leave a partially replaced binary.
-
-### Acceptance criteria
-
-- Safe rollback on failed replace
-- Checksum mismatch aborts update
-- Works for common install locations (`/usr/local/bin`, local folder)
+If install path is not writable, CardBot prints a `sudo` command to retry.
 
 ---
 
-## Phase 3 — Optional Auto-Apply (deferred)
+## Safety Properties
 
-Not needed now.
-
-Potential future work:
-
-- Auto-apply updates on startup
-- Signed release verification
-- Rollback cache and telemetry
-
-This phase is intentionally deferred until user base + stability justify it.
+- Explicit user action for install (`self-update`)
+- Checksum verification before replace
+- Atomic file replacement (no partial binary state)
+- Graceful failure when offline or unauthorized
 
 ---
 
-## Rough Effort
+## CI/CD Dependency
 
-- Phase 1: ~0.5 day
-- Phase 2: ~1–2 days
-- Phase 3: several days + ongoing maintenance
+Release workflow must publish:
 
----
-
-## Suggested Implementation Layout
-
-- `internal/update/check.go` — release query + semver compare
-- `internal/update/download.go` — fetch binary/checksum
-- `internal/update/install.go` — atomic replace + permissions
-- `internal/update/update_test.go` — unit tests for compare, URL selection, checksum
+- `cardbot-darwin-arm64`
+- `cardbot-darwin-amd64`
+- `cardbot-linux-amd64`
+- `cardbot-linux-arm64`
+- `checksums.txt` (SHA256)
 
 ---
 
 ## Out of Scope (for now)
 
+- Silent auto-apply updates on startup
 - GUI updater
 - Homebrew formula auto-bump
 - Delta/binary patch updates
-- Windows installer support
+- Windows installer/update support

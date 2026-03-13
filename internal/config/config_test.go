@@ -24,6 +24,9 @@ func TestDefaults(t *testing.T) {
 	if !cfg.Output.Color {
 		t.Error("Color should default to true")
 	}
+	if cfg.Update.LastCheck != "" {
+		t.Errorf("Update.LastCheck = %q, want empty", cfg.Update.LastCheck)
+	}
 }
 
 func TestSaveLoad_RoundTrip(t *testing.T) {
@@ -207,6 +210,9 @@ func TestLoad_PartialConfig(t *testing.T) {
 	}
 	if cfg.Output.Quiet != defaults.Output.Quiet {
 		t.Errorf("Quiet = %v, want %v (default)", cfg.Output.Quiet, defaults.Output.Quiet)
+	}
+	if cfg.Update.LastCheck != defaults.Update.LastCheck {
+		t.Errorf("Update.LastCheck = %q, want %q (default)", cfg.Update.LastCheck, defaults.Update.LastCheck)
 	}
 }
 

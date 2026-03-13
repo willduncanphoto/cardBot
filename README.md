@@ -23,6 +23,7 @@ CardBot generates a concise overview of your memory card and provides modern cop
 - Disk space preflight check before copy
 - Read-only card warnings
 - Track copy history via `.cardbot` dotfile written to the card
+- Built-in updater (`cardbot self-update`) with checksum verification
 - Queue multiple cards
 - Eject cards safely
 - Doesn't delete your hard work
@@ -156,6 +157,18 @@ Press `?` for the full command list, including hidden commands. See [docs/OUTPUT
 | `--reset` | Clear saved config |
 | `--version` | Print version and exit |
 
+### Update Command
+
+```bash
+cardbot self-update
+```
+
+- Checks the latest GitHub release
+- Verifies the downloaded binary with `checksums.txt` (SHA256)
+- Replaces the current binary atomically
+- Prints a `sudo` command if your install path is not writable
+
+CardBot also performs a lightweight update check on startup (max ~2s timeout, cached to once per 24 hours).
 ## Copy
 
 Press `a` to copy all files, or use selective copy modes to copy only specific file types. CardBot groups files into dated folders based on EXIF date:
@@ -228,6 +241,9 @@ Config is stored at `~/.config/cardbot/config.json`:
     "buffer_size_kb": 256,
     "exif_workers": 4,
     "log_file": "~/.cardbot/cardbot.log"
+  },
+  "update": {
+    "last_check": "2026-03-13T15:37:00Z"
   }
 }
 ```
@@ -239,7 +255,7 @@ Run `cardbot --setup` to change the destination. Run `cardbot --reset` to clear 
 - File renaming on copy (date-based, camera+date, sequence)
 - Resume interrupted copies
 - ETA during copy
-- Auto-update flow (see `docs/AUTO-UPDATE.md`)
+- Auto-update enhancements (signed releases, package-manager integration)
 - Linux support
 
 ## Project Structure

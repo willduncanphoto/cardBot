@@ -61,10 +61,17 @@ jobs:
           path: artifacts
           merge-multiple: true
 
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum cardbot-* > checksums.txt
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/cardbot-*
+          files: |
+            artifacts/cardbot-*
+            artifacts/checksums.txt
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

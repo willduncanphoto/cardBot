@@ -19,6 +19,10 @@ import (
 const version = "0.2.0"
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "self-update" {
+		os.Exit(runSelfUpdate())
+	}
+
 	// --- CLI flags ---
 	var (
 		flagVersion = flag.Bool("version", false, "print version and exit")
@@ -142,6 +146,11 @@ func main() {
 
 	a.printf("[%s] Copy path %s\n", ts(), config.ContractPath(cfg.Destination.Path))
 	a.printf("[%s] Keep original filenames\n", ts())
+
+	if latest, ok := maybeCheckForUpdate(cfg, cfgPath, logger); ok {
+		a.printf("[%s] Update available: %s (you have %s)\n", ts(), latest, version)
+		a.printf("[%s] Run: cardbot self-update\n", ts())
+	}
 
 	if a.dryRun {
 		a.printf("[%s] Dry-run mode — no files will be copied\n", ts())
