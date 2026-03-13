@@ -38,6 +38,8 @@ CardBot generates a concise overview of your memory card and provides modern cop
 
 ## Installation
 
+**No Go required.** The pre-built binaries run directly on macOS with zero dependencies.
+
 ### Option 1: Pre-built Binary (macOS)
 
 Download the latest release for your Mac (Apple Silicon or Intel):
@@ -88,11 +90,22 @@ go build -o cardbot .
 
 ## Usage
 
-Run CardBot and insert a memory card:
+**Quick start** — download and run (no install needed):
+
+```bash
+# Download for Apple Silicon Mac
+curl -LO https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-arm64
+chmod +x cardbot-darwin-arm64
+./cardbot-darwin-arm64
+```
+
+Or if you moved it to your PATH:
 
 ```bash
 ./cardbot
 ```
+
+Then insert a memory card.
 
 **First run** — CardBot will open a folder picker (macOS) or prompt for a destination path. The choice is saved to `~/.config/cardbot/config.json`.
 
