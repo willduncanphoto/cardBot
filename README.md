@@ -295,13 +295,6 @@ cardbot/
 
 TBD — will be added before public release
 
-## DISCLAIMER: Built with AI Coding Tools
-
-CardBot was built with the help of human guided AI coding models and many many many open source projects. There is no way in hell I could do this alone. A special thanks goes out to **[Pi](https://shittycodingagent.ai)** — a terminal-based coding agent.
-
-- Website: [shittycodingagent.ai](https://shittycodingagent.ai)
-- GitHub: [github.com/badlogic/pi-mono](https://github.com/badlogic/pi-mono)
-
 ## Notes
 
 - **CID on Linux:** The SD Card Identification register (manufacturer ID, serial, manufacturing date) is only accessible with direct SD card slots. USB readers hide it.
