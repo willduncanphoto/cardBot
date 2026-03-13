@@ -54,7 +54,7 @@ chmod +x cardbot-darwin-*
 mv cardbot-darwin-* /usr/local/bin/cardbot
 ```
 
-Or grab the binary from the repo directly:
+Or grab the binary from the repo directly (Apple Silicon only):
 
 ```bash
 git clone https://github.com/willduncanphoto/CardBot.git
@@ -81,7 +81,7 @@ go build -o cardbot .
 CGO_ENABLED=0 go build -o cardbot .
 ```
 
-**Linux:**
+**Linux (planned for 0.3.0):**
 ```bash
 go build -o cardbot .
 ```
@@ -235,23 +235,28 @@ Run `cardbot --setup` to change the destination. Run `cardbot --reset` to clear 
 cardbot/
 ├── main.go                          # CLI flags, config, logger, signal handling, entry point
 ├── app.go                           # App struct, event loop, card/queue management, input
+├── app_logic.go                     # Input parsing, copy guards, prompt text (pure functions)
+├── app_logic_test.go                # Tests for app logic
 ├── display.go                       # Card info display, prompts, help, hardware info
 ├── copy_cmd.go                      # Copy orchestration, speed test
 ├── internal/
 │   ├── analyze/
 │   │   ├── analyze.go               # DCIM walking, parallel EXIF/XMP, date grouping
-│   │   └── analyze_test.go
+│   │   ├── analyze_test.go
+│   │   └── analyze_rating_test.go
 │   ├── config/
 │   │   ├── config.go                # Config load/save, schema versioning, path expansion
 │   │   └── config_test.go
 │   ├── copy/
 │   │   ├── copy.go                  # File copy engine — walk, copy, verify, cancel
 │   │   ├── copy_test.go
+│   │   ├── copy_filter_test.go
 │   │   ├── diskspace_unix.go        # Disk free space check (darwin/linux)
 │   │   └── diskspace_other.go       # Fallback stub
 │   ├── detect/
 │   │   ├── card.go                  # Card struct
 │   │   ├── format.go                # FormatBytes (platform-agnostic)
+│   │   ├── format_test.go
 │   │   ├── shared.go                # Brand detection
 │   │   ├── shared_test.go
 │   │   ├── detect_darwin.go         # macOS native (CGO + DiskArbitration)
@@ -273,7 +278,9 @@ cardbot/
 │   │   ├── speedtest_darwin.go      # 256MB sequential read/write benchmark
 │   │   └── speedtest_other.go       # Stub for unsupported platforms
 │   └── ui/
-│       └── color.go                 # ANSI brand colors
+│       ├── color.go                 # ANSI brand colors
+│       └── color_test.go
+├── .github/workflows/               # CI and release automation
 ├── docs/                            # Project documentation
 └── go.mod
 ```
@@ -287,8 +294,8 @@ cardbot/
 ## Size
 
 - Binary: ~3.2 MB (stripped)
-- Source: ~4,200 lines of Go across 33 files
-- Tests: ~1,800 lines, 100+ tests across 8 packages
+- Source: ~4,350 lines of Go across 37 files
+- Tests: ~2,100 lines, 138 tests across 8 packages
 
 ## License
 
