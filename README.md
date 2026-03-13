@@ -296,7 +296,7 @@ cardbot/
 
 ## License
 
-TBD — will be added before public release
+MIT License — see [LICENSE](LICENSE) for details.
 
 ## Notes
 
