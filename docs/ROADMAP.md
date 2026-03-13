@@ -119,6 +119,7 @@ Work items grouped by milestone.
 
 - Estimated time remaining during copy
 - Show current filename during copy (deferred to renaming milestone)
+- Per-file copy logging (forensic/recovery audit trail)
 - Single-key input (raw terminal mode, no Enter required)
 - Auto-update: check GitHub Releases for new version at startup, `--update` flag
 - Network destination support

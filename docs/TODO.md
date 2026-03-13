@@ -14,6 +14,7 @@ These are "nice to have" features that aren't on the immediate roadmap:
 
 - Estimated time remaining during copy
 - Show current filename during copy (deferred to renaming milestone)
+- Per-file copy logging (forensic/recovery audit trail — separate from main log)
 - Single-key input (raw terminal mode, no Enter required)
 - Auto-update: check GitHub Releases for new version at startup
 - Network destination support
