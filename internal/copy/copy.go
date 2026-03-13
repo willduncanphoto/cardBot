@@ -34,15 +34,17 @@ type Result struct {
 	BytesCopied int64
 	Elapsed     time.Duration
 	DestPath    string
+	Warnings    []string // Non-fatal errors encountered during walk (permission, I/O)
 }
 
 // Options configures the copy operation.
 type Options struct {
-	CardPath      string          // Source card mount point
-	DestBase      string          // Base destination directory (e.g. ~/Pictures/CardBot)
-	BufferKB      int             // Copy buffer size in KB (default 256)
-	DryRun        bool            // If true, walk and report but don't copy
-	AnalyzeResult *analyze.Result // If provided, use EXIF dates for folder grouping
+	CardPath      string                                // Source card mount point
+	DestBase      string                                // Base destination directory (e.g. ~/Pictures/CardBot)
+	BufferKB      int                                   // Copy buffer size in KB (default 256)
+	DryRun        bool                                  // If true, walk and report but don't copy
+	AnalyzeResult *analyze.Result                       // If provided, use EXIF dates for folder grouping
+	Filter        func(relPath string, ext string) bool // If provided, skip files where func returns false
 }
 
 // fileEntry holds a file to be copied.
@@ -75,9 +77,16 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 	// --- Phase 1: Collect files ---
 	var files []fileEntry
 	var totalBytes int64
+	var walkWarnings []string
 
 	err := filepath.WalkDir(dcim, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
+			// Log permission/IO errors but keep walking.
+			// Broken symlinks and not-exist are silently skipped.
+			if !os.IsNotExist(err) {
+				rel, _ := filepath.Rel(dcim, path)
+				walkWarnings = append(walkWarnings, fmt.Sprintf("%s: %v", rel, err))
+			}
 			return nil
 		}
 		if d.IsDir() {
@@ -96,6 +105,18 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 		}
 
 		rel, _ := filepath.Rel(dcim, path)
+
+		// Apply selective copy filter if provided.
+		if opts.Filter != nil {
+			// Extract extension (uppercase, no dot)
+			ext := filepath.Ext(d.Name())
+			if len(ext) > 0 {
+				ext = strings.ToUpper(ext[1:])
+			}
+			if !opts.Filter(rel, ext) {
+				return nil
+			}
+		}
 
 		// Use EXIF date if available, fall back to mtime.
 		date := info.ModTime().Format("2006-01-02")
@@ -211,6 +232,7 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 		BytesCopied: bytesDone,
 		Elapsed:     time.Since(start),
 		DestPath:    opts.DestBase,
+		Warnings:    walkWarnings,
 	}, nil
 }
 

@@ -16,8 +16,9 @@ CardBot generates a concise overview of your memory card and provides modern cop
 **Current capabilities:**
 - Detect CFexpress, XQD, and SD cards on macOS
 - Quickly analyze a card's content and technical information
-- Show starred image count for future quick copy operation
-- Copy all files to dated folders with verification
+- Show starred image count directly from EXIF/XMP
+- Selective copy: choose to copy only Selects (starred), Photos, Videos, or All
+- Copy files to dated folders with size verification
 - Cancel or interrupt copy safely (card removal, `[\]` key, Ctrl+C)
 - Disk space preflight check before copy
 - Read-only card warnings
@@ -78,7 +79,7 @@ Run CardBot and insert a memory card:
 **Output example:**
 
 ```
-[2026-03-12T12:15:32] Starting CardBot 0.1.7...
+[2026-03-12T12:15:32] Starting CardBot 0.1.9...
 [2026-03-12T12:15:33] Copy path /Pictures/CardBot
 [2026-03-12T12:15:33] Keep original filenames
 [2026-03-12T12:15:33] Card detected
@@ -102,9 +103,9 @@ Run CardBot and insert a memory card:
 | Key | Action |
 |-----|--------|
 | `a` | Copy All — copy all files to destination |
-| `s` | Copy Selects — starred/picked files only *(coming in 0.1.8)* |
-| `p` | Copy Photos — photos only *(coming in 0.1.8)* |
-| `v` | Copy Videos — videos only *(coming in 0.1.8)* |
+| `s` | Copy Selects — starred/picked files only |
+| `p` | Copy Photos — photos only |
+| `v` | Copy Videos — videos only |
 | `e` | Eject the card |
 | `x` | Exit — skip this card, move to next |
 | `\` | Cancel Copy — cancel the copy in progress |
@@ -202,9 +203,6 @@ Run `cardbot --setup` to change the destination. Run `cardbot --reset` to clear 
 
 ## Planned Stuff
 
-- `[s]` Copy Selects — starred/picked files only
-- `[p]` Copy Photos — skip video files
-- `[v]` Copy Videos — skip photos
 - File renaming on copy (date-based, camera+date, sequence)
 - Resume interrupted copies
 - ETA during copy
@@ -215,7 +213,10 @@ Run `cardbot --setup` to change the destination. Run `cardbot --reset` to clear 
 
 ```
 cardbot/
-├── main.go                          # CLI, event loop, display, input, copy orchestration
+├── main.go                          # CLI flags, config, logger, signal handling, entry point
+├── app.go                           # App struct, event loop, card/queue management, input
+├── display.go                       # Card info display, prompts, help, hardware info
+├── copy_cmd.go                      # Copy orchestration, speed test
 ├── internal/
 │   ├── analyze/
 │   │   ├── analyze.go               # DCIM walking, parallel EXIF/XMP, date grouping
@@ -230,7 +231,8 @@ cardbot/
 │   │   └── diskspace_other.go       # Fallback stub
 │   ├── detect/
 │   │   ├── card.go                  # Card struct
-│   │   ├── shared.go                # Brand detection, FormatBytes
+│   │   ├── format.go                # FormatBytes (platform-agnostic)
+│   │   ├── shared.go                # Brand detection
 │   │   ├── shared_test.go
 │   │   ├── detect_darwin.go         # macOS native (CGO + DiskArbitration)
 │   │   ├── detect_darwin_nocgo.go   # macOS polling fallback
@@ -264,9 +266,9 @@ cardbot/
 
 ## Size
 
-- Binary: ~4.9 MB
-- Source: ~3,800 lines of Go across 24 files
-- Tests: ~1,600 lines, 97 tests across 6 packages
+- Binary: ~3.2 MB (stripped)
+- Source: ~4,200 lines of Go across 33 files
+- Tests: ~1,800 lines, 105 tests across 8 packages
 
 ## License
 

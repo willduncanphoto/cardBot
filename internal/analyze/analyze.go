@@ -5,6 +5,8 @@ package analyze
 
 import (
 	"bytes"
+	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -40,6 +42,18 @@ var supportedExif = map[string]bool{
 	"HEIF": true,
 }
 
+// IsPhoto returns true if the extension belongs to a known photo format.
+// Ext should be uppercase without the dot (e.g., "NEF").
+func IsPhoto(ext string) bool {
+	return photoExts[ext]
+}
+
+// IsVideo returns true if the extension belongs to a known video format.
+// Ext should be uppercase without the dot (e.g., "MOV").
+func IsVideo(ext string) bool {
+	return videoExts[ext]
+}
+
 // DateGroup holds stats for all files on a single date.
 type DateGroup struct {
 	Date       string   // YYYY-MM-DD
@@ -50,16 +64,18 @@ type DateGroup struct {
 
 // Result contains analysis data for a memory card.
 type Result struct {
-	Groups     []DateGroup       // Newest first
-	FileDates  map[string]string // Per-file date map: relative path from DCIM → "YYYY-MM-DD"
-	TotalSize  int64             // Sum of all file sizes
-	FileCount  int               // Total number of files
-	PhotoSize  int64             // Total bytes of photo files
-	PhotoCount int               // Number of photo files
-	VideoSize  int64             // Total bytes of video files
-	VideoCount int               // Number of video files
-	Gear       string            // Camera make + model (e.g. "Nikon Z 9"), empty if unknown
-	Starred    int               // Count of files with star rating > 0
+	Groups      []DateGroup       // Newest first
+	FileDates   map[string]string // Per-file date map: relative path from DCIM → "YYYY-MM-DD"
+	FileRatings map[string]int    // Per-file rating: relative path from DCIM → star rating (1-5)
+	TotalSize   int64             // Sum of all file sizes
+	FileCount   int               // Total number of files
+	PhotoSize   int64             // Total bytes of photo files
+	PhotoCount  int               // Number of photo files
+	VideoSize   int64             // Total bytes of video files
+	VideoCount  int               // Number of video files
+	Gear        string            // Camera make + model (e.g. "Nikon Z 9"), empty if unknown
+	Starred     int               // Count of files with star rating > 0
+	Warnings    []string          // Non-fatal errors encountered during scan (permission, I/O)
 }
 
 // videoExts lists extensions classified as video.
@@ -152,9 +168,10 @@ type exifResult struct {
 // Phase 2: Parallel EXIF extraction — N workers decode date, camera, rating.
 // Phase 3: Merge — combines walk data with EXIF results into grouped stats.
 //
+// The context enables clean cancellation if the card is removed mid-scan.
 // Returns an empty Result (not nil) if the card has no files.
 // Returns an error only if DCIM cannot be read at all.
-func (a *Analyzer) Analyze() (*Result, error) {
+func (a *Analyzer) Analyze(ctx context.Context) (*Result, error) {
 	dcim := filepath.Join(a.cardPath, "DCIM")
 	if _, err := os.Stat(dcim); err != nil {
 		return nil, err
@@ -162,8 +179,22 @@ func (a *Analyzer) Analyze() (*Result, error) {
 
 	// --- Phase 1: Fast directory walk ---
 	var files []fileEntry
+	var warnings []string
 	err := filepath.WalkDir(dcim, func(path string, d os.DirEntry, err error) error {
+		// Check for cancellation.
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
 		if err != nil {
+			// Log permission/IO errors but keep walking.
+			// Broken symlinks and not-exist are silently skipped.
+			if !os.IsNotExist(err) {
+				rel, _ := filepath.Rel(dcim, path)
+				warnings = append(warnings, fmt.Sprintf("%s: %v", rel, err))
+			}
 			return nil
 		}
 		if d.IsDir() {
@@ -197,6 +228,9 @@ func (a *Analyzer) Analyze() (*Result, error) {
 		return nil
 	})
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		return nil, err
 	}
 
@@ -214,6 +248,12 @@ func (a *Analyzer) Analyze() (*Result, error) {
 			defer wg.Done()
 			xmpBuf := make([]byte, xmpBufSize)
 			for idx := range exifFiles {
+				// Skip expensive EXIF reads if cancelled.
+				select {
+				case <-ctx.Done():
+					continue
+				default:
+				}
 				f := &files[idx]
 				date, gear, rating, ok := readExif(f.path, xmpBuf)
 				exifResults[idx] = exifResult{
@@ -231,13 +271,23 @@ func (a *Analyzer) Analyze() (*Result, error) {
 	}
 
 	// Send EXIF-eligible files to workers; non-EXIF files need no processing.
+loop:
 	for i := range files {
 		if supportedExif[files[i].ext] {
-			exifFiles <- i
+			select {
+			case <-ctx.Done():
+				break loop
+			case exifFiles <- i:
+			}
 		}
 	}
 	close(exifFiles)
 	wg.Wait()
+
+	// Check for cancellation after EXIF phase.
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 
 	// Fire final progress with total count.
 	totalFiles := len(files)
@@ -248,6 +298,7 @@ func (a *Analyzer) Analyze() (*Result, error) {
 	// --- Phase 3: Merge ---
 	groups := make(map[string]*dateAccumulator)
 	fileDates := make(map[string]string, len(files))
+	fileRatings := make(map[string]int)
 	var totalSize, photoSize, videoSize int64
 	var photoCount, videoCount, starred int
 	var gear string
@@ -268,6 +319,7 @@ func (a *Analyzer) Analyze() (*Result, error) {
 				}
 				if r.rating > 0 {
 					starred++
+					fileRatings[f.relPath] = r.rating
 				}
 			}
 		}
@@ -294,9 +346,10 @@ func (a *Analyzer) Analyze() (*Result, error) {
 	}
 
 	return &Result{
-		Groups:     buildGroups(groups),
-		FileDates:  fileDates,
-		TotalSize:  totalSize,
+		Groups:      buildGroups(groups),
+		FileDates:   fileDates,
+		FileRatings: fileRatings,
+		TotalSize:   totalSize,
 		FileCount:  totalFiles,
 		PhotoSize:  photoSize,
 		PhotoCount: photoCount,
@@ -304,6 +357,7 @@ func (a *Analyzer) Analyze() (*Result, error) {
 		VideoCount: videoCount,
 		Gear:       gear,
 		Starred:    starred,
+		Warnings:   warnings,
 	}, nil
 }
 

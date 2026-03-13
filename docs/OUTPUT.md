@@ -5,9 +5,9 @@
 Complete sequence from launch to first card display:
 
 ```
-[2026-03-12T12:15:32] Starting CardBot 0.1.7.     ← dots animate over ~1s
-[2026-03-12T12:15:33] Starting CardBot 0.1.7..
-[2026-03-12T12:15:34] Starting CardBot 0.1.7...
+[2026-03-12T12:15:32] Starting CardBot 0.1.9.     ← dots animate over ~1s
+[2026-03-12T12:15:33] Starting CardBot 0.1.9..
+[2026-03-12T12:15:34] Starting CardBot 0.1.9...
 [2026-03-12T12:15:34] Copy path /Pictures/CardBot
 [2026-03-12T12:15:34] Keep original filenames
 [2026-03-12T12:15:34] Scanning  |                  ← spinner animates: | / - \
@@ -30,7 +30,7 @@ Complete sequence from launch to first card display:
 ## Startup
 
 ```
-[2026-03-12T12:15:32] Starting CardBot 0.1.7...
+[2026-03-12T12:15:32] Starting CardBot 0.1.9...
 [2026-03-12T12:15:32] Copy path /Pictures/CardBot
 [2026-03-12T12:15:32] Keep original filenames
 [2026-03-12T12:15:32] Scanning  |
@@ -47,7 +47,7 @@ Where should CardBot copy your work?
 
 Destination: /Users/user/Pictures/CardBot
 
-[2026-03-12T12:15:32] Starting CardBot 0.1.7...
+[2026-03-12T12:15:32] Starting CardBot 0.1.9...
 [2026-03-12T12:15:32] Copy path /Pictures/CardBot
 [2026-03-12T12:15:32] Scanning...
 ```
@@ -175,9 +175,9 @@ Queue is processed in insertion order. The queue count appears when additional c
 | Key | Action |
 |-----|--------|
 | `a` | Copy All — copy all files to destination |
-| `s` | Copy Selects — copy starred/picked files only *(coming in 0.1.8)* |
-| `p` | Copy Photos — copy photos only *(coming in 0.1.8)* |
-| `v` | Copy Videos — copy videos only *(coming in 0.1.8)* |
+| `s` | Copy Selects — copy starred/picked files only |
+| `p` | Copy Photos — copy photos only |
+| `v` | Copy Videos — copy videos only |
 | `e` | Eject the card |
 | `x` | Exit — skip this card, move to next |
 | `\` | Cancel Copy — cancel the copy in progress |
@@ -197,9 +197,9 @@ Output of the `[?]` command:
 ```
   Commands:
   [a]  Copy All       copy all files to destination
-  [s]  Copy Selects   copy starred/picked files only    (coming in 0.1.8)
-  [p]  Copy Photos    copy photos only                  (coming in 0.1.8)
-  [v]  Copy Videos    copy videos only                  (coming in 0.1.8)
+  [s]  Copy Selects   copy starred/picked files only
+  [p]  Copy Photos    copy photos only              
+  [v]  Copy Videos    copy videos only              
   [e]  Eject          safely eject this card
   [x]  Exit           skip this card, move to next
   [i]  Card Info      show hardware details

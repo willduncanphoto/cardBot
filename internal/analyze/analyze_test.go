@@ -1,6 +1,7 @@
 package analyze
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,7 +47,7 @@ func TestAnalyze_MultiDay(t *testing.T) {
 		"100NIKON/DSC_0005.NEF": {size: 40000, mtime: date(2025, 3, 7)},
 	})
 
-	result, err := New(root).Analyze()
+	result, err := New(root).Analyze(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,12 +115,12 @@ func TestAnalyze_MultiDay(t *testing.T) {
 func TestAnalyze_SkipsHiddenFiles(t *testing.T) {
 	t.Parallel()
 	root := createTestCard(t, map[string]testFile{
-		"100NIKON/DSC_0001.NEF":    {size: 1000, mtime: date(2025, 3, 8)},
-		"100NIKON/.DS_Store":       {size: 500, mtime: date(2025, 3, 8)},
-		"100NIKON/._DSC_0001.NEF":  {size: 300, mtime: date(2025, 3, 8)},
+		"100NIKON/DSC_0001.NEF":   {size: 1000, mtime: date(2025, 3, 8)},
+		"100NIKON/.DS_Store":      {size: 500, mtime: date(2025, 3, 8)},
+		"100NIKON/._DSC_0001.NEF": {size: 300, mtime: date(2025, 3, 8)},
 	})
 
-	result, err := New(root).Analyze()
+	result, err := New(root).Analyze(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +141,7 @@ func TestAnalyze_EmptyCard(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := New(root).Analyze()
+	result, err := New(root).Analyze(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +164,7 @@ func TestAnalyze_NoDCIM(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
 
-	_, err := New(root).Analyze()
+	_, err := New(root).Analyze(context.Background())
 	if err == nil {
 		t.Error("expected error for missing DCIM, got nil")
 	}
@@ -176,7 +177,7 @@ func TestAnalyze_HiddenDirectory(t *testing.T) {
 		".Trashes/junk.dat":     {size: 500, mtime: date(2025, 3, 8)},
 	})
 
-	result, err := New(root).Analyze()
+	result, err := New(root).Analyze(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,7 +195,7 @@ func TestAnalyze_ExtensionNormalization(t *testing.T) {
 		"100NIKON/photo2.NEF": {size: 100, mtime: date(2025, 3, 8)},
 	})
 
-	result, err := New(root).Analyze()
+	result, err := New(root).Analyze(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -215,7 +216,7 @@ func TestAnalyze_FileDates(t *testing.T) {
 		"100NIKON/DSC_0002.MOV": {size: 200, mtime: date(2025, 3, 9)},
 	})
 
-	result, err := New(root).Analyze()
+	result, err := New(root).Analyze(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -249,7 +250,7 @@ func TestAnalyze_MultipleSubfolders(t *testing.T) {
 		"102NIKON/DSC_0020.JPG": {size: 300, mtime: date(2025, 3, 9)},
 	})
 
-	result, err := New(root).Analyze()
+	result, err := New(root).Analyze(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,7 +271,7 @@ func TestAnalyze_UnsupportedExtensionsSkipped(t *testing.T) {
 		"100NIKON/data.xml":     {size: 75, mtime: date(2025, 3, 8)},
 	})
 
-	result, err := New(root).Analyze()
+	result, err := New(root).Analyze(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -358,7 +359,7 @@ func TestTitleCase(t *testing.T) {
 	}{
 		{"CORPORATION NIKON Z 9", "Corporation Nikon Z 9"},
 		{"HELLO WORLD", "Hello World"},
-		{"A B", "A B"},           // single-char words unchanged
+		{"A B", "A B"}, // single-char words unchanged
 		{"ILCE-7RM5", "Ilce-7rm5"},
 		{"", ""},
 	}
@@ -394,3 +395,4 @@ func TestScanXMPRating(t *testing.T) {
 		})
 	}
 }
+

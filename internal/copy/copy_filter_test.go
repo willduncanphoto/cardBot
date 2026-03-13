@@ -1,0 +1,64 @@
+package copy
+
+import (
+	"context"
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestCopy_Filter(t *testing.T) {
+	t.Parallel()
+	card := t.TempDir()
+	dest := t.TempDir()
+
+	dcim := filepath.Join(card, "DCIM", "100MEDIA")
+	if err := os.MkdirAll(dcim, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	os.WriteFile(filepath.Join(dcim, "TEST1.JPG"), []byte("jpg"), 0644)
+	os.WriteFile(filepath.Join(dcim, "TEST2.MOV"), []byte("mov"), 0644)
+	os.WriteFile(filepath.Join(dcim, "TEST3.NEF"), []byte("nef"), 0644)
+
+	res, err := Run(context.Background(), Options{
+		CardPath: card,
+		DestBase: dest,
+		Filter: func(rel string, ext string) bool {
+			return ext == "JPG" || ext == "NEF"
+		},
+	}, nil)
+
+	if err != nil {
+		t.Fatalf("Copy failed: %v", err)
+	}
+	if res.FilesCopied != 2 {
+		t.Errorf("Expected 2 files copied, got %d", res.FilesCopied)
+	}
+
+	// Verify filtered file was NOT copied anywhere under dest.
+	found := false
+	filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+		if d != nil && d.Name() == "TEST2.MOV" {
+			found = true
+		}
+		return nil
+	})
+	if found {
+		t.Error("Expected TEST2.MOV to be filtered out, but it was copied")
+	}
+
+	// Verify accepted files WERE copied somewhere under dest.
+	for _, name := range []string{"TEST1.JPG", "TEST3.NEF"} {
+		exists := false
+		filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+			if d != nil && d.Name() == name {
+				exists = true
+			}
+			return nil
+		})
+		if !exists {
+			t.Errorf("Expected %s to be copied, but it was not found under dest", name)
+		}
+	}
+}

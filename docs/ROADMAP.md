@@ -113,29 +113,30 @@ Work items grouped by milestone.
 - [x] go.mod bumped to go 1.25.0
 - [x] Test suite: 100 tests across 8 packages, all passing with `-race`
 
+### 0.1.8 — Code Health
+- [x] Split `main.go` into `main.go`, `app.go`, `display.go`, `copy_cmd.go`
+- [x] Extract `printCardHeader` helper (DRY)
+- [x] Add `context.Context` to `displayCard` and analyzer — clean cancellation on card removal
+- [x] Log walk errors instead of silently swallowing (warnings in Result)
+- [x] Standardize `friendlyErr` for all user-facing errors
+- [x] Validate destination path at copy start
+- [x] Move `FormatBytes` to platform-agnostic file (`detect/format.go`)
+- [x] Remove 500ms `displayCard` delay — analysis starts immediately
+- [x] Context cancellation test added
+- [x] Test suite: 101 tests across 8 packages, all passing with `-race`
+
+### 0.1.9 — Selective Copy
+- [x] `[s]` Copy Selects — copy starred/picked files only (XMP rating > 0)
+- [x] `[p]` Copy Photos — copy photo files only (RAW + JPEG, no video)
+- [x] `[v]` Copy Videos — copy video files only (MOV, MP4, MXF, etc.)
+- [x] Dotfile v2 with multi-mode array schema
+- [x] Status line tracks individual and combined modes (Photos + Videos copied on...)
+- [x] Session guard logic to prevent double copies of selected subsets
+- [x] Disk space preflight naturally scoped through filters
+
 ---
 
 ## Upcoming
-
-### 0.1.8 — Selective Copy
-- [ ] `[s]` Copy Selects — copy starred/picked files only (XMP rating > 0)
-- [ ] `[p]` Copy Photos — copy photo files only (RAW + JPEG, no video)
-- [ ] `[v]` Copy Videos — copy video files only (MOV, MP4, MXF, etc.)
-- [ ] Dotfile tracks copy mode per operation
-- [ ] Status line reflects partial copy
-- [ ] Re-copy guard per mode
-- [ ] Disk space preflight scoped to selected subset
-
-### 0.1.9 — Code Health
-- [ ] Split `main.go` into `app.go`, `display.go`, `copy_cmd.go`
-- [ ] Extract `printCardHeader` helper (DRY)
-- [ ] Add `context.Context` to `displayCard` and analyzer
-- [ ] Log walk errors instead of silently swallowing
-- [ ] Standardize `friendlyErr` for all user-facing errors
-- [ ] Validate destination path on config load or copy start
-- [ ] Move `FormatBytes` to platform-agnostic file
-- [ ] Remove 500ms `displayCard` delay
-- [ ] Test coverage pass — target 80%+ across testable packages
 
 ### 0.2.0 — Daily Driver
 - [ ] All 0.1.x items complete

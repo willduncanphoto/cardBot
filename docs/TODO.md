@@ -1,9 +1,10 @@
 # CardBot — TODO
 
-## Current Version: 0.1.7
+## Current Version: 0.1.9
 
 Detection, analysis, EXIF, config, UI polish, copy with robustness, UX improvements,
-and bug fixes complete. 100 tests across 8 packages, all passing with `-race`.
+bug fixes, and code health refactor complete. 105 tests across 8 packages, all passing
+with `-race`.
 
 **Target: 0.2.0 — Daily Driver.** The version you hand to another photographer and say "try this."
 
@@ -17,108 +18,84 @@ and bug fixes complete. 100 tests across 8 packages, all passing with `-race`.
 
 ---
 
-## 0.1.8 — Selective Copy
+## 0.1.8 — Code Health
 
-Core feature: let users copy subsets of a card instead of everything.
-
-- [ ] `[s]` Copy Selects — copy starred/picked files only (XMP rating > 0)
-- [ ] `[p]` Copy Photos — copy photo files only (RAW + JPEG, no video)
-- [ ] `[v]` Copy Videos — copy video files only (MOV, MP4, MXF, etc.)
-- [ ] Dotfile tracks copy mode per operation (`"mode": "selects"`)
-- [ ] Status line reflects partial copy (`Selects copied on ...`)
-- [ ] Re-copy guard per mode — don't skip if previous copy was a different mode
-- [ ] Disk space preflight scoped to selected file subset
-- [ ] Help removes strikethrough from `[s]`, `[p]`, `[v]` once implemented
-
-### Dotfile Design (decide before implementation)
-
-The `.cardbot` dotfile currently tracks a single copy event. With selective copy modes,
-a card may be partially copied in multiple independent passes (e.g. videos first in the
-field, photos later in the studio). The dotfile needs to track each mode independently.
-
-- [ ] Store a `copies` array — one entry per mode with timestamp, dest, file count, bytes
-- [ ] Status line logic: what to show when multiple modes have been copied?
-      e.g. `Photos + Videos copied` vs `All copied` vs `Selects copied on ...`
-- [ ] Should `[a] Copy All` mark all selective modes as complete, or only the "all" mode?
-- [ ] If photos were copied and user runs `[a]`, should photo files be skipped (size check)
-      or re-evaluated?
-- [ ] Consider a `completed_modes []string` field so the UI can show checkmarks per mode
-
----
-
-## 0.1.9 — Code Health
-
-Cleanup pass with only verified, real issues from four model reviews cross-checked
-against the actual codebase.
+Cleanup pass with verified, real issues from four model reviews cross-checked
+against the actual codebase. Refactor to make the codebase testable and clean
+before adding selective copy features.
 
 ### Split main.go (~995 lines)
 
-`main.go` does too much: CLI flags, config, signal handling, event loop, card display,
-copy orchestration, prompts, help, input, eject, speed test. Split into:
-
-- **`main.go`** — flag parsing, config, logger setup, signal handling, `main()` (~100 lines)
-- **`app.go`** — `app` struct, event loop, card/queue management, `handleInput`
-- **`display.go`** — `printCardInfo`, `printInvalidCardInfo`, `printPrompt`, `showHelp`,
+- [x] **`main.go`** — flag parsing, config, logger setup, signal handling, `main()`
+- [x] **`app.go`** — `app` struct, event loop, card/queue management, `handleInput`
+- [x] **`display.go`** — `printCardInfo`, `printInvalidCardInfo`, `printPrompt`, `showHelp`,
   `showHardwareInfo`, `friendlyErr`
-- **`copy_cmd.go`** — `copyAll` method (the 120-line copy event loop)
+- [x] **`copy_cmd.go`** — `copyAll` method, `runSpeedTest`
 
-### Extract `printCardHeader` helper
+### Other Refactors
 
-`printCardInfo` and `printInvalidCardInfo` both render Status, Path, Storage, Camera
-with slightly different formatting. Extract shared `printCardHeader(card, result)`.
+- [x] Extract `printCardHeader` helper — DRY between `printCardInfo` and `printInvalidCardInfo`
+- [x] Add `context.Context` to `displayCard` and analyzer — enables clean cancellation
+      when card is removed mid-scan
+- [x] Log walk errors instead of swallowing them — permission/IO errors now collected
+      as warnings in `Result.Warnings` (both analyze and copy packages)
+- [x] Standardize `friendlyErr` for all user-facing errors — dotfile write warning,
+      config load errors, speed test errors all routed through `friendlyErr`
+- [x] Validate destination path — empty destination check at copy start with clear message
+- [x] Move `FormatBytes` to platform-agnostic file — `detect/format.go` with no build
+      constraints, compiles on all platforms
+- [x] Remove 500ms `displayCard` delay — analysis starts immediately on card detection
 
-### Add `context.Context` to `displayCard` and analyzer
+### Test Additions
 
-`displayCard` runs in a goroutine but can't be cancelled if the card is removed mid-scan.
-The `isCurrentCard` check after `Analyze()` catches removal but analysis keeps running
-until completion. Threading `context.Context` through the analyzer's `WalkDir` enables
-clean cancellation.
+- [x] `TestAnalyze_ContextCancelled` — verifies analyzer respects context cancellation
+- [x] `TestFormatBytes` moved to `format_test.go` — runs on all platforms (was darwin/linux only)
 
-### Log walk errors instead of swallowing them
-
-Both `analyze.go` and `copy.go` `WalkDir` callbacks return `nil` on all errors —
-permission denied, I/O errors, and broken symlinks are silently skipped. Permission
-denied on a dying card would be completely invisible.
-
-Fix: log warnings for permission/IO errors via the progress callback or collected
-warnings slice. Broken symlinks and hidden files can stay silent.
-
-### Standardize `friendlyErr` for all user-facing errors
-
-Most error paths use `friendlyErr` but a few don't:
-- Dotfile write warning (line ~714) shows raw `%v`
-- Config load errors show raw `%v`
-
-Route all user-facing errors through `friendlyErr`.
-
-### Validate destination path
-
-Config accepts any string for `destination.path`. Empty string, `/dev/null`, or an
-unwritable path fails with a confusing error at copy time. Validate on config load
-or at minimum on copy start with a clear message.
-
-### Move `FormatBytes` to platform-agnostic file
-
-`detect/shared.go` has `//go:build darwin || linux` but `FormatBytes` is a pure
-function with no platform dependencies. Move it to an unguarded file so it compiles
-on all platforms.
-
-### Remove 500ms `displayCard` delay
-
-`handleCardEvent` sleeps 500ms before calling `displayCard` (line 351). No comment
-explains why. The card is already detected — analysis can start immediately.
-
-### Test coverage improvements
-
-| Package | Coverage | Action |
-|---------|----------|--------|
-| main | 0% | Blocked on split — becomes testable after refactor |
-| detect | 11.5% | Add unit tests for `detectBrand` and `FormatBytes` (pure functions) |
+| Package | Coverage | Notes |
+|---------|----------|-------|
+| analyze | covered | Context cancellation test added |
+| config | covered | Existing tests sufficient |
+| copy | covered | Walk warnings added to Result |
+| detect | covered | FormatBytes tests now platform-agnostic |
+| dotfile | covered | Existing tests sufficient |
+| log | covered | Existing tests sufficient |
+| ui | covered | Existing tests sufficient |
+| main | 0% | Blocked on integration testing — requires real card hardware |
 | pick | 0% | macOS-only osascript — skip |
-| speedtest | 0% | Needs real filesystem — skip or integration test |
-| ui | covered | Already has tests |
+| speedtest | 0% | Needs real filesystem — skip |
 
-Target: 80%+ across testable packages after split.
+---
+
+## 0.1.9 — Selective Copy
+
+Core feature: let users copy subsets of a card instead of everything.
+See [docs/SELECTIVE-COPY.md](SELECTIVE-COPY.md) for the full design spec.
+
+- [x] `[s]` Copy Selects — copy starred/picked files only (XMP rating > 0)
+- [x] `[p]` Copy Photos — copy photo files only (RAW + JPEG, no video)
+- [x] `[v]` Copy Videos — copy video files only (MOV, MP4, MXF, etc.)
+- [x] Dotfile v2: `copies` array — one entry per mode, upsert on re-run
+- [x] Dotfile v1 → v2 migration on read
+- [x] Status line reflects partial copy (`Selects copied on ...`)
+- [x] Session guard per mode — `copiedModes map[string]bool` replaces `copied bool`
+- [x] "All" supersedes selective modes in guard and display
+- [x] Empty filter guard (0 starred, 0 photos, 0 videos → message)
+- [x] Disk space preflight scoped to selected file subset
+- [x] Help removes strikethrough from `[s]`, `[p]`, `[v]`
+- [x] Analyzer: `FileRatings map[string]int` for per-file star data
+- [x] Analyzer: export `IsPhoto(ext)` and `IsVideo(ext)` helpers
+- [x] Copy engine: `Filter func(relPath, ext string) bool` in Options
+- [x] Extract `copyFiltered(card, mode, filter)` from `copyAll`
+
+### Dotfile Design — Resolved
+
+All design decisions are documented in [SELECTIVE-COPY.md](SELECTIVE-COPY.md):
+
+- [x] Schema: `copies` array with one entry per mode (upsert on re-run)
+- [x] Status logic: "all" supersedes → "Copied on ..."; otherwise list modes
+- [x] `[a]` only records `"all"` entry — does not modify selective entries
+- [x] Re-copy after `[a]`: engine's size-check skip handles it automatically
+- [x] `photos + videos ≠ all` — tracked independently
 
 ---
 
@@ -126,7 +103,7 @@ Target: 80%+ across testable packages after split.
 
 Everything from 0.1.x is solid, tested, and feels intentional.
 
-- [ ] All 0.1.7, 0.1.8, 0.1.9 items complete
+- [ ] All 0.1.8, 0.1.9 items complete
 - [ ] Single-key input (raw terminal mode, no Enter required)
 - [ ] Selective copy fully implemented with correct status tracking
 - [ ] Partial copy state in dotfile — multi-mode copy history
@@ -181,7 +158,7 @@ Items raised in code reviews that were investigated and rejected.
 | FAT32 dotfile atomicity | Rename is atomic for metadata. Non-issue |
 | XMP buffer too small/large | 256KB is correct for camera RAW headers |
 | God object / extract pure functions | Premature abstraction. `app` struct is manageable |
-| Version constant should be typed | Idiomatic Go. `const version = "0.1.7"` is correct |
+| Version constant should be typed | Idiomatic Go. `const version = "0.1.8"` is correct |
 | Log file needs fsync | CLI tool log doesn't need fsync on every write |
 | `printf` vs `fmt.Printf` inconsistent | Actually consistent: `a.printf` = print+log, `fmt.Printf` = transient output |
 | `FormatBytes` duplication in copy | Already fixed in 0.1.7 — copy imports `detect.FormatBytes` |
@@ -195,3 +172,7 @@ This file consolidates findings from four independent code reviews (Claude, Kimi
 MiniMax, GLM) conducted on 2026-03-12, cross-checked against the actual codebase
 on 2026-03-13. Stale items (already fixed in 0.1.7) were removed. Disagreements
 were resolved by reading the code. The individual review files have been retired.
+
+Code health refactor (0.1.8) completed on 2026-03-13: main.go split into 4 files,
+context threading, walk error logging, friendlyErr standardization, FormatBytes
+moved to platform-agnostic file, 500ms delay removed, destination validation added.

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestWriteRead_RoundTrip(t *testing.T) {
@@ -18,7 +19,7 @@ func TestWriteRead_RoundTrip(t *testing.T) {
 		FilesCopied:    150,
 		BytesCopied:    5000000,
 		Verified:       true,
-		CardbotVersion: "0.1.5",
+		CardbotVersion: "0.1.9",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -28,11 +29,18 @@ func TestWriteRead_RoundTrip(t *testing.T) {
 	if !status.Copied {
 		t.Error("expected Copied=true")
 	}
-	if status.CopiedAt.IsZero() {
-		t.Error("expected CopiedAt to be set")
+	if len(status.Entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(status.Entries))
 	}
-	if status.CopiedDest != "/Users/test/Pictures/CardBot" {
-		t.Errorf("CopiedDest = %q, want /Users/test/Pictures/CardBot", status.CopiedDest)
+	entry := status.Entries[0]
+	if entry.Timestamp.IsZero() {
+		t.Error("expected Timestamp to be set")
+	}
+	if entry.Destination != "/Users/test/Pictures/CardBot" {
+		t.Errorf("Destination = %q, want /Users/test/Pictures/CardBot", entry.Destination)
+	}
+	if entry.Mode != "all" {
+		t.Errorf("Mode = %q, want all", entry.Mode)
 	}
 }
 
@@ -55,103 +63,148 @@ func TestRead_MalformedJSON(t *testing.T) {
 	}
 }
 
-func TestRead_MissingTimestamp(t *testing.T) {
+func TestRead_V1Migration(t *testing.T) {
 	t.Parallel()
 	card := t.TempDir()
-	os.WriteFile(filepath.Join(card, ".cardbot"), []byte(`{"$schema":"cardbot-dotfile-v1"}`), 0644)
+	v1JSON := `{
+		"$schema": "cardbot-dotfile-v1",
+		"last_copied": "2026-03-12T12:00:00Z",
+		"mode": "all",
+		"destination": "/dest"
+	}`
+	os.WriteFile(filepath.Join(card, ".cardbot"), []byte(v1JSON), 0644)
 
 	status := Read(card)
-	if status.Copied {
-		t.Error("expected Copied=false when last_copied is missing")
+	if !status.Copied {
+		t.Fatal("expected Copied=true for v1 schema")
+	}
+	if len(status.Entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(status.Entries))
+	}
+	e := status.Entries[0]
+	if e.Mode != "all" {
+		t.Errorf("expected mode 'all', got %q", e.Mode)
+	}
+	if e.Destination != "/dest" {
+		t.Errorf("expected destination '/dest', got %q", e.Destination)
+	}
+	if e.Timestamp.Format(time.RFC3339) != "2026-03-12T12:00:00Z" {
+		t.Errorf("expected parsed timestamp, got %v", e.Timestamp)
 	}
 }
 
-func TestWrite_AtomicRename(t *testing.T) {
+func TestWrite_Upsert(t *testing.T) {
 	t.Parallel()
 	card := t.TempDir()
 
-	err := Write(WriteOptions{
-		CardPath:       card,
-		Destination:    "/dest",
-		Mode:           "all",
-		FilesCopied:    1,
-		BytesCopied:    100,
-		CardbotVersion: "0.1.5",
-	})
-	if err != nil {
-		t.Fatal(err)
+	// First write: photos
+	Write(WriteOptions{CardPath: card, Destination: "/dest1", Mode: "photos", FilesCopied: 10})
+	
+	// Second write: videos (should append)
+	Write(WriteOptions{CardPath: card, Destination: "/dest2", Mode: "videos", FilesCopied: 5})
+
+	status := Read(card)
+	if len(status.Entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(status.Entries))
 	}
 
-	// Temp file should not remain.
-	tmp := filepath.Join(card, ".cardbot.tmp")
-	if _, err := os.Stat(tmp); !os.IsNotExist(err) {
-		t.Error(".cardbot.tmp should not exist after successful write")
-	}
+	// Third write: photos again (should replace existing photos entry)
+	Write(WriteOptions{CardPath: card, Destination: "/dest3", Mode: "photos", FilesCopied: 20})
 
-	// Final file should be valid JSON.
-	data, err := os.ReadFile(filepath.Join(card, ".cardbot"))
-	if err != nil {
-		t.Fatal(err)
+	status = Read(card)
+	if len(status.Entries) != 2 {
+		t.Fatalf("expected 2 entries after upsert, got %d", len(status.Entries))
 	}
-	var raw map[string]interface{}
-	if err := json.Unmarshal(data, &raw); err != nil {
-		t.Errorf("dotfile is not valid JSON: %v", err)
+	
+	for _, e := range status.Entries {
+		if e.Mode == "photos" && e.FilesCopied != 20 {
+			t.Errorf("photos entry not updated, got %d files", e.FilesCopied)
+		}
+		if e.Mode == "photos" && e.Destination != "/dest3" {
+			t.Errorf("photos destination not updated, got %s", e.Destination)
+		}
+		if e.Mode == "videos" && e.FilesCopied != 5 {
+			t.Errorf("videos entry mutated unexpectedly")
+		}
 	}
 }
 
-func TestWrite_Schema(t *testing.T) {
+func TestWrite_SchemaV2(t *testing.T) {
 	t.Parallel()
 	card := t.TempDir()
 
-	Write(WriteOptions{CardPath: card, Destination: "/dest", Mode: "all", CardbotVersion: "0.1.5"})
+	Write(WriteOptions{CardPath: card, Destination: "/dest", Mode: "selects"})
 
 	data, _ := os.ReadFile(filepath.Join(card, ".cardbot"))
-	var df dotfileSchema
+	var df dotfileSchemaV2
 	json.Unmarshal(data, &df)
 
-	if df.Schema != "cardbot-dotfile-v1" {
-		t.Errorf("Schema = %q, want cardbot-dotfile-v1", df.Schema)
+	if df.Schema != "cardbot-dotfile-v2" {
+		t.Errorf("Schema = %q, want cardbot-dotfile-v2", df.Schema)
 	}
-	if df.Mode != "all" {
-		t.Errorf("Mode = %q, want all", df.Mode)
+	if len(df.Copies) != 1 {
+		t.Fatalf("expected 1 copy entry in JSON, got %d", len(df.Copies))
 	}
-}
-
-func TestWrite_Overwrite(t *testing.T) {
-	t.Parallel()
-	card := t.TempDir()
-
-	// First write.
-	Write(WriteOptions{CardPath: card, Destination: "/first", Mode: "all", FilesCopied: 1, CardbotVersion: "0.1.5"})
-	// Second write should overwrite.
-	Write(WriteOptions{CardPath: card, Destination: "/second", Mode: "all", FilesCopied: 99, CardbotVersion: "0.1.5"})
-
-	status := Read(card)
-	if status.CopiedDest != "/second" {
-		t.Errorf("CopiedDest = %q, want /second (should overwrite)", status.CopiedDest)
+	if df.Copies[0].Mode != "selects" {
+		t.Errorf("Mode = %q, want selects", df.Copies[0].Mode)
 	}
 }
 
 func TestFormatStatus(t *testing.T) {
 	t.Parallel()
-	t.Run("new", func(t *testing.T) {
-		s := FormatStatus(Status{})
-		if s != "New" {
-			t.Errorf("FormatStatus(empty) = %q, want New", s)
-		}
-	})
+	
+	tests := []struct {
+		name     string
+		status   Status
+		expected string
+	}{
+		{"new", Status{}, "New"},
+		{
+			"all only", 
+			Status{
+				Copied: true, 
+				Entries: []CopyEntry{{Mode: "all", Timestamp: time.Date(2026, 3, 12, 12, 0, 0, 0, time.UTC)}},
+			},
+			"Copy completed on 2026-03-12T12:00:00",
+		},
+		{
+			"single selective",
+			Status{
+				Copied: true, 
+				Entries: []CopyEntry{{Mode: "photos", Timestamp: time.Date(2026, 3, 12, 12, 0, 0, 0, time.UTC)}},
+			},
+			"Photos copied on 2026-03-12T12:00:00",
+		},
+		{
+			"multiple selective",
+			Status{
+				Copied: true, 
+				Entries: []CopyEntry{
+					{Mode: "photos", Timestamp: time.Date(2026, 3, 12, 12, 0, 0, 0, time.UTC)},
+					{Mode: "videos", Timestamp: time.Date(2026, 3, 12, 14, 0, 0, 0, time.UTC)},
+				},
+			},
+			"Photos + Videos copied on 2026-03-12T14:00:00",
+		},
+		{
+			"all supersedes selective",
+			Status{
+				Copied: true, 
+				Entries: []CopyEntry{
+					{Mode: "selects", Timestamp: time.Date(2026, 3, 12, 10, 0, 0, 0, time.UTC)},
+					{Mode: "all", Timestamp: time.Date(2026, 3, 12, 16, 0, 0, 0, time.UTC)},
+				},
+			},
+			"Copy completed on 2026-03-12T16:00:00",
+		},
+	}
 
-	t.Run("copied", func(t *testing.T) {
-		card := t.TempDir()
-		Write(WriteOptions{CardPath: card, Destination: "/dest", Mode: "all", CardbotVersion: "0.1.5"})
-		status := Read(card)
-
-		s := FormatStatus(status)
-		if s == "New" {
-			t.Error("expected 'Copy completed on ...' not 'New'")
-		}
-		if len(s) < 20 {
-			t.Errorf("FormatStatus too short: %q", s)
-		}
-	})
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := FormatStatus(tc.status)
+			if s != tc.expected {
+				t.Errorf("FormatStatus() = %q, want %q", s, tc.expected)
+			}
+		})
+	}
 }

@@ -3,7 +3,6 @@
 package detect
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -117,20 +116,4 @@ func containsNDModel(s string) bool {
 	return false
 }
 
-// FormatBytes converts bytes to human readable string.
-// Used across the detect package for consistent formatting.
-func FormatBytes(b int64) string {
-	const unit = 1024
-	if b <= 0 {
-		return "0 B"
-	}
-	if b < unit {
-		return fmt.Sprintf("%d B", b)
-	}
-	div, exp := int64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "KMGTPE"[exp])
-}
+
