@@ -24,7 +24,9 @@ func createTestCard(t *testing.T, files map[string]testFileSpec) string {
 			t.Fatal(err)
 		}
 		if !spec.mtime.IsZero() {
-			os.Chtimes(path, spec.mtime, spec.mtime)
+			if err := os.Chtimes(path, spec.mtime, spec.mtime); err != nil {
+				t.Fatal(err)
+			}
 		}
 	}
 	return root
@@ -109,7 +111,9 @@ func TestCopy_SkipsHiddenDirs(t *testing.T) {
 func TestCopy_EmptyCard(t *testing.T) {
 	t.Parallel()
 	root := t.TempDir()
-	os.MkdirAll(filepath.Join(root, "DCIM"), 0755)
+	if err := os.MkdirAll(filepath.Join(root, "DCIM"), 0755); err != nil {
+		t.Fatal(err)
+	}
 	dest := t.TempDir()
 
 	result, err := Run(context.Background(), Options{CardPath: root, DestBase: dest}, nil)
@@ -150,7 +154,10 @@ func TestCopy_DryRun(t *testing.T) {
 	}
 
 	// No dated folders should exist.
-	entries, _ := os.ReadDir(dest)
+	entries, err := os.ReadDir(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(entries) != 0 {
 		t.Errorf("dry-run should not create files, found %d entries", len(entries))
 	}
@@ -389,7 +396,9 @@ func TestCopy_SkipsExistingWithCorrectSize(t *testing.T) {
 	for i := range tampered {
 		tampered[i] = 'X'
 	}
-	os.WriteFile(destFile, tampered, 0644)
+	if err := os.WriteFile(destFile, tampered, 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Second copy — file should be skipped because size matches.
 	result2, err := Run(context.Background(), Options{CardPath: card, DestBase: dest}, nil)
@@ -401,7 +410,10 @@ func TestCopy_SkipsExistingWithCorrectSize(t *testing.T) {
 	}
 
 	// File should still have tampered content (was not overwritten).
-	got, _ := os.ReadFile(destFile)
+	got, err := os.ReadFile(destFile)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if string(got) != string(tampered) {
 		t.Error("file should have been skipped (not re-copied) since size matched")
 	}
@@ -523,7 +535,9 @@ func TestCopy_SourceMissing(t *testing.T) {
 		"100NIKON/DSC_0002.NEF": {data: make([]byte, 2000), mtime: date(2026, 3, 8)},
 	})
 	// Remove the second file after card is built — simulates card read error.
-	os.Remove(filepath.Join(card, "DCIM", "100NIKON", "DSC_0002.NEF"))
+	if err := os.Remove(filepath.Join(card, "DCIM", "100NIKON", "DSC_0002.NEF")); err != nil {
+		t.Fatal(err)
+	}
 
 	dest := t.TempDir()
 	result, err := Run(context.Background(), Options{CardPath: card, DestBase: dest}, nil)
@@ -546,13 +560,16 @@ func TestCopy_DestNotWritable(t *testing.T) {
 	})
 	// Create a read-only destination.
 	dest := filepath.Join(t.TempDir(), "readonly")
-	os.MkdirAll(dest, 0755)
-	os.Chmod(dest, 0444)
-	defer os.Chmod(dest, 0755) // cleanup
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dest, 0444); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chmod(dest, 0755) }() // cleanup
 
 	_, err := Run(context.Background(), Options{CardPath: card, DestBase: filepath.Join(dest, "sub")}, nil)
 	if err == nil {
 		t.Error("expected error for non-writable destination")
 	}
 }
-

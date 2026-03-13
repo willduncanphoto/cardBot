@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -55,7 +56,9 @@ func TestRead_MissingFile(t *testing.T) {
 func TestRead_MalformedJSON(t *testing.T) {
 	t.Parallel()
 	card := t.TempDir()
-	os.WriteFile(filepath.Join(card, ".cardbot"), []byte("{bad json"), 0644)
+	if err := os.WriteFile(filepath.Join(card, ".cardbot"), []byte("{bad json"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	status := Read(card)
 	if status.Copied {
@@ -72,7 +75,9 @@ func TestRead_V1Migration(t *testing.T) {
 		"mode": "all",
 		"destination": "/dest"
 	}`
-	os.WriteFile(filepath.Join(card, ".cardbot"), []byte(v1JSON), 0644)
+	if err := os.WriteFile(filepath.Join(card, ".cardbot"), []byte(v1JSON), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	status := Read(card)
 	if !status.Copied {
@@ -98,10 +103,14 @@ func TestWrite_Upsert(t *testing.T) {
 	card := t.TempDir()
 
 	// First write: photos
-	Write(WriteOptions{CardPath: card, Destination: "/dest1", Mode: "photos", FilesCopied: 10})
-	
+	if err := Write(WriteOptions{CardPath: card, Destination: "/dest1", Mode: "photos", FilesCopied: 10}); err != nil {
+		t.Fatal(err)
+	}
+
 	// Second write: videos (should append)
-	Write(WriteOptions{CardPath: card, Destination: "/dest2", Mode: "videos", FilesCopied: 5})
+	if err := Write(WriteOptions{CardPath: card, Destination: "/dest2", Mode: "videos", FilesCopied: 5}); err != nil {
+		t.Fatal(err)
+	}
 
 	status := Read(card)
 	if len(status.Entries) != 2 {
@@ -109,13 +118,15 @@ func TestWrite_Upsert(t *testing.T) {
 	}
 
 	// Third write: photos again (should replace existing photos entry)
-	Write(WriteOptions{CardPath: card, Destination: "/dest3", Mode: "photos", FilesCopied: 20})
+	if err := Write(WriteOptions{CardPath: card, Destination: "/dest3", Mode: "photos", FilesCopied: 20}); err != nil {
+		t.Fatal(err)
+	}
 
 	status = Read(card)
 	if len(status.Entries) != 2 {
 		t.Fatalf("expected 2 entries after upsert, got %d", len(status.Entries))
 	}
-	
+
 	for _, e := range status.Entries {
 		if e.Mode == "photos" && e.FilesCopied != 20 {
 			t.Errorf("photos entry not updated, got %d files", e.FilesCopied)
@@ -133,11 +144,19 @@ func TestWrite_SchemaV2(t *testing.T) {
 	t.Parallel()
 	card := t.TempDir()
 
-	Write(WriteOptions{CardPath: card, Destination: "/dest", Mode: "selects"})
+	if err := Write(WriteOptions{CardPath: card, Destination: "/dest", Mode: "selects"}); err != nil {
+		t.Fatal(err)
+	}
 
-	data, _ := os.ReadFile(filepath.Join(card, ".cardbot"))
+	data, err := os.ReadFile(filepath.Join(card, ".cardbot"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var df dotfileSchemaV2
-	json.Unmarshal(data, &df)
+	if err := json.Unmarshal(data, &df); err != nil {
+		t.Fatal(err)
+	}
 
 	if df.Schema != "cardbot-dotfile-v2" {
 		t.Errorf("Schema = %q, want cardbot-dotfile-v2", df.Schema)
@@ -150,9 +169,81 @@ func TestWrite_SchemaV2(t *testing.T) {
 	}
 }
 
+func TestWrite_UnknownSchemaDoesNotOverwrite(t *testing.T) {
+	t.Parallel()
+	card := t.TempDir()
+	path := filepath.Join(card, ".cardbot")
+	original := []byte(`{"$schema":"cardbot-dotfile-v99","copies":[]}`)
+	if err := os.WriteFile(path, original, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := Write(WriteOptions{CardPath: card, Destination: "/dest", Mode: "all"})
+	if err == nil {
+		t.Fatal("expected write to fail for unknown schema")
+	}
+	if !strings.Contains(err.Error(), "refusing to overwrite") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(original) {
+		t.Fatal("dotfile was modified despite unknown schema")
+	}
+}
+
+func TestWrite_MalformedExistingDotfileIsReplaced(t *testing.T) {
+	t.Parallel()
+	card := t.TempDir()
+	path := filepath.Join(card, ".cardbot")
+	if err := os.WriteFile(path, []byte("{bad json"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Write(WriteOptions{CardPath: card, Destination: "/dest", Mode: "photos"}); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var df dotfileSchemaV2
+	if err := json.Unmarshal(data, &df); err != nil {
+		t.Fatalf("expected malformed file to be replaced with valid v2 JSON: %v", err)
+	}
+	if df.Schema != "cardbot-dotfile-v2" {
+		t.Fatalf("Schema = %q, want cardbot-dotfile-v2", df.Schema)
+	}
+}
+
+func TestFormatModeLabel(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		mode string
+		want string
+	}{
+		{"photos", "Photos"},
+		{"videos", "Videos"},
+		{"étoiles", "Étoiles"},
+		{"", ""},
+	}
+
+	for _, tt := range tests {
+		if got := formatModeLabel(tt.mode); got != tt.want {
+			t.Errorf("formatModeLabel(%q) = %q, want %q", tt.mode, got, tt.want)
+		}
+	}
+}
+
 func TestFormatStatus(t *testing.T) {
 	t.Parallel()
-	
+
 	tests := []struct {
 		name     string
 		status   Status
@@ -160,9 +251,9 @@ func TestFormatStatus(t *testing.T) {
 	}{
 		{"new", Status{}, "New"},
 		{
-			"all only", 
+			"all only",
 			Status{
-				Copied: true, 
+				Copied:  true,
 				Entries: []CopyEntry{{Mode: "all", Timestamp: time.Date(2026, 3, 12, 12, 0, 0, 0, time.UTC)}},
 			},
 			"Copy completed on 2026-03-12T12:00:00",
@@ -170,7 +261,7 @@ func TestFormatStatus(t *testing.T) {
 		{
 			"single selective",
 			Status{
-				Copied: true, 
+				Copied:  true,
 				Entries: []CopyEntry{{Mode: "photos", Timestamp: time.Date(2026, 3, 12, 12, 0, 0, 0, time.UTC)}},
 			},
 			"Photos copied on 2026-03-12T12:00:00",
@@ -178,7 +269,7 @@ func TestFormatStatus(t *testing.T) {
 		{
 			"multiple selective",
 			Status{
-				Copied: true, 
+				Copied: true,
 				Entries: []CopyEntry{
 					{Mode: "photos", Timestamp: time.Date(2026, 3, 12, 12, 0, 0, 0, time.UTC)},
 					{Mode: "videos", Timestamp: time.Date(2026, 3, 12, 14, 0, 0, 0, time.UTC)},
@@ -187,9 +278,17 @@ func TestFormatStatus(t *testing.T) {
 			"Photos + Videos copied on 2026-03-12T14:00:00",
 		},
 		{
+			"empty mode ignored",
+			Status{
+				Copied:  true,
+				Entries: []CopyEntry{{Mode: "", Timestamp: time.Date(2026, 3, 12, 15, 0, 0, 0, time.UTC)}},
+			},
+			"Copy completed on 2026-03-12T15:00:00",
+		},
+		{
 			"all supersedes selective",
 			Status{
-				Copied: true, 
+				Copied: true,
 				Entries: []CopyEntry{
 					{Mode: "selects", Timestamp: time.Date(2026, 3, 12, 10, 0, 0, 0, time.UTC)},
 					{Mode: "all", Timestamp: time.Date(2026, 3, 12, 16, 0, 0, 0, time.UTC)},

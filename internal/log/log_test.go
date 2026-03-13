@@ -46,7 +46,10 @@ func TestPrintf_WritesTimestampedLine(t *testing.T) {
 	logger.Printf("hello %s", "world")
 	logger.Close()
 
-	data, _ := os.ReadFile(path)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 	line := string(data)
 	if !strings.Contains(line, "hello world") {
 		t.Errorf("log line missing message: %q", line)
@@ -67,7 +70,10 @@ func TestRaw_NoTimestamp(t *testing.T) {
 	logger.Raw("raw message here")
 	logger.Close()
 
-	data, _ := os.ReadFile(path)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 	line := strings.TrimSpace(string(data))
 	if line != "raw message here" {
 		t.Errorf("Raw() = %q, want exact 'raw message here'", line)
@@ -113,19 +119,31 @@ func TestWrittenTracksSizeAcrossRestart(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "test.log")
 
 	// First session: write some data.
-	logger1, _ := Open(path)
+	logger1, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 	logger1.Printf("first session")
 	logger1.Close()
 
-	info, _ := os.Stat(path)
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 	size1 := info.Size()
 
 	// Second session: Open should seed `written` from existing file size.
-	logger2, _ := Open(path)
+	logger2, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 	logger2.Printf("second session")
 	logger2.Close()
 
-	info, _ = os.Stat(path)
+	info, err = os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if info.Size() <= size1 {
 		t.Error("second session should have appended to the file")
 	}

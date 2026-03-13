@@ -3,13 +3,18 @@ package dotfile
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 )
 
-const fileName = ".cardbot"
+const (
+	fileName = ".cardbot"
+	schemaV1 = "cardbot-dotfile-v1"
+	schemaV2 = "cardbot-dotfile-v2"
+)
 
 // CopyEntry tracks a single copy mode operation.
 type CopyEntry struct {
@@ -25,8 +30,8 @@ type CopyEntry struct {
 
 // Status represents the parsed copy state of a card.
 type Status struct {
-	Copied   bool
-	Entries  []CopyEntry
+	Copied  bool
+	Entries []CopyEntry
 }
 
 // dotfileSchemaV1 is the legacy v1 single-entry JSON structure.
@@ -66,7 +71,7 @@ func Read(cardPath string) Status {
 
 	status := Status{}
 
-	if probe.Schema == "cardbot-dotfile-v1" {
+	if probe.Schema == schemaV1 {
 		var v1 dotfileSchemaV1
 		if err := json.Unmarshal(data, &v1); err != nil {
 			return Status{}
@@ -89,7 +94,7 @@ func Read(cardPath string) Status {
 		return status
 	}
 
-	if probe.Schema == "cardbot-dotfile-v2" {
+	if probe.Schema == schemaV2 {
 		var v2 dotfileSchemaV2
 		if err := json.Unmarshal(data, &v2); err != nil {
 			return Status{}
@@ -110,6 +115,27 @@ func Read(cardPath string) Status {
 	return Status{}
 }
 
+// readExistingSchema returns the schema string for an existing .cardbot file.
+// Missing or malformed files are treated as empty schema.
+func readExistingSchema(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", err
+	}
+
+	var probe struct {
+		Schema string `json:"$schema"`
+	}
+	if err := json.Unmarshal(data, &probe); err != nil {
+		// Malformed JSON is treated as "new" status and may be replaced.
+		return "", nil
+	}
+	return probe.Schema, nil
+}
+
 // WriteOptions configures what gets written to the dotfile.
 type WriteOptions struct {
 	CardPath       string
@@ -125,6 +151,15 @@ type WriteOptions struct {
 // Uses atomic write (temp file + rename) to avoid corruption.
 // Preserves existing v2 entries for other modes.
 func Write(opts WriteOptions) error {
+	target := filepath.Join(opts.CardPath, fileName)
+	schema, err := readExistingSchema(target)
+	if err != nil {
+		return err
+	}
+	if schema != "" && schema != schemaV1 && schema != schemaV2 {
+		return fmt.Errorf("unknown .cardbot schema %q: refusing to overwrite", schema)
+	}
+
 	status := Read(opts.CardPath)
 
 	now := time.Now()
@@ -154,7 +189,7 @@ func Write(opts WriteOptions) error {
 	}
 
 	df := dotfileSchemaV2{
-		Schema: "cardbot-dotfile-v2",
+		Schema: schemaV2,
 		Copies: copies,
 	}
 
@@ -164,7 +199,6 @@ func Write(opts WriteOptions) error {
 	}
 	data = append(data, '\n')
 
-	target := filepath.Join(opts.CardPath, fileName)
 	tmp := target + ".tmp"
 
 	if err := os.WriteFile(tmp, data, 0644); err != nil {
@@ -191,10 +225,9 @@ func FormatStatus(s Status) string {
 		}
 		if e.Mode == "all" {
 			hasAll = true
+			continue
 		}
-		if e.Mode != "all" {
-			// Title case mode names ("photos" -> "Photos")
-			titleMode := strings.ToUpper(e.Mode[:1]) + e.Mode[1:]
+		if titleMode := formatModeLabel(e.Mode); titleMode != "" {
 			modes = append(modes, titleMode)
 		}
 	}
@@ -208,6 +241,21 @@ func FormatStatus(s Status) string {
 	if len(modes) == 1 {
 		return modes[0] + " copied on " + ts
 	}
+	if len(modes) == 0 {
+		return "Copy completed on " + ts
+	}
 
 	return strings.Join(modes, " + ") + " copied on " + ts
+}
+
+// formatModeLabel normalizes a copy mode key for user-facing display.
+func formatModeLabel(mode string) string {
+	if mode == "" {
+		return ""
+	}
+	r := []rune(mode)
+	if len(r) == 0 {
+		return ""
+	}
+	return strings.ToUpper(string(r[0])) + string(r[1:])
 }

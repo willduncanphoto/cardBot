@@ -268,7 +268,7 @@ cardbot/
 
 - Binary: ~3.2 MB (stripped)
 - Source: ~4,200 lines of Go across 33 files
-- Tests: ~1,800 lines, 105 tests across 8 packages
+- Tests: ~1,800 lines, 100+ tests across 8 packages
 
 ## License
 

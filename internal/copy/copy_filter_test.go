@@ -17,9 +17,15 @@ func TestCopy_Filter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	os.WriteFile(filepath.Join(dcim, "TEST1.JPG"), []byte("jpg"), 0644)
-	os.WriteFile(filepath.Join(dcim, "TEST2.MOV"), []byte("mov"), 0644)
-	os.WriteFile(filepath.Join(dcim, "TEST3.NEF"), []byte("nef"), 0644)
+	if err := os.WriteFile(filepath.Join(dcim, "TEST1.JPG"), []byte("jpg"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dcim, "TEST2.MOV"), []byte("mov"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dcim, "TEST3.NEF"), []byte("nef"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	res, err := Run(context.Background(), Options{
 		CardPath: card,
@@ -38,12 +44,17 @@ func TestCopy_Filter(t *testing.T) {
 
 	// Verify filtered file was NOT copied anywhere under dest.
 	found := false
-	filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+	if err := filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 		if d != nil && d.Name() == "TEST2.MOV" {
 			found = true
 		}
 		return nil
-	})
+	}); err != nil {
+		t.Fatal(err)
+	}
 	if found {
 		t.Error("Expected TEST2.MOV to be filtered out, but it was copied")
 	}
@@ -51,12 +62,17 @@ func TestCopy_Filter(t *testing.T) {
 	// Verify accepted files WERE copied somewhere under dest.
 	for _, name := range []string{"TEST1.JPG", "TEST3.NEF"} {
 		exists := false
-		filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+		if err := filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
 			if d != nil && d.Name() == name {
 				exists = true
 			}
 			return nil
-		})
+		}); err != nil {
+			t.Fatal(err)
+		}
 		if !exists {
 			t.Errorf("Expected %s to be copied, but it was not found under dest", name)
 		}

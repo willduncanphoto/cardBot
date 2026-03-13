@@ -115,5 +115,3 @@ func containsNDModel(s string) bool {
 	}
 	return false
 }
-
-

@@ -29,21 +29,21 @@ func ts() string {
 type app struct {
 	detector    *detect.Detector
 	currentCard *detect.Card
-	lastResult  *analyze.Result     // analysis result for currentCard
+	lastResult  *analyze.Result // analysis result for currentCard
 	cardQueue   []*detect.Card
 	mu          sync.Mutex
-	printMu     sync.Mutex          // serialises concurrent stdout writes during copy
+	printMu     sync.Mutex // serialises concurrent stdout writes during copy
 	cfg         *config.Config
 	logger      *cblog.Logger
-	inputChan   chan string          // buffered input from stdin
-	sigChan     chan os.Signal       // SIGINT/SIGTERM
-	inputDone   chan struct{}        // closed on shutdown to stop readInput
+	inputChan   chan string    // buffered input from stdin
+	sigChan     chan os.Signal // SIGINT/SIGTERM
+	inputDone   chan struct{}  // closed on shutdown to stop readInput
 	dryRun      bool
-	copiedModes map[string]bool     // modes completed this session
-	cardInvalid bool                // true when current card has no DCIM directory
-	spinStop    chan struct{}        // signals spinner goroutine to stop
-	spinDone    chan struct{}        // closed when spinner goroutine exits
-	scanCancel  context.CancelFunc  // cancels the current displayCard goroutine
+	copiedModes map[string]bool    // modes completed this session
+	cardInvalid bool               // true when current card has no DCIM directory
+	spinStop    chan struct{}      // signals spinner goroutine to stop
+	spinDone    chan struct{}      // closed when spinner goroutine exits
+	scanCancel  context.CancelFunc // cancels the current displayCard goroutine
 }
 
 // drainInput discards any buffered input keystrokes.
@@ -262,6 +262,19 @@ func (a *app) finishCard() {
 	a.startSpinner()
 }
 
+// resumeScanningIfIdle prints the scanning line and starts the spinner only if
+// no current card is active and no queued cards are waiting.
+func (a *app) resumeScanningIfIdle() {
+	a.mu.Lock()
+	shouldStart := shouldResumeScanning(a.currentCard == nil, len(a.cardQueue))
+	a.mu.Unlock()
+	if !shouldStart {
+		return
+	}
+	fmt.Printf("\n[%s] Scanning  ", ts())
+	a.startSpinner()
+}
+
 func (a *app) handleRemoval(path string) {
 	a.mu.Lock()
 	wasCurrent := a.currentCard != nil && a.currentCard.Path == path
@@ -295,8 +308,7 @@ func (a *app) handleRemoval(path string) {
 		} else {
 			go func() {
 				time.Sleep(removalDelay)
-				fmt.Printf("\n[%s] Scanning  ", ts())
-				a.startSpinner()
+				a.resumeScanningIfIdle()
 			}()
 		}
 		return
@@ -316,53 +328,56 @@ func (a *app) handleRemoval(path string) {
 }
 
 func (a *app) handleInput(input string) {
-	cmd := strings.ToLower(input)
+	a.mu.Lock()
+	card := a.currentCard
+	hasCard := card != nil
+	a.mu.Unlock()
 
-	// Help works regardless of card state.
-	if cmd == "?" {
+	action := parseInputAction(input, hasCard)
+
+	switch action {
+	case actionNone:
+		return
+	case actionHelp:
 		a.showHelp()
-		a.mu.Lock()
-		hasCard := a.currentCard != nil
-		a.mu.Unlock()
 		if hasCard {
 			a.printPrompt()
 		}
 		return
-	}
-
-	a.mu.Lock()
-	card := a.currentCard
-	a.mu.Unlock()
-
-	if card == nil {
-		if input != "" {
-			fmt.Printf("\nNo card inserted. Waiting for a memory card...\n")
-		}
+	case actionNoCardMessage:
+		fmt.Printf("\nNo card inserted. Waiting for a memory card...\n")
 		return
 	}
 
-	switch cmd {
-	case "a":
+	// Re-read current card to avoid acting on a stale pointer if card state changed.
+	a.mu.Lock()
+	card = a.currentCard
+	a.mu.Unlock()
+	if card == nil {
+		fmt.Printf("\nNo card inserted. Waiting for a memory card...\n")
+		return
+	}
+
+	switch action {
+	case actionCopyAll:
 		a.handleCopyCmd(card, "all")
-	case "s":
+	case actionCopySelects:
 		a.handleCopyCmd(card, "selects")
-	case "p":
+	case actionCopyPhotos:
 		a.handleCopyCmd(card, "photos")
-	case "v":
+	case actionCopyVideos:
 		a.handleCopyCmd(card, "videos")
-	case "e":
+	case actionEject:
 		a.ejectCard(card)
-	case "x":
+	case actionExitCard:
 		a.cancelCard()
-	case "i":
+	case actionHardwareInfo:
 		a.showHardwareInfo(card)
-	case "t":
+	case actionSpeedTest:
 		a.runSpeedTest(card)
-	default:
-		if input != "" {
-			fmt.Printf("\nUnknown command %q. Press [?] for help.\n", input)
-			a.printPrompt()
-		}
+	case actionUnknown:
+		fmt.Printf("\nUnknown command %q. Press [?] for help.\n", input)
+		a.printPrompt()
 	}
 }
 
@@ -423,50 +438,10 @@ func (a *app) handleCopyCmd(card *detect.Card, mode string) {
 	analyzeResult := a.lastResult
 	a.mu.Unlock()
 
-	if invalid {
-		fmt.Printf("\n[%s] No media found on this card.\n", ts())
+	if reason := copyBlockReason(mode, invalid, copiedAll, copiedMode, analyzeResult); reason != "" {
+		fmt.Printf("\n[%s] %s\n", ts(), reason)
 		a.printPrompt()
 		return
-	}
-
-	if copiedAll {
-		fmt.Printf("\n[%s] Already copied.\n", ts())
-		a.printPrompt()
-		return
-	}
-
-	if copiedMode {
-		modeName := "Selects"
-		switch mode {
-		case "photos": modeName = "Photos"
-		case "videos": modeName = "Videos"
-		}
-		fmt.Printf("\n[%s] %s already copied.\n", ts(), modeName)
-		a.printPrompt()
-		return
-	}
-
-	if analyzeResult != nil {
-		switch mode {
-		case "selects":
-			if analyzeResult.Starred == 0 {
-				fmt.Printf("\n[%s] No starred files found on this card.\n", ts())
-				a.printPrompt()
-				return
-			}
-		case "photos":
-			if analyzeResult.PhotoCount == 0 {
-				fmt.Printf("\n[%s] No photo files found on this card.\n", ts())
-				a.printPrompt()
-				return
-			}
-		case "videos":
-			if analyzeResult.VideoCount == 0 {
-				fmt.Printf("\n[%s] No video files found on this card.\n", ts())
-				a.printPrompt()
-				return
-			}
-		}
 	}
 
 	a.copyFiltered(card, mode)

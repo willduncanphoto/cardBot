@@ -3,7 +3,7 @@
 ## Current Version: 0.1.9
 
 Detection, analysis, EXIF, config, UI polish, copy with robustness, UX improvements,
-bug fixes, and code health refactor complete. 105 tests across 8 packages, all passing
+bug fixes, and code health refactor complete. 100+ tests across 8 packages, all passing
 with `-race`.
 
 **Target: 0.2.0 — Daily Driver.** The version you hand to another photographer and say "try this."

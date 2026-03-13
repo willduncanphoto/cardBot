@@ -70,7 +70,9 @@ func TestLoad_MissingFile(t *testing.T) {
 func TestLoad_MalformedJSON(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join(t.TempDir(), "config.json")
-	os.WriteFile(path, []byte("{not valid json"), 0600)
+	if err := os.WriteFile(path, []byte("{not valid json"), 0600); err != nil {
+		t.Fatal(err)
+	}
 
 	cfg, warnings, err := Load(path)
 	if err != nil {
@@ -87,7 +89,9 @@ func TestLoad_MalformedJSON(t *testing.T) {
 func TestLoad_WrongSchema(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join(t.TempDir(), "config.json")
-	os.WriteFile(path, []byte(`{"$schema": "cardbot-config-v99"}`), 0600)
+	if err := os.WriteFile(path, []byte(`{"$schema": "cardbot-config-v99"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
 
 	_, warnings, err := Load(path)
 	if err != nil {
@@ -101,9 +105,9 @@ func TestLoad_WrongSchema(t *testing.T) {
 func TestLoad_ClampBufferSizeKB(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name    string
-		json    string
-		want    int
+		name     string
+		json     string
+		want     int
 		wantWarn bool
 	}{
 		{"too small", `{"$schema":"cardbot-config-v1","advanced":{"buffer_size_kb":10}}`, 64, true},
@@ -114,7 +118,9 @@ func TestLoad_ClampBufferSizeKB(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "config.json")
-			os.WriteFile(path, []byte(tt.json), 0600)
+			if err := os.WriteFile(path, []byte(tt.json), 0600); err != nil {
+				t.Fatal(err)
+			}
 
 			cfg, warnings, err := Load(path)
 			if err != nil {
@@ -136,9 +142,9 @@ func TestLoad_ClampBufferSizeKB(t *testing.T) {
 func TestLoad_ClampExifWorkers(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name    string
-		json    string
-		want    int
+		name     string
+		json     string
+		want     int
 		wantWarn bool
 	}{
 		{"too small", `{"$schema":"cardbot-config-v1","advanced":{"exif_workers":0}}`, 1, true},
@@ -149,7 +155,9 @@ func TestLoad_ClampExifWorkers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "config.json")
-			os.WriteFile(path, []byte(tt.json), 0600)
+			if err := os.WriteFile(path, []byte(tt.json), 0600); err != nil {
+				t.Fatal(err)
+			}
 
 			cfg, warnings, err := Load(path)
 			if err != nil {
@@ -169,7 +177,9 @@ func TestLoad_PartialConfig(t *testing.T) {
 	t.Parallel()
 	// Only override destination; everything else should use defaults.
 	path := filepath.Join(t.TempDir(), "config.json")
-	os.WriteFile(path, []byte(`{"$schema":"cardbot-config-v1","destination":{"path":"~/Custom"}}`), 0600)
+	if err := os.WriteFile(path, []byte(`{"$schema":"cardbot-config-v1","destination":{"path":"~/Custom"}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
 
 	cfg, warnings, err := Load(path)
 	if err != nil {
@@ -202,7 +212,10 @@ func TestLoad_PartialConfig(t *testing.T) {
 
 func TestExpandPath(t *testing.T) {
 	t.Parallel()
-	home, _ := os.UserHomeDir()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		input string
@@ -229,7 +242,10 @@ func TestExpandPath(t *testing.T) {
 
 func TestContractPath(t *testing.T) {
 	t.Parallel()
-	home, _ := os.UserHomeDir()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		input string
@@ -237,7 +253,7 @@ func TestContractPath(t *testing.T) {
 	}{
 		{filepath.Join(home, "Pictures"), "~/Pictures"},
 		{filepath.Join(home, ""), "~"},
-		{home + "/", "~"},               // trailing slash normalized
+		{home + "/", "~"}, // trailing slash normalized
 		{"/other/path", "/other/path"},
 	}
 

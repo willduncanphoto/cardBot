@@ -36,9 +36,13 @@ func TestDetectBrand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			root := t.TempDir()
 			dcim := filepath.Join(root, "DCIM")
-			os.MkdirAll(dcim, 0755)
+			if err := os.MkdirAll(dcim, 0755); err != nil {
+				t.Fatal(err)
+			}
 			for _, folder := range tt.folders {
-				os.MkdirAll(filepath.Join(dcim, folder), 0755)
+				if err := os.MkdirAll(filepath.Join(dcim, folder), 0755); err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			got := detectBrand(root)

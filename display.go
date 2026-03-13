@@ -107,14 +107,7 @@ func (a *app) printPrompt() {
 	copiedAll := a.copiedModes["all"]
 	a.mu.Unlock()
 
-	switch {
-	case invalid:
-		fmt.Print("[e] Eject  [x] Exit  [?]  > ")
-	case copiedAll:
-		fmt.Print("[e] Eject  [x] Done  [?]  > ")
-	default:
-		fmt.Print("[a] Copy All  [e] Eject  [x] Exit  [?]  > ")
-	}
+	fmt.Print(promptText(invalid, copiedAll))
 }
 
 // showHelp prints all available commands.

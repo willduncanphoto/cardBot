@@ -22,7 +22,9 @@ func createTestCard(t *testing.T, files map[string]testFile) string {
 			t.Fatal(err)
 		}
 		if !tf.mtime.IsZero() {
-			os.Chtimes(path, tf.mtime, tf.mtime)
+			if err := os.Chtimes(path, tf.mtime, tf.mtime); err != nil {
+				t.Fatal(err)
+			}
 		}
 	}
 	return root
@@ -395,4 +397,3 @@ func TestScanXMPRating(t *testing.T) {
 		})
 	}
 }
-

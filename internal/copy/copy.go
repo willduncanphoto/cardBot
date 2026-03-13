@@ -297,4 +297,3 @@ func copyFile(dst, src string, srcSize int64, buf []byte, madeDir map[string]boo
 
 	return nil
 }
-

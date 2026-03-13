@@ -210,4 +210,3 @@ func (d *Detector) isMemoryCard(path string) bool {
 	info, err := os.Stat(dcim)
 	return err == nil && info.IsDir()
 }
-

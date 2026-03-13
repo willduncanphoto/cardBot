@@ -223,7 +223,7 @@ func (a *Analyzer) Analyze(ctx context.Context) (*Result, error) {
 			relPath: rel,
 			size:    info.Size(),
 			ext:     ext,
-			mtime: info.ModTime(),
+			mtime:   info.ModTime(),
 		})
 		return nil
 	})
@@ -350,14 +350,14 @@ loop:
 		FileDates:   fileDates,
 		FileRatings: fileRatings,
 		TotalSize:   totalSize,
-		FileCount:  totalFiles,
-		PhotoSize:  photoSize,
-		PhotoCount: photoCount,
-		VideoSize:  videoSize,
-		VideoCount: videoCount,
-		Gear:       gear,
-		Starred:    starred,
-		Warnings:   warnings,
+		FileCount:   totalFiles,
+		PhotoSize:   photoSize,
+		PhotoCount:  photoCount,
+		VideoSize:   videoSize,
+		VideoCount:  videoCount,
+		Gear:        gear,
+		Starred:     starred,
+		Warnings:    warnings,
 	}, nil
 }
 
@@ -496,18 +496,18 @@ func normalizeExt(ext string) string {
 
 // brandAliases maps uppercase EXIF brand prefixes to clean display names.
 var brandAliases = map[string]string{
-	"NIKON":     "Nikon",
-	"CANON":     "Canon",
-	"SONY":      "Sony",
-	"FUJIFILM":  "Fujifilm",
-	"PANASONIC": "Panasonic",
-	"OLYMPUS":   "Olympus",
+	"NIKON":      "Nikon",
+	"CANON":      "Canon",
+	"SONY":       "Sony",
+	"FUJIFILM":   "Fujifilm",
+	"PANASONIC":  "Panasonic",
+	"OLYMPUS":    "Olympus",
 	"OM DIGITAL": "OM System",
 	"HASSELBLAD": "Hasselblad",
-	"LEICA":     "Leica",
-	"RICOH":     "Ricoh",
-	"PENTAX":    "Pentax",
-	"SIGMA":     "Sigma",
+	"LEICA":      "Leica",
+	"RICOH":      "Ricoh",
+	"PENTAX":     "Pentax",
+	"SIGMA":      "Sigma",
 }
 
 // cleanGear normalizes camera brand casing in the gear string.
