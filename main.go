@@ -50,8 +50,8 @@ type app struct {
 	sigChan     chan os.Signal // SIGINT/SIGTERM
 	inputDone   chan struct{}  // closed on shutdown to stop readInput
 	dryRun      bool
-	copied      bool // true after successful copy of current card
-	cardInvalid bool // true when current card has no DCIM directory
+	copied      bool          // true after successful copy of current card
+	cardInvalid bool          // true when current card has no DCIM directory
 	spinStop    chan struct{} // signals spinner goroutine to stop
 	spinDone    chan struct{} // closed when spinner goroutine exits
 }
@@ -332,7 +332,7 @@ func (a *app) handleCardEvent(card *detect.Card) {
 	if a.currentCard == nil {
 		a.currentCard = card
 		a.stopSpinner()
-		fmt.Printf("\r\033[K[%s] Card detected.", ts())
+		fmt.Printf("\r\033[K[%s] Card detected", ts())
 		fmt.Println()
 		a.logf("Card detected: %s", card.Path)
 		cardPath := card.Path // capture by value before releasing lock
