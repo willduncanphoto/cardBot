@@ -138,16 +138,14 @@ Work items grouped by milestone.
 
 ## Upcoming
 
-### 0.2.0 — Daily Driver
-- [ ] All 0.1.x items complete
-- [ ] Single-key input (raw terminal mode, no Enter required)
-- [ ] Selective copy fully implemented with correct status tracking
-- [ ] Partial copy state in dotfile — multi-mode copy history
-- [ ] No known crashes or data loss scenarios
-- [ ] Tested on personal gear across multiple shooting days
-- [ ] Feedback from at least one other photographer
-- [ ] README reflects actual current behavior
-- [ ] First public-facing release candidate
+### 0.2.0 — Testing
+- [x] All 0.1.x items complete
+- [x] Selective copy fully implemented with correct status tracking
+- [x] Partial copy state in dotfile — multi-mode copy history
+- [x] No known crashes or data loss scenarios
+- [x] README reflects actual current behavior
+
+Real-world testing with the Z9. Identify workflow friction and fine-tune based on actual use.
 
 ### 0.3.0 — Linux Support
 - [ ] Linux detection (polling-based, /run/media, /media, /mnt)
@@ -161,6 +159,7 @@ Work items grouped by milestone.
 
 ## Wishlist
 
+- Single-key input (raw terminal mode, no Enter required)
 - Estimated time remaining during copy
 - Show current filename during copy (deferred to renaming milestone)
 - Per-file copy logging (forensic/recovery audit trail)

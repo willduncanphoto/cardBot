@@ -16,7 +16,7 @@ import (
 	"github.com/illwill/cardbot/internal/pick"
 )
 
-const version = "0.1.9"
+const version = "0.2.0"
 
 func main() {
 	// --- CLI flags ---

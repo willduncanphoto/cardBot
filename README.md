@@ -38,10 +38,35 @@ CardBot generates a concise overview of your memory card and provides modern cop
 
 ## Installation
 
+### Option 1: Pre-built Binary (macOS)
+
+Download the latest release for your Mac (Apple Silicon or Intel):
+
+```bash
+# Download (Apple Silicon / M1/M2/M3)
+curl -LO https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-arm64
+
+# Download (Intel)
+curl -LO https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-amd64
+
+# Make executable and move to your PATH
+chmod +x cardbot-darwin-*
+mv cardbot-darwin-* /usr/local/bin/cardbot
+```
+
+Or grab the binary from the repo directly:
+
+```bash
+git clone https://github.com/willduncanphoto/CardBot.git
+cd CardBot
+./cardbot --version
+```
+
+### Option 2: Build from Source
+
 Requires Go 1.25 or later.
 
-### macOS (Recommended)
-
+**macOS (Recommended — with Xcode):**
 ```bash
 # Install Xcode CLI tools if you haven't already
 xcode-select --install
@@ -51,17 +76,12 @@ cd CardBot
 go build -o cardbot .
 ```
 
-### macOS without Xcode
-
+**macOS (without Xcode):**
 ```bash
 CGO_ENABLED=0 go build -o cardbot .
 ```
 
-### Linux
-
-Linux support is planned for 0.3.0. The codebase includes preliminary detection
-and hardware info code, but it has not been tested on real hardware.
-
+**Linux:**
 ```bash
 go build -o cardbot .
 ```
@@ -79,7 +99,7 @@ Run CardBot and insert a memory card:
 **Output example:**
 
 ```
-[2026-03-12T12:15:32] Starting CardBot 0.1.9...
+[2026-03-12T12:15:32] Starting CardBot 0.2.0...
 [2026-03-12T12:15:33] Copy path /Pictures/CardBot
 [2026-03-12T12:15:33] Keep original filenames
 [2026-03-12T12:15:33] Card detected
@@ -95,7 +115,7 @@ Run CardBot and insert a memory card:
 
   Total:    3048 photos, 0 videos, 96.0 GB
 ────────────────────────────────────────
-[a] Copy All  [e] Eject  [x] Exit  [?] Help  >
+[a] Copy All  [s] Copy Selects  [p] Copy Photos  [v] Copy Videos  [e] Eject  [x] Exit  [?] Help  >
 ```
 
 ### Commands
@@ -123,9 +143,9 @@ Press `?` for the full command list, including hidden commands. See [docs/OUTPUT
 | `--reset` | Clear saved config |
 | `--version` | Print version and exit |
 
-## Copy (WIP)
+## Copy
 
-Press `a` to copy all files. CardBot groups files into dated folders based on EXIF date:
+Press `a` to copy all files, or use selective copy modes to copy only specific file types. CardBot groups files into dated folders based on EXIF date:
 
 ```
 ~/Pictures/CardBot/
@@ -203,11 +223,11 @@ Run `cardbot --setup` to change the destination. Run `cardbot --reset` to clear 
 
 ## Planned Stuff
 
+- Linux support (0.3.0)
 - File renaming on copy (date-based, camera+date, sequence)
 - Resume interrupted copies
 - ETA during copy
 - Auto-update check
-- Linux support (0.3.0)
 
 ## Project Structure
 

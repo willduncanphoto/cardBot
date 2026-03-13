@@ -6,7 +6,7 @@ Detection, analysis, EXIF, config, UI polish, copy with robustness, UX improveme
 bug fixes, and code health refactor complete. 100+ tests across 8 packages, all passing
 with `-race`.
 
-**Target: 0.2.0 — Daily Driver.** The version you hand to another photographer and say "try this."
+**0.2.0 — Testing.** Feature-complete for real-world validation. Time to plug in the Z9 and see what breaks.
 
 ---
 
@@ -99,19 +99,21 @@ All design decisions are documented in [SELECTIVE-COPY.md](SELECTIVE-COPY.md):
 
 ---
 
-## 0.2.0 — Daily Driver
+## 0.2.0 — Testing
 
-Everything from 0.1.x is solid, tested, and feels intentional.
+Everything from 0.1.x is ready for real-world validation.
 
-- [ ] All 0.1.8, 0.1.9 items complete
-- [ ] Single-key input (raw terminal mode, no Enter required)
-- [ ] Selective copy fully implemented with correct status tracking
-- [ ] Partial copy state in dotfile — multi-mode copy history
-- [ ] No known crashes or data loss scenarios
-- [ ] Tested on personal gear across multiple shooting days
-- [ ] Feedback from at least one other photographer
-- [ ] README reflects actual current behavior
-- [ ] First public-facing release candidate
+- [x] All 0.1.8, 0.1.9 items complete
+- [x] Selective copy fully implemented with correct status tracking
+- [x] Partial copy state in dotfile — multi-mode copy history
+- [x] No known crashes or data loss scenarios
+- [x] README reflects actual current behavior
+
+**Goals for this phase:**
+- Test with real Z9 cards
+- Identify friction points in the workflow
+- Fine-tune copy speeds, buffer sizes, progress feedback
+- Validate selective copy modes with actual star-rated files
 
 ---
 
@@ -133,7 +135,7 @@ Not on the immediate roadmap. Nice-to-have for someday.
 - Estimated time remaining during copy
 - Show current filename during copy (deferred to renaming milestone)
 - Per-file copy logging (forensic/recovery audit trail)
-- Single-key input (raw terminal mode, no Enter required) → promoted to 0.2.0
+- Single-key input (raw terminal mode, no Enter required)
 - Auto-update: check GitHub Releases for new version at startup
 - Network destination support
 - Windows support
