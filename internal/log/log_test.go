@@ -88,7 +88,7 @@ func TestRotation(t *testing.T) {
 	// Track approximate bytes to know when we've crossed the threshold.
 	line := strings.Repeat("x", 200)
 	for i := 0; i < 30000; i++ {
-		logger.Printf(line)
+		logger.Printf("%s", line)
 	}
 	logger.Close()
 

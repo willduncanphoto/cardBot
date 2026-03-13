@@ -340,10 +340,21 @@ func readExif(path string, xmpBuf []byte) (date time.Time, gear string, rating i
 
 	// Camera model: combine Make + Model, dedup if Model already contains Make,
 	// and normalize brand casing for clean display (e.g. "NIKON Z 9" → "Nikon Z 9").
+	// Some cameras report Make="NIKON CORPORATION" and Model="NIKON Z 9" — the full
+	// Make doesn't prefix the Model, but the brand word does. In that case, use Model
+	// alone to avoid "NIKON CORPORATION NIKON Z 9".
 	cameraMake := strings.TrimSpace(exif.Make)
 	model := strings.TrimSpace(exif.Model)
 	if cameraMake != "" && model != "" {
-		if strings.HasPrefix(strings.ToLower(model), strings.ToLower(cameraMake)) {
+		lowerMake := strings.ToLower(cameraMake)
+		lowerModel := strings.ToLower(model)
+		if strings.HasPrefix(lowerModel, lowerMake) {
+			// Model starts with full Make — use Model alone.
+			gear = model
+		} else if brandWord := strings.Fields(lowerMake); len(brandWord) > 0 &&
+			strings.HasPrefix(lowerModel, brandWord[0]) {
+			// Model starts with the first word of Make (e.g. "NIKON" from "NIKON CORPORATION")
+			// — use Model alone to avoid redundant concatenation.
 			gear = model
 		} else {
 			gear = cameraMake + " " + model
@@ -447,6 +458,8 @@ var brandAliases = map[string]string{
 
 // cleanGear normalizes camera brand casing in the gear string.
 // "NIKON Z 9" → "Nikon Z 9", "Canon EOS R5" stays as-is.
+// The suffix after the brand prefix keeps its original casing since camera
+// model strings contain acronyms (EOS, ILCE) that should not be altered.
 func cleanGear(gear string) string {
 	if gear == "" {
 		return gear
@@ -454,8 +467,26 @@ func cleanGear(gear string) string {
 	upper := strings.ToUpper(gear)
 	for prefix, clean := range brandAliases {
 		if strings.HasPrefix(upper, prefix) {
-			return clean + gear[len(prefix):]
+			suffix := strings.TrimSpace(gear[len(prefix):])
+			if suffix == "" {
+				return clean
+			}
+			return clean + " " + suffix
 		}
 	}
 	return gear
+}
+
+// titleCase converts an all-uppercase string to title case.
+// "CORPORATION NIKON Z 9" → "Corporation Nikon Z 9"
+// Single-character words (like model numbers) stay uppercase.
+func titleCase(s string) string {
+	words := strings.Fields(s)
+	for i, w := range words {
+		if len(w) <= 1 {
+			continue
+		}
+		words[i] = strings.ToUpper(w[:1]) + strings.ToLower(w[1:])
+	}
+	return strings.Join(words, " ")
 }

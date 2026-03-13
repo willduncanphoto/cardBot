@@ -57,7 +57,7 @@ This runs directly in `handleRemoval()`, which is called from the main select lo
 ```go
 go func() {
     time.Sleep(removalDelay)
-    fmt.Printf("\n[%s] Scanning for memory cards...", ts())
+    fmt.Printf("\n[%s] Scanning...", ts())
 }()
 ```
 

@@ -148,7 +148,7 @@ func TestFormatStatus(t *testing.T) {
 
 		s := FormatStatus(status)
 		if s == "New" {
-			t.Error("expected 'Copied on ...' not 'New'")
+			t.Error("expected 'Copy completed on ...' not 'New'")
 		}
 		if len(s) < 20 {
 			t.Errorf("FormatStatus too short: %q", s)

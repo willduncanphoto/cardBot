@@ -42,7 +42,7 @@ func (l *Logger) Printf(format string, args ...any) {
 	defer l.mu.Unlock()
 
 	line := fmt.Sprintf("[%s] %s\n",
-		time.Now().Format("2006-01-02 15:04:05"),
+		time.Now().Format("2006-01-02T15:04:05"),
 		fmt.Sprintf(format, args...))
 
 	if l.written >= maxSize {

@@ -14,7 +14,7 @@ CardBot was built with the help of AI coding models and many open source project
 CardBot generates a concise overview of your memory card and provides modern copy tools. It will also rename your files one day.
 
 **Current capabilities:**
-- Detect CFexpress, XQD, and SD cards on macOS and Linux
+- Detect CFexpress, XQD, and SD cards on macOS
 - Quickly analyze a card's content and technical information
 - Show starred image count for future quick copy operation
 - Copy all files to dated folders with verification
@@ -32,12 +32,12 @@ CardBot generates a concise overview of your memory card and provides modern cop
 |----------|--------|-------|
 | macOS (with Xcode) | [OK] Working | Native DiskArbitration, instant detection |
 | macOS (no Xcode) | [OK] Working | Polling fallback, 1s interval |
-| Linux | [WIP] Experimental | Polling-based, needs real-world testing |
+| Linux | [--] Planned for 0.3.0 | Not yet supported |
 | Windows | [--] Not supported | Not Planned |
 
 ## Installation
 
-Requires Go 1.21 or later.
+Requires Go 1.25 or later.
 
 ### macOS (Recommended)
 
@@ -58,6 +58,9 @@ CGO_ENABLED=0 go build -o cardbot .
 
 ### Linux
 
+Linux support is planned for 0.3.0. The codebase includes preliminary detection
+and hardware info code, but it has not been tested on real hardware.
+
 ```bash
 go build -o cardbot .
 ```
@@ -75,12 +78,12 @@ Run CardBot and insert a memory card:
 **Output example:**
 
 ```
-[2026-03-12 12:15:32] Starting CardBot 0.1.6...
-[2026-03-12 12:15:32] Copy location is set to ~/Pictures/CardBot
-[2026-03-12 12:15:32] File renaming is set to Original
-[2026-03-12 12:15:32] Scanning for memory cards...card found.
-[2026-03-12 12:15:33] Scanning /Volumes/NIKON Z 9  ... 3051 files ✓
-[2026-03-12 12:15:33] Scan completed in 0 seconds
+[2026-03-12T12:15:32] Starting CardBot 0.1.7...
+[2026-03-12T12:15:32] Copy location is set to ~/Pictures/CardBot
+[2026-03-12T12:15:32] File renaming is set to Original
+[2026-03-12T12:15:32] Scanning...card found.
+[2026-03-12T12:15:33] Scanning /Volumes/NIKON Z 9  ... 3051 files ✓
+[2026-03-12T12:15:33] Scan completed in 0 seconds
 
   Status:   New
   Path:     /Volumes/NIKON Z 9
@@ -145,7 +148,7 @@ Press `a` to copy all files. CardBot groups files into dated folders based on EX
 
 **After copy:**
 - CardBot writes a `.cardbot` file to the card
-- On re-insert, the card shows `Status: Copied on 2026-03-12 12:31` instead of `Status: New`
+- On re-insert, the card shows `Status: Copy completed on 2026-03-12T12:31:05` instead of `Status: New`
 - Re-copying the same card skips files that already exist with the correct size
 
 **Invalid cards:**
@@ -204,7 +207,7 @@ Run `cardbot --setup` to change the destination. Run `cardbot --reset` to clear 
 - Native macOS card detection (DiskArbitration)
 - DCIM walking, date grouping, file type breakdown
 - EXIF camera model, XMP star ratings, parallel EXIF workers
-- Hardware info (macOS via IOKit/system_profiler, Linux via sysfs/CID)
+- Hardware info (macOS via IOKit/system_profiler)
 - Config file with first-run setup and native folder picker
 - Brand name cleanup and ANSI colors
 - Copy all files with dated folders, size verification, dotfile tracking
@@ -232,7 +235,7 @@ Run `cardbot --setup` to change the destination. Run `cardbot --reset` to clear 
 - Copy Selects mode (starred files only)
 - Show current filename during copy (deferred to renaming milestone)
 
-**Later:** Windows support, Linux testing, file renaming, resume interrupted copies, video metadata, auto-update, copyright/personal data injection on copy
+**Later:** File renaming, resume interrupted copies, video metadata, auto-update, copyright/personal data injection on copy
 
 ## Project Structure
 
@@ -297,6 +300,6 @@ TBD — will be added before public release
 
 ## Notes
 
-- **CID on Linux:** The SD Card Identification register (manufacturer ID, serial, manufacturing date) is only accessible with direct SD card slots. USB readers hide it.
+- **CID on Linux (planned for 0.3.0):** The SD Card Identification register (manufacturer ID, serial, manufacturing date) is only accessible with direct SD card slots. USB readers hide it.
 - **Hardware size vs filesystem size:** macOS reports the card's raw physical capacity alongside the formatted filesystem size — this is why a "512GB" card shows ~477GB usable.
 - **Speed test:** CardBot includes a hidden `[t]` command that runs a 256MB sequential read/write benchmark on the card. Results are synthetic — read speeds in particular may be inflated by the OS page cache.

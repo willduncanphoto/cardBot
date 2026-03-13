@@ -27,14 +27,14 @@ import (
 
 const version = "0.1.7"
 
-// UX delays — remove in 0.4.0 when real startup and analysis timings replace them.
+// UX delays — gives the user time to read each startup line before the next appears.
 const (
 	removalDelay = 2 * time.Second // Pause after card removal so message is visible
 )
 
 // ts returns the current timestamp formatted for log output.
 func ts() string {
-	return time.Now().Format("2006-01-02 15:04:05")
+	return time.Now().Format("2006-01-02T15:04:05")
 }
 
 type app struct {
@@ -52,6 +52,8 @@ type app struct {
 	dryRun      bool
 	copied      bool // true after successful copy of current card
 	cardInvalid bool // true when current card has no DCIM directory
+	spinStop    chan struct{} // signals spinner goroutine to stop
+	spinDone    chan struct{} // closed when spinner goroutine exits
 }
 
 // drainInput discards any buffered input keystrokes.
@@ -64,6 +66,43 @@ func (a *app) drainInput() {
 		default:
 			return
 		}
+	}
+}
+
+// spinnerFrames are the braille animation frames for the scanning spinner.
+// spinnerFrames are the classic spinner animation frames.
+var spinnerFrames = []string{"|", "/", "-", "\\"}
+
+// startSpinner starts the background spinner animation on the current line.
+func (a *app) startSpinner() {
+	a.stopSpinner() // ensure no stale spinner
+	a.spinStop = make(chan struct{})
+	a.spinDone = make(chan struct{})
+	go func() {
+		defer close(a.spinDone)
+		i := 0
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-a.spinStop:
+				fmt.Print("\b \b")
+				return
+			case <-ticker.C:
+				fmt.Printf("\b%s", spinnerFrames[i%len(spinnerFrames)])
+				i++
+			}
+		}
+	}()
+}
+
+// stopSpinner stops the background spinner and waits for it to finish.
+func (a *app) stopSpinner() {
+	if a.spinStop != nil {
+		close(a.spinStop)
+		<-a.spinDone // wait for goroutine to clean up
+		a.spinStop = nil
+		a.spinDone = nil
 	}
 }
 
@@ -194,18 +233,28 @@ func main() {
 		a.printf("[%s] Warning: %s\n", ts(), w)
 	}
 
-	a.printf("[%s] Starting CardBot %s...\n", ts(), version)
-	time.Sleep(150 * time.Millisecond)
+	// Print version, animate dots over ~1 second, then continue.
+	fmt.Printf("[%s] Starting CardBot %s", ts(), version)
+	if a.logger != nil {
+		a.logger.Raw(fmt.Sprintf("[%s] Starting CardBot %s...", ts(), version))
+	}
+	for i := 0; i < 3; i++ {
+		time.Sleep(350 * time.Millisecond)
+		fmt.Print(".")
+	}
+	fmt.Println()
+
 	a.printf("[%s] Copy location is set to %s\n", ts(), cfg.Destination.Path)
-	time.Sleep(150 * time.Millisecond)
+	time.Sleep(600 * time.Millisecond)
 	a.printf("[%s] File renaming is set to Original\n", ts())
-	time.Sleep(150 * time.Millisecond)
+	time.Sleep(600 * time.Millisecond)
 
 	if a.dryRun {
 		a.printf("[%s] Dry-run mode — no files will be copied\n", ts())
 	}
 
-	a.printf("[%s] Scanning for memory cards...", ts())
+	a.printf("[%s] Scanning  ", ts())
+	a.startSpinner()
 
 	a.detector = detect.NewDetector()
 	if err := a.detector.Start(); err != nil {
@@ -282,6 +331,7 @@ func (a *app) handleCardEvent(card *detect.Card) {
 
 	if a.currentCard == nil {
 		a.currentCard = card
+		a.stopSpinner()
 		fmt.Println("card found.")
 		a.logf("Card detected: %s", card.Path)
 		cardPath := card.Path // capture by value before releasing lock
@@ -325,14 +375,14 @@ func (a *app) displayCard(path string) {
 		return // Card was cancelled or removed while starting
 	}
 
-	fmt.Printf("[%s] Scanning %s... ", ts(), path)
-	a.logf("Scanning %s", path)
+	fmt.Printf("[%s] Scanning  %s... ", ts(), path)
+	a.logf("Scanning  %s", path)
 	scanStart := time.Now()
 	analyzer := analyze.New(path)
 	analyzer.SetWorkers(a.cfg.Advanced.ExifWorkers)
 	analyzer.OnProgress(func(count int) {
 		if count%100 == 0 {
-			fmt.Printf("\r[%s] Scanning %s... %d files", ts(), path, count)
+			fmt.Printf("\r[%s] Scanning  %s... %d files", ts(), path, count)
 		}
 	})
 
@@ -367,13 +417,8 @@ func (a *app) displayCard(path string) {
 	if result != nil {
 		total = result.FileCount
 	}
-	fmt.Printf("\r[%s] Scanning %s... %d files ✓\n", ts(), path, total)
-	secWord := "seconds"
-	if secs == 1 {
-		secWord = "second"
-	}
-	fmt.Printf("[%s] Scan completed in %d %s\n", ts(), secs, secWord)
-	a.logf("Scan completed: %s — %d files in %d %s", path, total, secs, secWord)
+	fmt.Printf("\r[%s] Scanning  %s... %d files ✓ (%ds)\n", ts(), path, total, secs)
+	a.logf("Scan completed: %s — %d files in %ds", path, total, secs)
 	fmt.Println()
 	a.mu.Lock()
 	a.lastResult = result
@@ -481,7 +526,8 @@ func (a *app) finishCard() {
 	}
 	a.mu.Unlock()
 
-	fmt.Printf("\n[%s] Scanning for memory cards...", ts())
+	fmt.Printf("\n[%s] Scanning  ", ts())
+	a.startSpinner()
 }
 
 func (a *app) handleRemoval(path string) {
@@ -509,7 +555,8 @@ func (a *app) handleRemoval(path string) {
 		} else {
 			go func() {
 				time.Sleep(removalDelay)
-				fmt.Printf("\n[%s] Scanning for memory cards...", ts())
+				fmt.Printf("\n[%s] Scanning  ", ts())
+				a.startSpinner()
 			}()
 		}
 		return

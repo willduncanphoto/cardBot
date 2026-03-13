@@ -9,7 +9,6 @@ Work items grouped by milestone.
 ### 0.1.0 — Detection
 - [x] macOS native detection (CGO + DiskArbitration)
 - [x] macOS fallback detection (polling, no Xcode)
-- [x] Linux detection (polling-based)
 - [x] DCIM folder detection
 - [x] Brand guess from folder names
 - [x] Basic display (path, storage, brand)
@@ -35,9 +34,8 @@ Work items grouped by milestone.
 - [x] Extract star ratings from XMP
 - [x] Display starred count
 - [x] Photo/video split in totals
-- [x] Hardware info query via IOKit (macOS) / sysfs (Linux)
+- [x] Hardware info query via IOKit (macOS)
 - [x] Raw device size vs filesystem size
-- [x] CID parsing on Linux with direct SD slot
 - [x] `[i]` key for hardware info (hidden command)
 
 ### 0.1.3 — Config & Destination
@@ -155,7 +153,7 @@ Everything from 0.1.x is solid, tested, and feels intentional. This is the versi
 you hand to another photographer and say "try this."
 
 - [ ] All 0.1.7, 0.1.8, 0.1.9 items complete
-- [ ] Single-key input working reliably across macOS and Linux
+- [ ] Single-key input working reliably on macOS
 - [ ] Selective copy (`[s]`, `[p]`, `[v]`) fully implemented with correct status tracking
 - [ ] Partial copy state in dotfile — multi-mode copy history
 - [ ] No known crashes or data loss scenarios
@@ -166,11 +164,27 @@ you hand to another photographer and say "try this."
 
 ---
 
+---
+
+### 0.3.0 — Linux Support
+
+**Full Linux platform support — detection, copy, hardware info, speed test.**
+
+- [ ] Linux detection (polling-based, /run/media, /media, /mnt)
+- [ ] Linux hardware info (sysfs, CID parsing for direct SD slots)
+- [ ] Linux speed test support
+- [ ] Linux eject (udisksctl / umount)
+- [ ] Real-world testing (Ubuntu, Fedora, Debian)
+- [ ] Mount point documentation
+- [ ] Stable Linux build and CI
+
+---
+
 ## Later
 
 - File renaming on copy (date-based, camera+date, sequence numbering)
 - Resume interrupted copies
 - Video metadata (duration, resolution)
-- Linux testing (Ubuntu, Fedora, Debian), mount point docs, stable build
+- Windows support
 - TOML/YAML config
 - Toggle flat vs preserve DCIM structure

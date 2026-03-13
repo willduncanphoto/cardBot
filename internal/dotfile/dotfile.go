@@ -99,10 +99,10 @@ func Write(opts WriteOptions) error {
 // FormatStatus returns a display string for the card status.
 //
 //	"New"
-//	"Copied on 2026-03-08 15:04"
+//	"Copy completed on 2026-03-08T15:04:05"
 func FormatStatus(s Status) string {
 	if !s.Copied {
 		return "New"
 	}
-	return "Copied on " + s.CopiedAt.Format("2006-01-02 15:04")
+	return "Copy completed on " + s.CopiedAt.Format("2006-01-02T15:04:05")
 }

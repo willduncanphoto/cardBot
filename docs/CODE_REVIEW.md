@@ -1,4 +1,4 @@
-# Code Review Notes — v0.1.6
+# Code Review Notes — v0.1.7
 
 Review date: 2026-03-12. Notes for a future cleanup pass.
 

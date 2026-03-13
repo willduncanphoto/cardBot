@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/illwill/cardbot/internal/analyze"
+	"github.com/illwill/cardbot/internal/detect"
 )
 
 // ProgressFunc is called periodically during the copy with current stats.
@@ -148,7 +149,7 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 	// so this check may be conservative for re-copies.
 	if free, ok := diskFreeBytes(opts.DestBase); ok && free < totalBytes {
 		return nil, fmt.Errorf("not enough space on destination: need %s, only %s free",
-			fmtBytes(totalBytes), fmtBytes(free))
+			detect.FormatBytes(totalBytes), detect.FormatBytes(free))
 	}
 
 	// --- Phase 2: Copy ---
@@ -275,17 +276,3 @@ func copyFile(dst, src string, srcSize int64, buf []byte, madeDir map[string]boo
 	return nil
 }
 
-// fmtBytes formats a byte count as a human-readable string (e.g. "12.3 GB").
-// Kept local to avoid a dependency on the detect package.
-func fmtBytes(b int64) string {
-	const unit = 1024
-	if b < unit {
-		return fmt.Sprintf("%d B", b)
-	}
-	div, exp := int64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "KMGTPE"[exp])
-}

@@ -19,7 +19,7 @@ Example: `/Volumes/NIKON Z 9  /.cardbot`
   "files_copied": 3051,
   "bytes_copied": 96424837120,
   "verified": true,
-  "cardbot_version": "0.1.5"
+  "cardbot_version": "0.1.7"
 }
 ```
 
@@ -55,14 +55,14 @@ Example: `/Volumes/NIKON Z 9  /.cardbot`
 
 ### Reading
 
-- Presence of valid `.cardbot` → status "Copied on YYYY-MM-DD HH:MM"
+- Presence of valid `.cardbot` → status "Copy completed on 2026-03-12T12:31:05"
 - Absence or parse error → status "New"
 
 ### Display
 
 ```
   Status:   New
-  Status:   Copied on 2026-03-11 21:31
+  Status:   Copy completed on 2026-03-11T21:31:05
 ```
 
 ## Future Extensibility
