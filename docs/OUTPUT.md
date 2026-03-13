@@ -28,7 +28,7 @@ Destination: /Users/user/Pictures/CardBot
 ## Card Detected (New)
 
 ```
-[2026-03-12T12:15:32] Scanning...Card detected.
+[2026-03-12T12:15:32] Card detected.
 [2026-03-12T12:15:33] Scanning /Volumes/NIKON Z 9  ... 3051 files ✓
 [2026-03-12T12:15:33] Scan completed in 0 seconds
 

@@ -81,7 +81,7 @@ Run CardBot and insert a memory card:
 [2026-03-12T12:15:32] Starting CardBot 0.1.7...
 [2026-03-12T12:15:32] Copy location is set to ~/Pictures/CardBot
 [2026-03-12T12:15:32] File renaming is set to Original
-[2026-03-12T12:15:32] Scanning...Card detected.
+[2026-03-12T12:15:32] Card detected.
 [2026-03-12T12:15:33] Scanning /Volumes/NIKON Z 9  ... 3051 files ✓
 [2026-03-12T12:15:33] Scan completed in 0 seconds
 
