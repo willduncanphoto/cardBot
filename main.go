@@ -244,9 +244,9 @@ func main() {
 	}
 	fmt.Println()
 
-	a.printf("[%s] Copy path ~/%s\n", ts(), config.ContractPath(cfg.Destination.Path))
+	a.printf("[%s] Copy path %s\n", ts(), config.ContractPath(cfg.Destination.Path))
 	time.Sleep(600 * time.Millisecond)
-	a.printf("[%s] Processing settings NONE\n", ts())
+	a.printf("[%s] Processing: None\n", ts())
 	time.Sleep(600 * time.Millisecond)
 
 	if a.dryRun {

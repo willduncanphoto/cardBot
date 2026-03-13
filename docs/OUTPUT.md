@@ -8,8 +8,8 @@ Complete sequence from launch to first card display:
 [2026-03-12T12:15:32] Starting CardBot 0.1.7.     ← dots animate over ~1s
 [2026-03-12T12:15:33] Starting CardBot 0.1.7..
 [2026-03-12T12:15:34] Starting CardBot 0.1.7...
-[2026-03-12T12:15:34] Copy path ~//Pictures/CardBot
-[2026-03-12T12:15:34] Processing settings NONE
+[2026-03-12T12:15:34] Copy path /Pictures/CardBot
+[2026-03-12T12:15:34] Processing: None
 [2026-03-12T12:15:34] Scanning  |                  ← spinner animates: | / - \
 [2026-03-12T12:15:35] Card detected               ← card inserted, spinner stops
 [2026-03-12T12:15:35] Scanning /Volumes/NIKON Z 9  ... 3051 files ✓ (0s)
@@ -31,8 +31,8 @@ Complete sequence from launch to first card display:
 
 ```
 [2026-03-12T12:15:32] Starting CardBot 0.1.7...
-[2026-03-12T12:15:32] Copy path ~//Pictures/CardBot
-[2026-03-12T12:15:32] Processing settings NONE
+[2026-03-12T12:15:32] Copy path /Pictures/CardBot
+[2026-03-12T12:15:32] Processing: None
 [2026-03-12T12:15:32] Scanning  |
 ```
 
@@ -48,7 +48,7 @@ Where should CardBot copy your work?
 Destination: /Users/user/Pictures/CardBot
 
 [2026-03-12T12:15:32] Starting CardBot 0.1.7...
-[2026-03-12T12:15:32] Copy path ~//Pictures/CardBot
+[2026-03-12T12:15:32] Copy path /Pictures/CardBot
 [2026-03-12T12:15:32] Scanning...
 ```
 
