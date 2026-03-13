@@ -376,14 +376,14 @@ func (a *app) displayCard(path string) {
 		return // Card was cancelled or removed while starting
 	}
 
-	fmt.Printf("[%s] Scanning  %s... ", ts(), path)
-	a.logf("Scanning  %s", path)
+	fmt.Printf("[%s] Reading %s... ", ts(), path)
+	a.logf("Reading %s", path)
 	scanStart := time.Now()
 	analyzer := analyze.New(path)
 	analyzer.SetWorkers(a.cfg.Advanced.ExifWorkers)
 	analyzer.OnProgress(func(count int) {
 		if count%100 == 0 {
-			fmt.Printf("\r[%s] Scanning  %s... %d files", ts(), path, count)
+			fmt.Printf("\r[%s] Reading %s... %d files", ts(), path, count)
 		}
 	})
 
@@ -418,7 +418,7 @@ func (a *app) displayCard(path string) {
 	if result != nil {
 		total = result.FileCount
 	}
-	fmt.Printf("\r[%s] Scanning  %s... %d files ✓ (%ds)\n", ts(), path, total, secs)
+	fmt.Printf("\r[%s] Reading %s... %d files ✓ (%ds)\n", ts(), path, total, secs)
 	a.logf("Scan completed: %s — %d files in %ds", path, total, secs)
 	fmt.Println()
 	a.mu.Lock()
