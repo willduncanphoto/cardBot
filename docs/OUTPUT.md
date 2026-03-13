@@ -1,12 +1,39 @@
 # Output Format
 
+## Full Startup Flow
+
+Complete sequence from launch to first card display:
+
+```
+[2026-03-12T12:15:32] Starting CardBot 0.1.7.     ← dots animate over ~1s
+[2026-03-12T12:15:33] Starting CardBot 0.1.7..
+[2026-03-12T12:15:34] Starting CardBot 0.1.7...
+[2026-03-12T12:15:34] Copy location is set to ~/Pictures/CardBot
+[2026-03-12T12:15:34] File renaming is set to Original
+[2026-03-12T12:15:34] Scanning  |                  ← spinner animates: | / - \
+[2026-03-12T12:15:35] Card detected.               ← card inserted, spinner stops
+[2026-03-12T12:15:35] Scanning /Volumes/NIKON Z 9  ... 3051 files ✓ (0s)
+
+  Status:   New
+  Path:     /Volumes/NIKON Z 9
+  Storage:  96.4 GB / 476.9 GB (20%)
+  Camera:   Nikon Z 9
+  Starred:  1
+  Content:  2026-02-27      12.9 GB    418   NEF
+            2026-02-26      28.4 MB      1   NEF
+
+  Total:    3048 photos, 0 videos, 96.0 GB
+────────────────────────────────────────
+[a] Copy All  [e] Eject  [x] Exit  [?] Help  >
+```
+
 ## Startup
 
 ```
 [2026-03-12T12:15:32] Starting CardBot 0.1.7...
 [2026-03-12T12:15:32] Copy location is set to ~/Pictures/CardBot
 [2026-03-12T12:15:32] File renaming is set to Original
-[2026-03-12T12:15:32] Scanning...
+[2026-03-12T12:15:32] Scanning  |
 ```
 
 ## First Run (No Config)
@@ -29,8 +56,7 @@ Destination: /Users/user/Pictures/CardBot
 
 ```
 [2026-03-12T12:15:32] Card detected.
-[2026-03-12T12:15:33] Scanning /Volumes/NIKON Z 9  ... 3051 files ✓
-[2026-03-12T12:15:33] Scan completed in 0 seconds
+[2026-03-12T12:15:33] Scanning /Volumes/NIKON Z 9  ... 3051 files ✓ (0s)
 
   Status:   New
   Path:     /Volumes/NIKON Z 9
