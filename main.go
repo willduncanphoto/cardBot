@@ -16,7 +16,7 @@ import (
 	"github.com/illwill/cardbot/internal/pick"
 )
 
-const version = "0.2.0"
+const version = "0.2.1"
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "self-update" {
