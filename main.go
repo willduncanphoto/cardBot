@@ -233,17 +233,15 @@ func main() {
 		a.printf("[%s] Warning: %s\n", ts(), w)
 	}
 
-	// Print version, animate spinner over ~1 second, then continue.
-	fmt.Printf("[%s] Starting CardBot %s ", ts(), version)
+	// Print version, animate dots over ~1 second, then continue.
+	fmt.Printf("[%s] Starting CardBot %s", ts(), version)
 	if a.logger != nil {
 		a.logger.Raw(fmt.Sprintf("[%s] Starting CardBot %s...", ts(), version))
 	}
-	spinner := []string{" |", " /", " -", " \\"}
-	for i := 0; i < 8; i++ {
-		time.Sleep(125 * time.Millisecond)
-		fmt.Printf("\b%s", spinner[i%4])
+	for i := 0; i < 3; i++ {
+		time.Sleep(300 * time.Millisecond)
+		fmt.Print(".")
 	}
-	fmt.Print("\b \b") // clear spinner
 	fmt.Println()
 
 	a.printf("[%s] Copy path %s\n", ts(), config.ContractPath(cfg.Destination.Path))
