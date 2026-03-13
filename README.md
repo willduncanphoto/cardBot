@@ -106,7 +106,7 @@ chmod +x cardbot-darwin-arm64
 Or if you moved it to your PATH:
 
 ```bash
-./cardbot
+cardbot
 ```
 
 Then insert a memory card.
@@ -271,6 +271,7 @@ cardbot/
 ├── app_logic_test.go                # Tests for app logic
 ├── display.go                       # Card info display, prompts, help, hardware info
 ├── copy_cmd.go                      # Copy orchestration, speed test
+├── update_cmd.go                    # Update check + self-update command wiring
 ├── internal/
 │   ├── analyze/
 │   │   ├── analyze.go               # DCIM walking, parallel EXIF/XMP, date grouping
@@ -309,9 +310,12 @@ cardbot/
 │   ├── speedtest/
 │   │   ├── speedtest_darwin.go      # 256MB sequential read/write benchmark
 │   │   └── speedtest_other.go       # Stub for unsupported platforms
-│   └── ui/
-│       ├── color.go                 # ANSI brand colors
-│       └── color_test.go
+│   ├── ui/
+│   │   ├── color.go                 # ANSI brand colors
+│   │   └── color_test.go
+│   └── update/
+│       ├── update.go                # Release check + secure binary updater
+│       └── update_test.go
 ├── .github/workflows/               # CI and release automation
 ├── docs/                            # Project documentation
 └── go.mod
@@ -326,8 +330,8 @@ cardbot/
 ## Size
 
 - Binary: ~3.2 MB (stripped)
-- Source: ~4,350 lines of Go across 37 files
-- Tests: ~2,100 lines, 138 tests across 8 packages
+- Source: ~4,770 lines of Go across 40 files
+- Tests: ~2,290 lines, 144 tests across 9 packages
 
 ## License
 
