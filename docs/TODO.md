@@ -117,21 +117,11 @@ Everything from 0.1.x is ready for real-world validation.
 
 ---
 
-## 0.3.0 — Linux Support
-
-- [ ] Linux detection (polling-based, /run/media, /media, /mnt)
-- [ ] Linux hardware info (sysfs, CID parsing)
-- [ ] Linux speed test
-- [ ] Linux eject (udisksctl / umount)
-- [ ] Real-world testing (Ubuntu, Fedora, Debian)
-- [ ] Stable build and CI
-
----
-
 ## Wishlist
 
 Not on the immediate roadmap. Nice-to-have for someday.
 
+- Linux support (detection, hardware info, speed test, eject)
 - Estimated time remaining during copy
 - Show current filename during copy (deferred to renaming milestone)
 - Per-file copy logging (forensic/recovery audit trail)

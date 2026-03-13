@@ -33,7 +33,7 @@ CardBot generates a concise overview of your memory card and provides modern cop
 |----------|--------|-------|
 | macOS (with Xcode) | [OK] Working | Native DiskArbitration, instant detection |
 | macOS (no Xcode) | [OK] Working | Polling fallback, 1s interval |
-| Linux | [--] Planned for 0.3.0 | Not yet supported |
+| Linux | [--] Not supported | Wishlist |
 | Windows | [--] Not supported | Not Planned |
 
 ## Installation
@@ -81,7 +81,7 @@ go build -o cardbot .
 CGO_ENABLED=0 go build -o cardbot .
 ```
 
-**Linux (planned for 0.3.0):**
+**Linux (not yet supported):**
 ```bash
 go build -o cardbot .
 ```
@@ -223,11 +223,11 @@ Run `cardbot --setup` to change the destination. Run `cardbot --reset` to clear 
 
 ## Planned Stuff
 
-- Linux support (0.3.0)
 - File renaming on copy (date-based, camera+date, sequence)
 - Resume interrupted copies
 - ETA during copy
 - Auto-update check
+- Linux support
 
 ## Project Structure
 
@@ -303,6 +303,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## Notes
 
-- **CID on Linux (planned for 0.3.0):** The SD Card Identification register (manufacturer ID, serial, manufacturing date) is only accessible with direct SD card slots. USB readers hide it.
+- **CID on Linux:** The SD Card Identification register (manufacturer ID, serial, manufacturing date) is only accessible with direct SD card slots. USB readers hide it.
 - **Hardware size vs filesystem size:** macOS reports the card's raw physical capacity alongside the formatted filesystem size — this is why a "512GB" card shows ~477GB usable.
 - **Speed test:** CardBot includes a hidden `[t]` command that runs a 256MB sequential read/write benchmark on the card. Results are synthetic — read speeds in particular may be inflated by the OS page cache.

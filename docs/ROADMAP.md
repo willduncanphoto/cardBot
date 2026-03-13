@@ -147,18 +147,11 @@ Work items grouped by milestone.
 
 Real-world testing with the Z9. Identify workflow friction and fine-tune based on actual use.
 
-### 0.3.0 — Linux Support
-- [ ] Linux detection (polling-based, /run/media, /media, /mnt)
-- [ ] Linux hardware info (sysfs, CID parsing for direct SD slots)
-- [ ] Linux speed test support
-- [ ] Linux eject (udisksctl / umount)
-- [ ] Real-world testing (Ubuntu, Fedora, Debian)
-- [ ] Stable build and CI
-
 ---
 
 ## Wishlist
 
+- Linux support (detection, hardware info, speed test, eject)
 - Single-key input (raw terminal mode, no Enter required)
 - Estimated time remaining during copy
 - Show current filename during copy (deferred to renaming milestone)
