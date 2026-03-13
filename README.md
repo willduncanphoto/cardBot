@@ -49,15 +49,15 @@ Download the latest release for your Mac (Apple Silicon or Intel):
 > Build from source with Xcode tools if you want native instant detection.
 
 ```bash
-# Download (Apple Silicon / M1/M2/M3)
-curl -LO https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-arm64
+# Apple Silicon (M1/M2/M3)
+curl -fL -o cardbot https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-arm64
+chmod +x cardbot
+sudo mv cardbot /usr/local/bin/cardbot
 
-# Download (Intel)
-curl -LO https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-amd64
-
-# Make executable and move to your PATH
-chmod +x cardbot-darwin-*
-mv cardbot-darwin-* /usr/local/bin/cardbot
+# Intel Mac
+curl -fL -o cardbot https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-amd64
+chmod +x cardbot
+sudo mv cardbot /usr/local/bin/cardbot
 ```
 
 Or grab the binary from the repo directly (Apple Silicon only):
