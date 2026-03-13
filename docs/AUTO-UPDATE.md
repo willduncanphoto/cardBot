@@ -56,6 +56,31 @@ Release workflow must publish:
 
 ---
 
+## Open Questions / Future Investigation
+
+### User-local install paths (avoid sudo)
+
+Current install docs suggest `/usr/local/bin/cardbot`, which requires `sudo` for self-update.
+
+**Idea:** Support / document installing to user-writable paths:
+- `~/bin/cardbot` (add `~/bin` to PATH)
+- `~/.local/bin/cardbot` (XDG standard, already in PATH on many Linux distros)
+- `~/.cardbot/bin/cardbot` (self-contained)
+
+Benefits:
+- No sudo needed for self-update
+- Works on shared machines without admin rights
+- Simpler install story for non-technical users
+
+Trade-offs:
+- Need to ensure `~/bin` or `~/.local/bin` is in user's PATH
+- Different path conventions across platforms
+- May need shell profile modification (`.zshrc`, `.bashrc`)
+
+**Decision needed:** Should we change default install path recommendation? Provide multiple options?
+
+---
+
 ## Out of Scope (for now)
 
 - Silent auto-apply updates on startup

@@ -60,6 +60,14 @@ chmod +x cardbot
 sudo mv cardbot /usr/local/bin/cardbot
 ```
 
+**Avoid sudo:** Install to a user directory (e.g., `~/.local/bin`) and ensure it's in your PATH:
+```bash
+mkdir -p ~/.local/bin
+curl -fL -o ~/.local/bin/cardbot https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-arm64
+chmod +x ~/.local/bin/cardbot
+# Add to PATH if needed: export PATH="$HOME/.local/bin:$PATH"
+```
+
 Or grab the binary from the repo directly (Apple Silicon only):
 
 ```bash
