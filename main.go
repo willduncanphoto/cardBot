@@ -71,7 +71,7 @@ func (a *app) drainInput() {
 
 // spinnerFrames are the braille animation frames for the scanning spinner.
 // spinnerFrames are the classic spinner animation frames.
-var spinnerFrames = []string{" /", " |", " -", " \\"}
+var spinnerFrames = []string{"|", "/", "-", "\\"}
 
 // startSpinner starts the background spinner animation on the current line.
 func (a *app) startSpinner() {
@@ -251,7 +251,7 @@ func main() {
 		a.printf("[%s] Dry-run mode — no files will be copied\n", ts())
 	}
 
-	a.printf("[%s] Scanning ", ts())
+	a.printf("[%s] Scanning  ", ts())
 	a.startSpinner()
 
 	a.detector = detect.NewDetector()
@@ -525,7 +525,7 @@ func (a *app) finishCard() {
 	}
 	a.mu.Unlock()
 
-	fmt.Printf("\n[%s] Scanning ", ts())
+	fmt.Printf("\n[%s] Scanning  ", ts())
 	a.startSpinner()
 }
 
@@ -554,7 +554,7 @@ func (a *app) handleRemoval(path string) {
 		} else {
 			go func() {
 				time.Sleep(removalDelay)
-				fmt.Printf("\n[%s] Scanning ", ts())
+				fmt.Printf("\n[%s] Scanning  ", ts())
 				a.startSpinner()
 			}()
 		}
