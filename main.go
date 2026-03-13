@@ -239,14 +239,14 @@ func main() {
 		a.logger.Raw(fmt.Sprintf("[%s] Starting CardBot %s...", ts(), version))
 	}
 	for i := 0; i < 3; i++ {
-		time.Sleep(350 * time.Millisecond)
+		time.Sleep(600 * time.Millisecond)
 		fmt.Print(".")
 	}
 	fmt.Println()
 
-	a.printf("[%s] Copy location is set to %s\n", ts(), cfg.Destination.Path)
+	a.printf("[%s] Copy path ~/%s\n", ts(), config.ContractPath(cfg.Destination.Path))
 	time.Sleep(600 * time.Millisecond)
-	a.printf("[%s] File renaming is set to Original\n", ts())
+	a.printf("[%s] Processing settings NONE\n", ts())
 	time.Sleep(600 * time.Millisecond)
 
 	if a.dryRun {
