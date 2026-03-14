@@ -148,6 +148,20 @@ Work items grouped by milestone.
 
 Real-world testing with the Z9. Identify workflow friction and fine-tune based on actual use.
 
+### 0.7.0 — Video Workflow Separation
+
+Photos and videos often need different post-processing workflows. This milestone separates video handling with its own destination and tracking.
+
+- [ ] Separate video destination path (`destination.video_path` config)
+- [ ] `[v]` Copy Videos copies to video-specific folder (not mixed with photos)
+- [ ] `[a]` Copy All splits content: photos → photo dest, videos → video dest
+- [ ] Independent dotfile tracking for video copies (separate from photos)
+- [ ] Video-specific subfolder naming (may differ from photo naming)
+- [ ] Video metadata display (duration, resolution, codec) in card info
+- [ ] Optional: proxy generation workflow for video files
+
+**Use case:** Photos go to `~/Pictures/CardBot/` for Lightroom import, videos go to `~/Movies/CardBot/` (or external RAID) for Premiere/DaVinci. Each tracked independently — can copy photos without re-copying videos, or vice versa.
+
 ---
 
 ## Wishlist
