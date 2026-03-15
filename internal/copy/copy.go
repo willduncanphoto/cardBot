@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -23,7 +24,8 @@ type Progress struct {
 	FilesTotal  int
 	BytesDone   int64
 	BytesTotal  int64
-	CurrentFile string // relative path being copied
+	CurrentFile string // relative destination path being copied
+	SourceFile  string // relative source path (for dry-run rename preview)
 }
 
 // Result holds the final outcome of a copy operation.
@@ -150,7 +152,49 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 		return &Result{DestPath: opts.DestBase}, nil
 	}
 
+	// Sort files by capture time for chronological sequence numbering.
+	// When shooting bursts, this ensures sequence numbers reflect actual shot order
+	// even if files are scattered across multiple DCIM subfolders.
+	sortFilesByCaptureTime(files)
+
+	// Compute rename mappings for progress reporting and dry-run preview.
+	namingMode := isTimestampMode(opts.NamingMode)
+	seqDigits := SequenceDigits(len(files))
+	if opts.AnalyzeResult != nil && opts.AnalyzeResult.FileCount > 0 {
+		seqDigits = SequenceDigits(opts.AnalyzeResult.FileCount)
+	}
+	seqMax := sequenceMax(seqDigits)
+	seq := 1
+
+	// Pre-compute all destination paths for dry-run and progress reporting.
+	destPaths := make([]string, len(files))
+	for i := range files {
+		f := &files[i]
+		destRelPath := f.relPath
+		if namingMode {
+			destRelPath = renamedRelativePath(f.relPath, f.captureTime, seq, seqDigits)
+			seq++
+			if seq > seqMax {
+				seq = 1 // Loop back to 001 after 999
+			}
+		}
+		destPaths[i] = destRelPath
+	}
+
 	if opts.DryRun {
+		// Report all mappings via progress callback for dry-run preview.
+		if onProgress != nil {
+			for i, f := range files {
+				onProgress(Progress{
+					FilesDone:   i,
+					FilesTotal:  len(files),
+					BytesDone:   0,
+					BytesTotal:  totalBytes,
+					CurrentFile: destPaths[i],
+					SourceFile:  f.relPath, // For dry-run rename preview
+				})
+			}
+		}
 		return &Result{
 			FilesCopied: len(files),
 			BytesCopied: totalBytes,
@@ -189,14 +233,6 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 	start := time.Now()
 	madeDir := make(map[string]bool, 32)
 
-	namingMode := normalizeNamingMode(opts.NamingMode)
-	seqDigits := sequenceDigits(len(files))
-	if opts.AnalyzeResult != nil && opts.AnalyzeResult.FileCount > 0 {
-		seqDigits = sequenceDigits(opts.AnalyzeResult.FileCount)
-	}
-	seqMax := sequenceMax(seqDigits)
-	seq := 1
-
 	for i := range files {
 		// Check for cancellation before each file.
 		select {
@@ -206,16 +242,7 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 		}
 
 		f := &files[i]
-		destRelPath := f.relPath
-		if namingMode == namingModeTimestamp {
-			destRelPath = renamedRelativePath(f.relPath, f.captureTime, seq, seqDigits)
-			seq++
-			if seq > seqMax {
-				seq = 1
-			}
-		}
-
-		destPath := filepath.Join(opts.DestBase, f.date, destRelPath)
+		destPath := filepath.Join(opts.DestBase, f.date, destPaths[i])
 
 		// Guard against path traversal via malicious card paths.
 		destPath = filepath.Clean(destPath)
@@ -230,7 +257,7 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 				FilesTotal:  len(files),
 				BytesDone:   bytesDone,
 				BytesTotal:  totalBytes,
-				CurrentFile: destRelPath,
+				CurrentFile: destPaths[i],
 			})
 		}
 
@@ -322,4 +349,15 @@ func copyFile(dst, src string, srcSize int64, buf []byte, madeDir map[string]boo
 	}
 
 	return nil
+}
+
+// sortFilesByCaptureTime sorts files chronologically by capture time.
+// Falls back to lexicographic path order if capture times are equal.
+func sortFilesByCaptureTime(files []fileEntry) {
+	sort.SliceStable(files, func(i, j int) bool {
+		if files[i].captureTime.Equal(files[j].captureTime) {
+			return files[i].relPath < files[j].relPath
+		}
+		return files[i].captureTime.Before(files[j].captureTime)
+	})
 }

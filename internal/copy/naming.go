@@ -5,34 +5,15 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/illwill/cardbot/internal/config"
 )
 
-const (
-	namingModeOriginal  = "original"
-	namingModeTimestamp = "timestamp"
-)
-
-func normalizeNamingMode(mode string) string {
-	switch strings.ToLower(strings.TrimSpace(mode)) {
-	case namingModeTimestamp:
-		return namingModeTimestamp
-	case namingModeOriginal, "":
-		return namingModeOriginal
-	default:
-		return namingModeOriginal
-	}
-}
-
-// sequenceDigits picks minimum padding for card file count, clamped to 3..5.
-func sequenceDigits(totalFiles int) int {
-	switch {
-	case totalFiles <= 999:
-		return 3
-	case totalFiles <= 9999:
-		return 4
-	default:
-		return 5
-	}
+// SequenceDigits returns the sequence padding (fixed at 3 for 0.3.x).
+// Future: per-date detection for cards with >999 files in a single day.
+func SequenceDigits(totalFiles int) int {
+	_ = totalFiles // reserved for future per-date detection
+	return 3
 }
 
 func sequenceMax(digits int) int {
@@ -47,6 +28,7 @@ func sequenceMax(digits int) int {
 }
 
 func formatSequence(n, digits int) string {
+	// Sequence is 1-based: 001-999, loop back to 001
 	if n < 1 {
 		n = 1
 	}
@@ -74,4 +56,9 @@ func renamedRelativePath(relPath string, captureTime time.Time, seq, digits int)
 		return name
 	}
 	return filepath.Join(dir, name)
+}
+
+// isTimestampMode returns whether the naming mode string means timestamp renaming.
+func isTimestampMode(mode string) bool {
+	return config.NormalizeNamingMode(mode) == config.NamingTimestamp
 }

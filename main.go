@@ -16,7 +16,7 @@ import (
 	"github.com/illwill/cardbot/internal/pick"
 )
 
-const version = "0.3.0"
+const version = "0.3.2"
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "self-update" {
@@ -29,7 +29,7 @@ func main() {
 		flagDest    = flag.String("dest", "", "destination path for copied cards")
 		flagDryRun  = flag.Bool("dry-run", false, "scan cards but do not copy files")
 		flagReset   = flag.Bool("reset", false, "clear saved config and exit")
-		flagSetup   = flag.Bool("setup", false, "re-run destination setup")
+		flagSetup   = flag.Bool("setup", false, "re-run first-time setup (destination and naming)")
 	)
 	flag.Parse()
 
@@ -71,8 +71,6 @@ func main() {
 	} else {
 		cfg = config.Defaults()
 	}
-
-	cfg.Naming.Mode = config.NormalizeNamingMode(cfg.Naming.Mode)
 
 	// --- CLI flags override config ---
 	if *flagDest != "" {
