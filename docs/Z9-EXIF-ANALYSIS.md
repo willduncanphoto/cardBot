@@ -40,9 +40,9 @@ Sample values from real files:
 Even with subsecond precision:
 - Two cameras can fire in same 1/100s window
 - Same camera burst can produce identical subsecond values
-- Sequence number (001-999) is still required
+- Sequence number (0001-9999) is still required
 
-**Recommendation:** Use camera prefix + sequence (`Z9_260314T143052_001.NEF`) rather than subsecond timestamp.
+**Recommendation:** Use camera prefix + sequence (`Z9_260314T143052_0001.NEF`) rather than subsecond timestamp.
 
 ## Full EXIF Sample
 

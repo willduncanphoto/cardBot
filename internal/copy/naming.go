@@ -28,7 +28,7 @@ func sequenceMax(digits int) int {
 }
 
 func formatSequence(n, digits int) string {
-	// Sequence is 1-based: 001-999, loop back to 001
+	// Sequence is 1-based: 0001-9999, loop back to 0001
 	if n < 1 {
 		n = 1
 	}

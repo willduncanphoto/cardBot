@@ -1,13 +1,13 @@
 # Output Format
 
-Document version: 0.3.3
+Document version: 0.3.4
 
 ## Full Startup Flow
 
 Complete sequence from launch to first card display:
 
 ```
-[2026-03-12T12:15:32] Starting CardBot 0.3.3...     ← dots animate over ~1s
+[2026-03-12T12:15:32] Starting CardBot 0.3.4...     ← dots animate over ~1s
 [2026-03-12T12:15:34] Waiting for card...
 [2026-03-12T12:15:35] Card detected               ← card inserted
 [2026-03-12T12:15:35] Reading /Volumes/NIKON Z 9 ... 3051 files ✓ (0s)
@@ -25,13 +25,13 @@ Complete sequence from launch to first card display:
   Copy to:  ~/Pictures/CardBot
   Naming:   Timestamp + sequence (xxxx = 0001-9999)
 
-[a] Copy All  [s] Copy Selects  [p] Copy Photos  [v] Copy Videos  [e] Eject  [x] Exit  [?] Help  >
+[a] Copy All  [e] Eject  [x] Exit  [?] Help  >
 ```
 
 ## Startup
 
 ```
-[2026-03-12T12:15:32] Starting CardBot 0.3.3...
+[2026-03-12T12:15:32] Starting CardBot 0.3.4...
 [2026-03-12T12:15:34] Waiting for card...
 ```
 
@@ -65,7 +65,7 @@ You can change this later with cardbot --setup.
 Choice [1]: 2
 Naming set to: Timestamp + sequence
 
-[2026-03-12T12:15:40] Starting CardBot 0.3.3...
+[2026-03-12T12:15:40] Starting CardBot 0.3.4...
 [2026-03-12T12:15:43] Waiting for card...
 ```
 
@@ -89,7 +89,7 @@ Naming set to: Timestamp + sequence
   Copy to:  ~/Pictures/CardBot
   Naming:   Timestamp + sequence (xxxx = 0001-9999)
 
-[a] Copy All  [s] Copy Selects  [p] Copy Photos  [v] Copy Videos  [e] Eject  [x] Exit  [?] Help  >
+[a] Copy All  [e] Eject  [x] Exit  [?] Help  >
 ```
 
 ## Card Detected (Previously Copied)

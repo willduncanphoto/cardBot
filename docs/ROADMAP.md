@@ -1,6 +1,6 @@
 # CardBot Roadmap
 
-## Current: 0.3.3 (Stable)
+## Current: 0.3.4 (Stable)
 
 **Status:** Feature-complete for renaming. Ready for real-world validation.
 
@@ -126,6 +126,7 @@ Raw terminal mode (no Enter required). Power user polish.
 
 | Version | Date | Key Feature |
 |---------|------|-------------|
+| 0.3.4 | 2026-03-15 | Simplified prompt, dead code removal, stale comment fixes |
 | 0.3.3 | 2026-03-15 | Cleanup pass: docs sync, dead code removal, prompt consistency |
 | 0.3.2 | 2026-03-14 | Simplified UX, fixed 4-digit sequence, Z9 EXIF analysis |
 | 0.3.1 | — | (Skipped, merged into 0.3.2) |

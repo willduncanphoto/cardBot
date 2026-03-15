@@ -175,7 +175,7 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 			destRelPath = renamedRelativePath(f.relPath, f.captureTime, seq, seqDigits)
 			seq++
 			if seq > seqMax {
-				seq = 1 // Loop back to 001 after 999
+				seq = 1 // Loop back to 0001 after 9999
 			}
 		}
 		destPaths[i] = destRelPath

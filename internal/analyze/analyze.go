@@ -536,17 +536,3 @@ func cleanGear(gear string) string {
 	}
 	return gear
 }
-
-// titleCase converts an all-uppercase string to title case.
-// "CORPORATION NIKON Z 9" → "Corporation Nikon Z 9"
-// Single-character words (like model numbers) stay uppercase.
-func titleCase(s string) string {
-	words := strings.Fields(s)
-	for i, w := range words {
-		if len(w) <= 1 {
-			continue
-		}
-		words[i] = strings.ToUpper(w[:1]) + strings.ToLower(w[1:])
-	}
-	return strings.Join(words, " ")
-}

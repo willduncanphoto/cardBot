@@ -362,25 +362,6 @@ func TestCleanGear(t *testing.T) {
 	}
 }
 
-func TestTitleCase(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"CORPORATION NIKON Z 9", "Corporation Nikon Z 9"},
-		{"HELLO WORLD", "Hello World"},
-		{"A B", "A B"}, // single-char words unchanged
-		{"ILCE-7RM5", "Ilce-7rm5"},
-		{"", ""},
-	}
-	for _, tt := range tests {
-		if got := titleCase(tt.input); got != tt.want {
-			t.Errorf("titleCase(%q) = %q, want %q", tt.input, got, tt.want)
-		}
-	}
-}
-
 func TestScanXMPRating(t *testing.T) {
 	t.Parallel()
 	tests := []struct {

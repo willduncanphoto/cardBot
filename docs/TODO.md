@@ -2,17 +2,17 @@
 
 See [ROADMAP.md](ROADMAP.md) for full future planning.
 
-## Current: 0.3.3
+## Current: 0.3.4
 
 **Status:** Ready for real-world validation.
 
-### Before Tagging 0.3.3
+### Before Tagging 0.3.4
 - [ ] Real-world test: Z9 card, timestamp mode
 - [x] Verify 4-digit sequence behavior (0001-9999)
 - [x] Verify dry-run preview output
 - [ ] Verify re-copy behavior (expected: may re-copy due to no mapping log)
 
-### Known Limitations (Acceptable for 0.3.3)
+### Known Limitations (Acceptable for 0.3.4)
 - 10000+ files/day: sequence loops (0001→9999→0001). Very rare, documented.
 - Multi-camera same second: collision risk. See ROADMAP "Stuff to Think About".
 - Re-copy: uses size check, may re-copy renamed files.

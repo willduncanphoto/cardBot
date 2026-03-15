@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CFG="$HOME/.config/cardbot/config.json"
+# macOS: ~/Library/Application Support/cardbot/config.json
+# Linux: ~/.config/cardbot/config.json
+if [[ "$(uname)" == "Darwin" ]]; then
+  CFG="$HOME/Library/Application Support/cardbot/config.json"
+else
+  CFG="${XDG_CONFIG_HOME:-$HOME/.config}/cardbot/config.json"
+fi
 
 if [[ ! -f "$CFG" ]]; then
   echo "Config not found: $CFG"
   exit 1
 fi
 
-python3 - <<'PY'
+python3 - "$CFG" <<'PY'
 import json, pathlib, sys
-p = pathlib.Path.home()/".config/cardbot/config.json"
+p = pathlib.Path(sys.argv[1])
 try:
     d = json.loads(p.read_text())
 except Exception as e:
