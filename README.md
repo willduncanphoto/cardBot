@@ -117,11 +117,11 @@ Then insert a memory card.
 **Output example:**
 
 ```
-[2026-03-12T12:15:32] Starting CardBot 0.2.9...
-[2026-03-12T12:15:33] Copy path /Pictures/CardBot
-[2026-03-12T12:15:33] Keep original filenames
-[2026-03-12T12:15:33] Card detected
-[2026-03-12T12:15:33] Scanning /Volumes/NIKON Z 9  ... 3051 files ✓ (0s)
+[2026-03-14T10:30:45] Starting CardBot 0.3.2...
+[2026-03-14T10:30:46] Copy path ~/Pictures/CardBot
+[2026-03-14T10:30:46] Naming: Timestamp + sequence (001-999)
+[2026-03-14T10:30:46] Card detected
+[2026-03-14T10:30:46] Scanning /Volumes/NIKON Z 9  ... 3051 files ✓ (0s)
 
   Status:   New
   Path:     /Volumes/NIKON Z 9
@@ -132,6 +132,7 @@ Then insert a memory card.
             2026-02-26      28.4 MB      1   NEF
 
   Total:    3048 photos, 0 videos, 96.0 GB
+  Naming:   Timestamp + sequence (001-999)
 ────────────────────────────────────────
 [a] Copy All  [s] Copy Selects  [p] Copy Photos  [v] Copy Videos  [e] Eject  [x] Exit  [?] Help  >
 ```

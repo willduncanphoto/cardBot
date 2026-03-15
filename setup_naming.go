@@ -23,13 +23,18 @@ func promptNamingModeIO(in io.Reader, out io.Writer, defaultMode string) string 
 		fmt.Fprintln(out, "────────────────────────────────────────")
 		fmt.Fprintln(out, "File Naming")
 		fmt.Fprintln(out, "────────────────────────────────────────")
-		fmt.Fprintln(out, "How would you like files named when copying?")
 		fmt.Fprintln(out)
-		fmt.Fprintln(out, "[1] Keep original filenames (DSC_0001.NEF)")
-		fmt.Fprintln(out, "[2] Timestamp + sequence (260314T143052_001.NEF)")
+		fmt.Fprintln(out, "Camera filenames reset every 10,000 shots.")
+		fmt.Fprintln(out, "This can cause duplicates when copying multiple cards.")
 		fmt.Fprintln(out)
-		fmt.Fprintln(out, "The timestamp comes from when each photo was taken.")
-		fmt.Fprintln(out, "Sequence digits adjust automatically based on card size (3/4/5 digits).")
+		fmt.Fprintln(out, "[1] Keep camera filenames")
+		fmt.Fprintln(out, "    DSC_0001.NEF, DSC_0002.NEF ...")
+		fmt.Fprintln(out, "    Use if you rely on camera numbering.")
+		fmt.Fprintln(out)
+		fmt.Fprintln(out, "[2] Timestamp + sequence")
+		fmt.Fprintln(out, "    260314T143052_001.NEF, _002.NEF ...")
+		fmt.Fprintln(out, "    Use for automatic order across all cards.")
+		fmt.Fprintln(out)
 		fmt.Fprintln(out, "You can change this later with cardbot --setup.")
 		fmt.Fprintln(out)
 		fmt.Fprintf(out, "Choice [%s]: ", namingChoiceDefault(mode))
@@ -75,40 +80,22 @@ func namingChoiceDefault(mode string) string {
 
 func namingModeLabel(mode string) string {
 	if config.NormalizeNamingMode(mode) == config.NamingTimestamp {
-		return "Timestamp + sequence (auto-detected digits)"
+		return "Timestamp + sequence"
 	}
-	return "Keep original filenames"
+	return "Camera original"
 }
 
 func namingStartupLine(mode string) string {
 	if config.NormalizeNamingMode(mode) == config.NamingTimestamp {
-		return "Timestamp + sequence filenames (YYMMDDTHHMMSS_NNN.EXT, auto 3/4/5 digits)"
+		return "Naming: Timestamp + sequence (001-999)"
 	}
-	return "Keep original filenames"
+	return "Naming: Camera original (DSC_xxxx.NEF)"
 }
 
 func namingDisplayLine(mode string, fileCount int) string {
+	_ = fileCount // reserved for future per-date digit detection
 	if config.NormalizeNamingMode(mode) != config.NamingTimestamp {
-		return "Keep original (DSC_0001.NEF)"
+		return "Camera original (DSC_0001.NEF)"
 	}
-	digits := sequenceDigitsForCount(fileCount)
-	sample := "001"
-	switch digits {
-	case 4:
-		sample = "0001"
-	case 5:
-		sample = "00001"
-	}
-	return fmt.Sprintf("Timestamp sequence (260314T143052_%s.NEF) [%d-digit]", sample, digits)
-}
-
-func sequenceDigitsForCount(fileCount int) int {
-	switch {
-	case fileCount <= 999:
-		return 3
-	case fileCount <= 9999:
-		return 4
-	default:
-		return 5
-	}
+	return "Timestamp + sequence (001-999)"
 }

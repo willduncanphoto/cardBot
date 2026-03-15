@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -260,9 +261,11 @@ func TestNormalizeNamingMode(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if got := NormalizeNamingMode(tt.in); got != tt.want {
-			t.Errorf("NormalizeNamingMode(%q) = %q, want %q", tt.in, got, tt.want)
-		}
+		t.Run(fmt.Sprintf("input_%q", tt.in), func(t *testing.T) {
+			if got := NormalizeNamingMode(tt.in); got != tt.want {
+				t.Errorf("NormalizeNamingMode(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
 	}
 }
 

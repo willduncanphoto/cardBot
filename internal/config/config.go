@@ -79,12 +79,15 @@ func Defaults() *Config {
 }
 
 // Path returns the default config file path.
+// Uses os.UserConfigDir() for platform-appropriate location:
+//   - macOS: ~/Library/Application Support/cardbot/config.json
+//   - Linux: ~/.config/cardbot/config.json
 func Path() (string, error) {
-	home, err := os.UserHomeDir()
+	dir, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".config", "cardbot", "config.json"), nil
+	return filepath.Join(dir, "cardbot", "config.json"), nil
 }
 
 // Load reads the config file and merges it over defaults.
