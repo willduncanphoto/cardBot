@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/illwill/cardbot/internal/analyze"
 	"github.com/illwill/cardbot/internal/config"
 	"github.com/illwill/cardbot/internal/detect"
@@ -42,6 +43,7 @@ type app struct {
 	copiedModes map[string]bool    // modes completed this session
 	cardInvalid bool               // true when current card has no DCIM directory
 	scanCancel  context.CancelFunc // cancels the current displayCard goroutine
+	spinner     *spinner.Spinner   // scanner spinner
 }
 
 // drainInput discards any buffered input keystrokes.
@@ -83,9 +85,17 @@ func (a *app) handleCardEvent(card *detect.Card) {
 		return
 	}
 
+	a.stopScanning()
+
 	if a.currentCard == nil {
 		a.currentCard = card
-		fmt.Printf("[%s] Card detected\n", ts())
+		// Format: "/Volumes/NAME" [disk identifier]
+		hw := card.GetHW()
+		diskID := ""
+		if hw != nil && hw.DeviceID != "" {
+			diskID = " [" + hw.DeviceID + "]"
+		}
+		fmt.Printf("[%s] \"%s\"%s detected\n", ts(), strings.TrimSpace(card.Path), diskID)
 		a.logf("Card detected: %s", card.Path)
 		ctx, cancel := context.WithCancel(context.Background())
 		a.scanCancel = cancel
@@ -127,14 +137,14 @@ func (a *app) displayCard(ctx context.Context, path string) {
 		return
 	}
 
-	fmt.Printf("[%s] Reading %s... ", ts(), path)
+	fmt.Printf("\n[%s] Scanning", ts())
 	a.logf("Reading %s", path)
 	scanStart := time.Now()
 	analyzer := analyze.New(path)
 	analyzer.SetWorkers(a.cfg.Advanced.ExifWorkers)
 	analyzer.OnProgress(func(count int) {
 		if count%100 == 0 {
-			fmt.Printf("\r[%s] Reading %s... %d files", ts(), path, count)
+			fmt.Printf("\r[%s] Scanning %d files", ts(), count)
 		}
 	})
 
@@ -180,7 +190,8 @@ func (a *app) displayCard(ctx context.Context, path string) {
 	if result != nil {
 		total = result.FileCount
 	}
-	fmt.Printf("\r[%s] Reading %s... %d files ✓ (%ds)\n", ts(), path, total, secs)
+	fmt.Printf("\r[%s] Scanning %d files ✓\n", ts(), total)
+	fmt.Printf("[%s] Scan complete (%ds)\n", ts(), secs)
 	a.logf("Scan completed: %s — %d files in %ds", path, total, secs)
 	fmt.Println()
 
@@ -218,10 +229,10 @@ func (a *app) finishCard() {
 	}
 	a.mu.Unlock()
 
-	fmt.Printf("\n[%s] Waiting for card...\n", ts())
+	a.startScanning()
 }
 
-// resumeScanningIfIdle prints the waiting message only if
+// resumeScanningIfIdle starts the scanning spinner only if
 // no current card is active and no queued cards are waiting.
 func (a *app) resumeScanningIfIdle() {
 	a.mu.Lock()
@@ -230,7 +241,7 @@ func (a *app) resumeScanningIfIdle() {
 	if !shouldStart {
 		return
 	}
-	fmt.Printf("\n[%s] Waiting for card...\n", ts())
+	a.startScanning()
 }
 
 func (a *app) handleRemoval(path string) {
@@ -371,6 +382,26 @@ func cardIsReadOnly(path string) bool {
 	f.Close()
 	os.Remove(probe)
 	return false
+}
+
+// startScanning starts the scanning spinner.
+func (a *app) startScanning() {
+	if a.spinner != nil {
+		a.spinner.Stop()
+	}
+	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+	s.Prefix = fmt.Sprintf("[%s] Scanning ", ts())
+	s.Start()
+	a.spinner = s
+}
+
+// stopScanning stops and clears the scanning spinner.
+func (a *app) stopScanning() {
+	if a.spinner != nil {
+		a.spinner.Stop()
+		fmt.Print("\r")
+		a.spinner = nil
+	}
 }
 
 func readInput(ch chan<- string, done <-chan struct{}) {

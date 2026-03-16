@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/illwill/cardbot/internal/config"
 	"github.com/illwill/cardbot/internal/detect"
@@ -130,16 +129,7 @@ func main() {
 		a.printf("[%s] Warning: %s\n", ts(), w)
 	}
 
-	// Print version, animate dots over ~1 second, then continue.
-	fmt.Printf("[%s] Starting CardBot %s", ts(), version)
-	if a.logger != nil {
-		a.logger.Raw(fmt.Sprintf("[%s] Starting CardBot %s...", ts(), version))
-	}
-	for i := 0; i < 3; i++ {
-		time.Sleep(300 * time.Millisecond)
-		fmt.Print(".")
-	}
-	fmt.Println()
+	a.printf("[%s] CardBot %s\n", ts(), version)
 
 	if latest, ok := maybeCheckForUpdate(cfg, cfgPath, logger); ok {
 		a.printf("[%s] Update available: %s (you have %s)\n", ts(), latest, version)
@@ -150,7 +140,7 @@ func main() {
 		a.printf("[%s] Dry-run mode — no files will be copied\n", ts())
 	}
 
-	a.printf("[%s] Waiting for card...\n", ts())
+	a.startScanning()
 
 	a.detector = detect.NewDetector()
 	if err := a.detector.Start(); err != nil {
@@ -173,6 +163,7 @@ func main() {
 			a.handleInput(input)
 
 		case <-a.sigChan:
+			a.stopScanning()
 			fmt.Println("\nShutting down...")
 			a.logf("Shutting down")
 			close(a.inputDone)
