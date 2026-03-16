@@ -4,22 +4,17 @@ A CLI tool for camera memory cards.
 
 ## What CardBot Does
 
-CardBot generates a concise overview of your memory card and provides modern copy tools. It will also rename your files one day.
+CardBot generates a concise overview of your memory cards, provides modern copy tools and logging for advanced professional photography and video workflow.
 
 **Current capabilities:**
 - Detect CFexpress, XQD, and SD cards on macOS
 - Quickly analyze a card's content and technical information
-- Show starred image count directly from EXIF/XMP
 - Selective copy: choose to copy only Selects (starred), Photos, Videos, or All
 - Copy files to dated folders with size verification
-- Cancel or interrupt copy safely (card removal, `[\]` key, Ctrl+C)
 - Disk space preflight check before copy
-- Read-only card warnings
-- Track copy history via `.cardbot` dotfile written to the card
-- Built-in updater (`cardbot self-update`) with checksum verification
+- Card copy status (.cardbot)
 - Queue multiple cards
-- Eject cards safely
-- Doesn't delete your hard work
+- Eject cards and cancel transfers safely
 
 ## Platform Support
 
@@ -174,7 +169,8 @@ cardbot self-update
 - Replaces the current binary atomically
 - Prints a `sudo` command if your install path is not writable
 
-CardBot also performs a lightweight update check on startup (max ~2s timeout, cached to once per 24 hours).
+CardBot also performs a lightweight update check on startup.
+
 ## Copy
 
 Press `a` to copy all files, or use selective copy modes to copy only specific file types. CardBot groups files into dated folders based on EXIF date:
@@ -219,8 +215,6 @@ Expected to work (based on DCIM folder patterns):
 - Panasonic GH6, S5 II
 - OM System OM-1
 
-See [docs/CARDS.md](docs/CARDS.md) for the full testing checklist.
-
 ## Supported File Types
 
 **Photos:** NEF, NRW, CR2, CR3, CRW, ARW, SRF, SR2, RAF, ORF, RW2, DNG, PEF, 3FR, IIQ, JPG, JPEG, TIF, TIFF, HEIC, HEIF, PNG
@@ -254,81 +248,19 @@ Config is stored at `~/.config/cardbot/config.json`:
 }
 ```
 
-Run `cardbot --setup` to change the destination. Run `cardbot --reset` to clear all saved config.
+Run `cardbot --setup` to change rerun the config setup. Run `cardbot --reset` to clear all saved config.
 
 ## Planned Stuff
 
-- File renaming on copy (date-based, camera+date, sequence)
 - Resume interrupted copies
 - ETA during copy
-- Auto-update enhancements (signed releases, package-manager integration)
 - Linux support
+- Video and photo destinations
 
-## Project Structure
+## Maybe Stuff
 
-```
-cardbot/
-├── main.go                          # CLI flags, config, logger, signal handling, entry point
-├── app.go                           # App struct, event loop, card/queue management, input
-├── app_logic.go                     # Input parsing, copy guards, prompt text (pure functions)
-├── app_logic_test.go                # Tests for app logic
-├── display.go                       # Card info display, prompts, help, hardware info
-├── copy_cmd.go                      # Copy orchestration, speed test
-├── update_cmd.go                    # Update check + self-update command wiring
-├── internal/
-│   ├── analyze/
-│   │   ├── analyze.go               # DCIM walking, parallel EXIF/XMP, date grouping
-│   │   ├── analyze_test.go
-│   │   └── analyze_rating_test.go
-│   ├── config/
-│   │   ├── config.go                # Config load/save, schema versioning, path expansion
-│   │   └── config_test.go
-│   ├── copy/
-│   │   ├── copy.go                  # File copy engine — walk, copy, verify, cancel
-│   │   ├── copy_test.go
-│   │   ├── copy_filter_test.go
-│   │   ├── diskspace_unix.go        # Disk free space check (darwin/linux)
-│   │   └── diskspace_other.go       # Fallback stub
-│   ├── detect/
-│   │   ├── card.go                  # Card struct
-│   │   ├── format.go                # FormatBytes (platform-agnostic)
-│   │   ├── format_test.go
-│   │   ├── shared.go                # Brand detection
-│   │   ├── shared_test.go
-│   │   ├── detect_darwin.go         # macOS native (CGO + DiskArbitration)
-│   │   ├── detect_darwin_nocgo.go   # macOS polling fallback
-│   │   ├── detect_linux.go          # Linux polling
-│   │   ├── detect_other.go          # Unsupported platforms stub
-│   │   ├── hardware_darwin.go       # macOS hardware info (IOKit, system_profiler)
-│   │   └── hardware_linux.go        # Linux hardware info (sysfs, CID)
-│   ├── dotfile/
-│   │   ├── dotfile.go               # .cardbot read/write for copy tracking
-│   │   └── dotfile_test.go
-│   ├── log/
-│   │   ├── log.go                   # File logging with rotation
-│   │   └── log_test.go
-│   ├── pick/
-│   │   ├── pick_darwin.go           # Native macOS folder picker (osascript)
-│   │   └── pick_other.go            # Fallback stub
-│   ├── speedtest/
-│   │   ├── speedtest_darwin.go      # 256MB sequential read/write benchmark
-│   │   └── speedtest_other.go       # Stub for unsupported platforms
-│   ├── ui/
-│   │   ├── color.go                 # ANSI brand colors
-│   │   └── color_test.go
-│   └── update/
-│       ├── update.go                # Release check + secure binary updater
-│       └── update_test.go
-├── .github/workflows/               # CI and release automation
-├── docs/                            # Project documentation
-└── go.mod
-```
-
-## Dependencies
-
-- **Runtime:** Zero external runtime dependencies
-- **Build:** `github.com/evanoberholster/imagemeta` for EXIF/XMP parsing
-- **Optional:** Xcode CLI Tools for macOS native card detection
+- Windows
+- Custom filename workflow
 
 ## Size
 
