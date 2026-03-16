@@ -14,17 +14,14 @@ import (
 )
 
 const (
-	updateCheckInterval = 24 * time.Hour
+	updateCheckInterval = 0 * time.Second // Always check on startup
 	updateCheckTimeout  = 5 * time.Second
 	selfUpdateTimeout   = 60 * time.Second
 )
 
-// MaybeCheckForUpdate checks for updates if enough time has passed since last check.
+// MaybeCheckForUpdate checks for updates on every app startup.
 func MaybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logger, version string) (string, bool) {
-	now := time.Now().UTC()
-	if !update.ShouldCheck(cfg.Update.LastCheck, now, updateCheckInterval) {
-		return "", false
-	}
+	fmt.Printf("[%s] Checking for updates...\n", ts())
 
 	ctx, cancel := context.WithTimeout(context.Background(), updateCheckTimeout)
 	defer cancel()
@@ -34,14 +31,6 @@ func MaybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logge
 			logger.Printf("Update check failed: %v", err)
 		}
 		return "", false
-	}
-
-	// Cache only successful checks. If network/API fails, we'll try again next startup.
-	cfg.Update.LastCheck = now.Format(time.RFC3339)
-	if cfgPath != "" {
-		if err := config.Save(cfg, cfgPath); err != nil && logger != nil {
-			logger.Printf("Update check save warning: %v", err)
-		}
 	}
 
 	if res.Update {
