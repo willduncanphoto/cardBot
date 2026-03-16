@@ -9,6 +9,11 @@ import (
 	"syscall"
 )
 
+var (
+	quickHardwareInfoFn = QuickHardwareInfo
+	getHardwareInfoFn   = GetHardwareInfo
+)
+
 // buildCard constructs a Card from a mount path and volume name.
 // Returns nil if filesystem stats cannot be read.
 // Hardware info is fetched in a background goroutine to avoid blocking card detection;
@@ -31,9 +36,13 @@ func buildCard(path, name string) *Card {
 		Brand:      detectBrand(path),
 	}
 
-	// Fetch hardware info asynchronously — shells out to diskutil + system_profiler.
+	// Pre-populate device ID synchronously (single diskutil/sysfs call)
+	// so it's available immediately for the detection message.
+	card.SetHW(quickHardwareInfoFn(path))
+
+	// Full hardware enrichment in background (includes system_profiler etc.).
 	go func() {
-		if hw, err := GetHardwareInfo(path); err == nil {
+		if hw, err := getHardwareInfoFn(path); err == nil {
 			card.SetHW(hw)
 		}
 	}()

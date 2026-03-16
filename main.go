@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/illwill/cardbot/internal/app"
 	"github.com/illwill/cardbot/internal/config"
 	cblog "github.com/illwill/cardbot/internal/log"
@@ -121,25 +119,13 @@ func main() {
 
 	a.Printf("[%s] CardBot %s\n", app.Ts(), version)
 
-	// Animated update check — spinner resolves to the result in-place.
-	updateSpinner := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
-	updateSpinner.Prefix = fmt.Sprintf("[%s] Checking for updates ", app.Ts())
-	updateSpinner.Start()
+	// Startup update-check stages.
+	a.Printf("[%s] Checking for updates\n", app.Ts())
 	latest, updateErr := app.MaybeCheckForUpdate(cfg, cfgPath, logger, version)
-	if updateErr != nil {
-		msg := fmt.Sprintf("[%s] NO SIGNAL\n", app.Ts())
-		if code := app.UpdateErrCode(updateErr); code != "" {
-			msg = fmt.Sprintf("[%s] NO SIGNAL (%s)\n", app.Ts(), code)
-		}
-		updateSpinner.FinalMSG = msg
-	} else if latest != "" {
-		updateSpinner.FinalMSG = fmt.Sprintf("[%s] Update available (%s)\n", app.Ts(), latest)
-	} else {
-		updateSpinner.FinalMSG = fmt.Sprintf("[%s] Up to date\n", app.Ts())
-	}
-	updateSpinner.Stop()
-	if updateErr == nil && latest != "" {
-		a.Printf("[%s] Run: cardbot self-update\n", app.Ts())
+	statusLine, actionLine := app.StartupUpdateMessages(latest, updateErr)
+	a.Printf("[%s] %s\n", app.Ts(), statusLine)
+	if actionLine != "" {
+		a.Printf("[%s] %s\n", app.Ts(), actionLine)
 	}
 
 	if *flagDryRun {

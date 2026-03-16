@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestDetectBrand(t *testing.T) {
@@ -81,6 +82,67 @@ func TestContainsNDModel(t *testing.T) {
 		got := containsNDModel(tt.input)
 		if got != tt.want {
 			t.Errorf("containsNDModel(%q) = %v, want %v", tt.input, got, tt.want)
+		}
+	}
+}
+
+func TestBuildCard_QuickHardwarePrefill(t *testing.T) {
+	root := t.TempDir()
+	dcim := filepath.Join(root, "DCIM", "100NIKON")
+	if err := os.MkdirAll(dcim, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	oldQuick := quickHardwareInfoFn
+	oldFull := getHardwareInfoFn
+	defer func() {
+		quickHardwareInfoFn = oldQuick
+		getHardwareInfoFn = oldFull
+	}()
+
+	quick := &HardwareInfo{}
+	full := &HardwareInfo{}
+	releaseFull := make(chan struct{})
+	quickCalled := false
+	fullStarted := make(chan struct{}, 1)
+
+	quickHardwareInfoFn = func(path string) *HardwareInfo {
+		quickCalled = true
+		return quick
+	}
+	getHardwareInfoFn = func(path string) (*HardwareInfo, error) {
+		select {
+		case fullStarted <- struct{}{}:
+		default:
+		}
+		<-releaseFull
+		return full, nil
+	}
+
+	card := buildCard(root, "CARD")
+	if card == nil {
+		t.Fatal("buildCard returned nil")
+	}
+	if !quickCalled {
+		t.Fatal("expected quickHardwareInfoFn to be called")
+	}
+	if got := card.GetHW(); got != quick {
+		t.Fatalf("expected quick hardware prefill pointer, got %p want %p", got, quick)
+	}
+
+	close(releaseFull)
+
+	deadline := time.After(500 * time.Millisecond)
+	for {
+		if got := card.GetHW(); got == full {
+			return
+		}
+		select {
+		case <-fullStarted:
+			// full path started; continue waiting for assignment.
+		case <-deadline:
+			t.Fatal("timed out waiting for full hardware enrichment")
+		case <-time.After(5 * time.Millisecond):
 		}
 	}
 }

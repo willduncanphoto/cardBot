@@ -25,13 +25,12 @@ func (a *App) handleCardEvent(card *detect.Card) {
 
 	if a.currentCard == nil {
 		a.currentCard = card
-		// Format: "/Volumes/NAME" [disk identifier]
 		hw := card.GetHW()
 		diskID := ""
-		if hw != nil && hw.DiskID() != "" {
-			diskID = " [" + hw.DiskID() + "]"
+		if hw != nil {
+			diskID = hw.DiskID()
 		}
-		fmt.Printf("[%s] \"%s\"%s detected\n", ts(), strings.TrimSpace(card.Path), diskID)
+		fmt.Printf("[%s] %s\n", ts(), formatDetectedVolume(card.Path, diskID))
 		a.logf("Card detected: %s", card.Path)
 		ctx, cancel := context.WithCancel(context.Background())
 		a.scanCancel = cancel
@@ -52,6 +51,15 @@ func (a *App) isTracked(path string) bool {
 		}
 	}
 	return false
+}
+
+func formatDetectedVolume(path, diskID string) string {
+	path = strings.TrimSpace(path)
+	diskID = strings.TrimSpace(diskID)
+	if diskID == "" {
+		return fmt.Sprintf("\"%s\" detected", path)
+	}
+	return fmt.Sprintf("\"%s\" [%s] detected", path, diskID)
 }
 
 func (a *App) printQueueNotice(card *detect.Card) {

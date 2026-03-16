@@ -57,6 +57,16 @@ func (h *HardwareInfo) DiskID() string {
 	return h.DevicePath
 }
 
+// QuickHardwareInfo returns a minimal HardwareInfo with just the DevicePath populated.
+// Fast enough to call synchronously — reads from sysfs.
+func QuickHardwareInfo(mountPath string) *HardwareInfo {
+	info := &HardwareInfo{}
+	if device, err := findBlockDevice(mountPath); err == nil {
+		info.DevicePath = device
+	}
+	return info
+}
+
 // GetHardwareInfo attempts to retrieve hardware information.
 // On Linux with direct SD slot, CID is available.
 func GetHardwareInfo(mountPath string) (*HardwareInfo, error) {

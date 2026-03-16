@@ -64,6 +64,16 @@ func (h *HardwareInfo) DiskID() string {
 	return h.DeviceID
 }
 
+// QuickHardwareInfo returns a minimal HardwareInfo with just the DeviceID populated.
+// Fast enough to call synchronously — runs a single diskutil info command.
+func QuickHardwareInfo(mountPath string) *HardwareInfo {
+	info := &HardwareInfo{}
+	if id, err := getDeviceID(mountPath); err == nil {
+		info.DeviceID = id
+	}
+	return info
+}
+
 // GetHardwareInfo attempts to retrieve hardware information for the given mount path.
 func GetHardwareInfo(mountPath string) (*HardwareInfo, error) {
 	info := &HardwareInfo{}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
@@ -18,8 +17,6 @@ const (
 	updateCheckTimeout = 5 * time.Second
 	selfUpdateTimeout  = 60 * time.Second
 )
-
-var httpCodeRe = regexp.MustCompile(`http (\d{3})`)
 
 // MaybeCheckForUpdate checks for updates on every app startup.
 func MaybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logger, version string) (string, error) {
@@ -39,30 +36,16 @@ func MaybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logge
 	return "", nil
 }
 
-// UpdateErrCode returns a short display code for an update check failure,
-// or an empty string if the error is a plain connectivity loss (no code needed).
-func UpdateErrCode(err error) string {
-	if err == nil {
-		return ""
+// StartupUpdateMessages returns user-facing startup lines for update-check outcome.
+// status is always non-empty; action is optional.
+func StartupUpdateMessages(latest string, err error) (status, action string) {
+	if err != nil {
+		return "NO SIGNAL", ""
 	}
-	// Deadline elapsed — plain no-signal, no code.
-	if errors.Is(err, context.DeadlineExceeded) {
-		return ""
+	if latest != "" {
+		return fmt.Sprintf("UPDATE AVAILABLE (%s)", latest), "Run: cardbot self-update"
 	}
-	s := strings.ToLower(err.Error())
-	// Network-level failures — no code needed.
-	if strings.Contains(s, "no such host") ||
-		strings.Contains(s, "no route to host") ||
-		strings.Contains(s, "network is unreachable") ||
-		strings.Contains(s, "i/o timeout") ||
-		strings.Contains(s, "connection refused") {
-		return ""
-	}
-	// HTTP status code — extract and return just the number.
-	if m := httpCodeRe.FindStringSubmatch(s); m != nil {
-		return m[1]
-	}
-	return "ERR"
+	return "Up to date", ""
 }
 
 // RunSelfUpdate performs a self-update to the latest version.
