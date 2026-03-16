@@ -21,7 +21,7 @@ const (
 
 // MaybeCheckForUpdate checks for updates on every app startup.
 func MaybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logger, version string) (string, bool) {
-	fmt.Printf("[%s] Checking for updates...\n", ts())
+	fmt.Printf("[%s] Checking for updates\n", ts())
 
 	ctx, cancel := context.WithTimeout(context.Background(), updateCheckTimeout)
 	defer cancel()
