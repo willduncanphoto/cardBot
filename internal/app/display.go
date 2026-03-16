@@ -1,7 +1,9 @@
-package main
+package app
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/illwill/cardbot/internal/analyze"
@@ -13,7 +15,7 @@ import (
 
 // printCardHeader renders the shared header lines used by both printCardInfo
 // and printInvalidCardInfo: Status, Path, Storage, Camera.
-func (a *app) printCardHeader(card *detect.Card, cameraDisplay string) {
+func (a *App) printCardHeader(card *detect.Card, cameraDisplay string) {
 	status := dotfile.Read(card.Path)
 	fmt.Printf("  Status:   %s\n", dotfile.FormatStatus(status))
 	fmt.Printf("  Path:     %s\n", card.Path)
@@ -33,7 +35,7 @@ func (a *app) printCardHeader(card *detect.Card, cameraDisplay string) {
 	fmt.Printf("  Camera:   %s%s%s\n", color, cameraDisplay, reset)
 }
 
-func (a *app) printCardInfo(card *detect.Card, result *analyze.Result) {
+func (a *App) printCardInfo(card *detect.Card, result *analyze.Result) {
 	camera := card.Brand + " (unknown model)"
 	if result != nil && result.Gear != "" {
 		camera = result.Gear
@@ -103,7 +105,7 @@ func (a *app) printCardInfo(card *detect.Card, result *analyze.Result) {
 }
 
 // printInvalidCardInfo shows basic card info when a card has no DCIM directory.
-func (a *app) printInvalidCardInfo(card *detect.Card) {
+func (a *App) printInvalidCardInfo(card *detect.Card) {
 	fmt.Println()
 	a.printCardHeader(card, card.Brand)
 	fmt.Printf("  Content:  (no DCIM — not a camera card)\n")
@@ -111,7 +113,7 @@ func (a *app) printInvalidCardInfo(card *detect.Card) {
 	a.printPrompt()
 }
 
-func (a *app) printPrompt() {
+func (a *App) printPrompt() {
 	a.mu.Lock()
 	invalid := a.cardInvalid
 	copiedAll := a.copiedModes["all"]
@@ -121,7 +123,7 @@ func (a *app) printPrompt() {
 }
 
 // showHelp prints all available commands.
-func (a *app) showHelp() {
+func (a *App) showHelp() {
 	fmt.Println()
 	fmt.Println("  Commands:")
 	fmt.Println("  [a]  Copy All     copy all files to destination")
@@ -138,7 +140,7 @@ func (a *app) showHelp() {
 }
 
 // showHardwareInfo displays hardware details for the current card.
-func (a *app) showHardwareInfo(card *detect.Card) {
+func (a *App) showHardwareInfo(card *detect.Card) {
 	fmt.Println()
 	hw := card.GetHW()
 	if hw == nil {
@@ -167,4 +169,17 @@ func friendlyErr(err error) string {
 	default:
 		return s
 	}
+}
+
+// cardIsReadOnly probes the card path for write access.
+// Returns true if a temp file cannot be created (write-protected card).
+func cardIsReadOnly(path string) bool {
+	probe := filepath.Join(path, ".cardbot_rw")
+	f, err := os.OpenFile(probe, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		return true
+	}
+	f.Close()
+	os.Remove(probe)
+	return false
 }

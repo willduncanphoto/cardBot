@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bufio"
@@ -10,8 +10,24 @@ import (
 	"github.com/illwill/cardbot/internal/config"
 )
 
-// promptNamingMode asks the user how filenames should be written on copy.
-func promptNamingMode(defaultMode string) string {
+// RunSetup executes first-time/--setup prompts and persists config.
+func RunSetup(
+	cfg *config.Config,
+	cfgPath string,
+	promptDestinationFn func(string) string,
+	promptNamingFn func(string) string,
+) error {
+	cfg.Destination.Path = config.ContractPath(promptDestinationFn(cfg.Destination.Path))
+	cfg.Naming.Mode = config.NormalizeNamingMode(promptNamingFn(cfg.Naming.Mode))
+
+	if cfgPath == "" {
+		return nil
+	}
+	return config.Save(cfg, cfgPath)
+}
+
+// PromptNamingMode asks the user how filenames should be written on copy.
+func PromptNamingMode(defaultMode string) string {
 	return promptNamingModeIO(os.Stdin, os.Stdout, defaultMode)
 }
 

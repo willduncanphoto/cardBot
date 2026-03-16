@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 
 const dryRunPreviewLimit = 200
 
-func (a *app) copyFiltered(card *detect.Card, mode string) {
+func (a *App) copyFiltered(card *detect.Card, mode string) {
 	destBase, err := config.ExpandPath(a.cfg.Destination.Path)
 	if err != nil {
 		fmt.Printf("\n[%s] Error: %s\n", ts(), friendlyErr(err))
@@ -228,7 +228,7 @@ func (a *app) copyFiltered(card *detect.Card, mode string) {
 	}
 }
 
-func (a *app) handleCopySuccess(card *detect.Card, mode, destBase string, result *cardcopy.Result, isDryRun bool, previewHidden int) {
+func (a *App) handleCopySuccess(card *detect.Card, mode, destBase string, result *cardcopy.Result, isDryRun bool, previewHidden int) {
 	if result == nil {
 		result = &cardcopy.Result{}
 	}
@@ -276,7 +276,7 @@ func (a *app) handleCopySuccess(card *detect.Card, mode, destBase string, result
 		FilesCopied:    result.FilesCopied,
 		BytesCopied:    result.BytesCopied,
 		Verified:       true,
-		CardbotVersion: version,
+		CardbotVersion: a.version,
 	})
 	if dotErr != nil {
 		fmt.Printf("[%s] Warning: could not write .cardbot to card: %s\n", ts(), friendlyErr(dotErr))
@@ -290,7 +290,7 @@ func (a *app) handleCopySuccess(card *detect.Card, mode, destBase string, result
 	a.mu.Unlock()
 }
 
-func (a *app) runSpeedTest(card *detect.Card) {
+func (a *App) runSpeedTest(card *detect.Card) {
 	fmt.Println()
 	fmt.Printf("[%s] Speed test starting (256 MB)...\n", ts())
 	a.logf("Speed test starting on %s", card.Path)

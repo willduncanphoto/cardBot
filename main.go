@@ -5,12 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 
+	"github.com/illwill/cardbot/internal/app"
 	"github.com/illwill/cardbot/internal/config"
-	"github.com/illwill/cardbot/internal/detect"
 	cblog "github.com/illwill/cardbot/internal/log"
 	"github.com/illwill/cardbot/internal/pick"
 )
@@ -19,7 +17,7 @@ const version = "0.3.5"
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "self-update" {
-		os.Exit(runSelfUpdate())
+		os.Exit(app.RunSelfUpdate(version))
 	}
 
 	// --- CLI flags ---
@@ -64,7 +62,7 @@ func main() {
 	if cfgPath != "" {
 		cfg, cfgWarnings, err = config.Load(cfgPath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: %s — using defaults\n", friendlyErr(err))
+			fmt.Fprintf(os.Stderr, "Warning: %s — using defaults\n", errMsg(err))
 			cfg = config.Defaults()
 		}
 	} else {
@@ -84,8 +82,8 @@ func main() {
 		}
 	}
 	if needsSetup {
-		if saveErr := runSetup(cfg, cfgPath, promptDestination, promptNamingMode); saveErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: could not save config: %s\n", friendlyErr(saveErr))
+		if saveErr := app.RunSetup(cfg, cfgPath, promptDestination, app.PromptNamingMode); saveErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not save config: %s\n", errMsg(saveErr))
 		}
 		fmt.Println()
 	}
@@ -95,80 +93,46 @@ func main() {
 	if cfg.Advanced.LogFile != "" {
 		logPath, expandErr := config.ExpandPath(cfg.Advanced.LogFile)
 		if expandErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: could not expand log path: %s\n", friendlyErr(expandErr))
+			fmt.Fprintf(os.Stderr, "Warning: could not expand log path: %s\n", errMsg(expandErr))
 		} else {
 			logger, err = cblog.Open(logPath)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: could not open log file: %s\n", friendlyErr(err))
+				fmt.Fprintf(os.Stderr, "Warning: could not open log file: %s\n", errMsg(err))
 			} else {
 				defer logger.Close()
 			}
 		}
 	}
 
-	// --- Signal handling ---
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	inputDone := make(chan struct{})
-
 	// --- Build app ---
-	inputChan := make(chan string, 10)
-	a := &app{
-		cardQueue:   make([]*detect.Card, 0),
-		cfg:         cfg,
-		logger:      logger,
-		inputChan:   inputChan,
-		sigChan:     sigChan,
-		inputDone:   inputDone,
-		dryRun:      *flagDryRun,
-		copiedModes: make(map[string]bool),
-	}
+	a := app.New(app.Config{
+		Cfg:     cfg,
+		Logger:  logger,
+		DryRun:  *flagDryRun,
+		Version: version,
+	})
 
 	// Print any config warnings now that logging is ready.
 	for _, w := range cfgWarnings {
-		a.printf("[%s] Warning: %s\n", ts(), w)
+		a.Printf("[%s] Warning: %s\n", app.Ts(), w)
 	}
 
-	a.printf("[%s] CardBot %s\n", ts(), version)
+	a.Printf("[%s] CardBot %s\n", app.Ts(), version)
 
-	if latest, ok := maybeCheckForUpdate(cfg, cfgPath, logger); ok {
-		a.printf("[%s] Update available: %s (you have %s)\n", ts(), latest, version)
-		a.printf("[%s] Run: cardbot self-update\n", ts())
+	if latest, ok := app.MaybeCheckForUpdate(cfg, cfgPath, logger, version); ok {
+		a.Printf("[%s] Update available: %s (you have %s)\n", app.Ts(), latest, version)
+		a.Printf("[%s] Run: cardbot self-update\n", app.Ts())
 	}
 
-	if a.dryRun {
-		a.printf("[%s] Dry-run mode — no files will be copied\n", ts())
+	if *flagDryRun {
+		a.Printf("[%s] Dry-run mode — no files will be copied\n", app.Ts())
 	}
 
-	a.startScanning()
+	a.StartScanning()
 
-	a.detector = detect.NewDetector()
-	if err := a.detector.Start(); err != nil {
+	if err := a.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
-	}
-	defer a.detector.Stop()
-
-	go readInput(a.inputChan, a.inputDone)
-
-	for {
-		select {
-		case card := <-a.detector.Events():
-			a.handleCardEvent(card)
-
-		case path := <-a.detector.Removals():
-			a.handleRemoval(path)
-
-		case input := <-a.inputChan:
-			a.handleInput(input)
-
-		case <-a.sigChan:
-			a.stopScanning()
-			fmt.Println("\nShutting down...")
-			a.logf("Shutting down")
-			close(a.inputDone)
-			return
-		}
 	}
 }
 
@@ -205,4 +169,21 @@ func promptDestinationReadline(defaultPath string) string {
 		return defaultPath
 	}
 	return line
+}
+
+// errMsg returns a short, user-facing message for common OS-level errors.
+func errMsg(err error) string {
+	s := err.Error()
+	switch {
+	case strings.Contains(s, "no space left"):
+		return "destination disk is full"
+	case strings.Contains(s, "permission denied"):
+		return "permission denied — check folder permissions"
+	case strings.Contains(s, "read-only file system"):
+		return "destination is read-only"
+	case strings.Contains(s, "input/output error"):
+		return "I/O error — card may be damaged"
+	default:
+		return s
+	}
 }

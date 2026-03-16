@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -19,7 +19,8 @@ const (
 	selfUpdateTimeout   = 60 * time.Second
 )
 
-func maybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logger) (string, bool) {
+// MaybeCheckForUpdate checks for updates if enough time has passed since last check.
+func MaybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logger, version string) (string, bool) {
 	now := time.Now().UTC()
 	if !update.ShouldCheck(cfg.Update.LastCheck, now, updateCheckInterval) {
 		return "", false
@@ -49,7 +50,8 @@ func maybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logge
 	return "", false
 }
 
-func runSelfUpdate() int {
+// RunSelfUpdate performs a self-update to the latest version.
+func RunSelfUpdate(version string) int {
 	execPath, err := os.Executable()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: could not determine executable path: %s\n", friendlyErr(err))

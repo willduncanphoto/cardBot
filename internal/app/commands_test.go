@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"os"
@@ -15,7 +15,7 @@ func TestHandleCopySuccess_DryRun_NoSideEffects(t *testing.T) {
 	t.Parallel()
 
 	cardPath := t.TempDir()
-	a := &app{copiedModes: make(map[string]bool)}
+	a := &App{copiedModes: make(map[string]bool)}
 	card := &detect.Card{Path: cardPath}
 
 	a.handleCopySuccess(card, "all", t.TempDir(), &cardcopy.Result{
@@ -38,7 +38,7 @@ func TestHandleCopySuccess_RealCopy_WritesDotfileAndMarksMode(t *testing.T) {
 	t.Parallel()
 
 	cardPath := t.TempDir()
-	a := &app{copiedModes: make(map[string]bool)}
+	a := &App{copiedModes: make(map[string]bool)}
 	card := &detect.Card{Path: cardPath}
 	dest := t.TempDir()
 

@@ -1,82 +1,18 @@
-package main
+package app
 
 import (
 	"bufio"
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/illwill/cardbot/internal/analyze"
-	"github.com/illwill/cardbot/internal/config"
 	"github.com/illwill/cardbot/internal/detect"
-	cblog "github.com/illwill/cardbot/internal/log"
 )
 
-// UX delays — gives the user time to read each startup line before the next appears.
-const (
-	removalDelay = 2 * time.Second // Pause after card removal so message is visible
-)
-
-// ts returns the current timestamp formatted for log output.
-func ts() string {
-	return time.Now().Format("2006-01-02T15:04:05")
-}
-
-type app struct {
-	detector    *detect.Detector
-	currentCard *detect.Card
-	lastResult  *analyze.Result // analysis result for currentCard
-	cardQueue   []*detect.Card
-	mu          sync.Mutex
-	printMu     sync.Mutex // serialises concurrent stdout writes during copy
-	cfg         *config.Config
-	logger      *cblog.Logger
-	inputChan   chan string    // buffered input from stdin
-	sigChan     chan os.Signal // SIGINT/SIGTERM
-	inputDone   chan struct{}  // closed on shutdown to stop readInput
-	dryRun      bool
-	copiedModes map[string]bool    // modes completed this session
-	cardInvalid bool               // true when current card has no DCIM directory
-	scanCancel  context.CancelFunc // cancels the current displayCard goroutine
-	spinner     *spinner.Spinner   // scanner spinner
-}
-
-// drainInput discards any buffered input keystrokes.
-// Called after blocking operations (copy, speed test) to prevent
-// queued commands from firing on the next prompt.
-func (a *app) drainInput() {
-	for {
-		select {
-		case <-a.inputChan:
-		default:
-			return
-		}
-	}
-}
-
-// logf writes to the log file if logging is enabled, and is a no-op otherwise.
-func (a *app) logf(format string, args ...any) {
-	if a.logger != nil {
-		a.logger.Printf(format, args...)
-	}
-}
-
-// printf prints to stdout and mirrors to the log file (without adding a second timestamp).
-func (a *app) printf(format string, args ...any) {
-	msg := fmt.Sprintf(format, args...)
-	fmt.Print(msg)
-	if a.logger != nil {
-		// Caller already includes [timestamp] in the message, so write raw.
-		a.logger.Raw(strings.TrimRight(msg, "\n"))
-	}
-}
-
-func (a *app) handleCardEvent(card *detect.Card) {
+func (a *App) handleCardEvent(card *detect.Card) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -106,7 +42,7 @@ func (a *app) handleCardEvent(card *detect.Card) {
 	}
 }
 
-func (a *app) isTracked(path string) bool {
+func (a *App) isTracked(path string) bool {
 	if a.currentCard != nil && a.currentCard.Path == path {
 		return true
 	}
@@ -118,7 +54,7 @@ func (a *app) isTracked(path string) bool {
 	return false
 }
 
-func (a *app) printQueueNotice(card *detect.Card) {
+func (a *App) printQueueNotice(card *detect.Card) {
 	plural := ""
 	if len(a.cardQueue) > 1 {
 		plural = "s"
@@ -131,7 +67,7 @@ func (a *app) printQueueNotice(card *detect.Card) {
 	a.logf("%s detected (%d card%s in queue)", card.Brand, len(a.cardQueue), plural)
 }
 
-func (a *app) displayCard(ctx context.Context, path string) {
+func (a *App) displayCard(ctx context.Context, path string) {
 	// Card may have been removed or replaced before this goroutine runs.
 	if ctx.Err() != nil {
 		return
@@ -206,7 +142,7 @@ func (a *app) displayCard(ctx context.Context, path string) {
 	a.printCardInfo(card, result)
 }
 
-func (a *app) finishCard() {
+func (a *App) finishCard() {
 	a.mu.Lock()
 	if a.scanCancel != nil {
 		a.scanCancel()
@@ -229,22 +165,22 @@ func (a *app) finishCard() {
 	}
 	a.mu.Unlock()
 
-	a.startScanning()
+	a.StartScanning()
 }
 
 // resumeScanningIfIdle starts the scanning spinner only if
 // no current card is active and no queued cards are waiting.
-func (a *app) resumeScanningIfIdle() {
+func (a *App) resumeScanningIfIdle() {
 	a.mu.Lock()
 	shouldStart := shouldResumeScanning(a.currentCard == nil, len(a.cardQueue))
 	a.mu.Unlock()
 	if !shouldStart {
 		return
 	}
-	a.startScanning()
+	a.StartScanning()
 }
 
-func (a *app) handleRemoval(path string) {
+func (a *App) handleRemoval(path string) {
 	a.mu.Lock()
 	wasCurrent := a.currentCard != nil && a.currentCard.Path == path
 
@@ -296,7 +232,7 @@ func (a *app) handleRemoval(path string) {
 	a.mu.Unlock()
 }
 
-func (a *app) handleInput(input string) {
+func (a *App) handleInput(input string) {
 	a.mu.Lock()
 	card := a.currentCard
 	hasCard := card != nil
@@ -350,7 +286,7 @@ func (a *app) handleInput(input string) {
 	}
 }
 
-func (a *app) ejectCard(card *detect.Card) {
+func (a *App) ejectCard(card *detect.Card) {
 	fmt.Printf("\nEjecting %s...\n", card.Name)
 	a.logf("Ejecting %s", card.Path)
 	if err := a.detector.Eject(card.Path); err != nil {
@@ -365,61 +301,13 @@ func (a *app) ejectCard(card *detect.Card) {
 	a.finishCard()
 }
 
-func (a *app) cancelCard() {
+func (a *App) cancelCard() {
 	fmt.Println("\nCancelled.")
 	a.logf("Card cancelled")
 	a.finishCard()
 }
 
-// cardIsReadOnly probes the card path for write access.
-// Returns true if a temp file cannot be created (write-protected card).
-func cardIsReadOnly(path string) bool {
-	probe := filepath.Join(path, ".cardbot_rw")
-	f, err := os.OpenFile(probe, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if err != nil {
-		return true
-	}
-	f.Close()
-	os.Remove(probe)
-	return false
-}
-
-// startScanning starts the scanning spinner.
-func (a *app) startScanning() {
-	if a.spinner != nil {
-		a.spinner.Stop()
-	}
-	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
-	s.Prefix = fmt.Sprintf("[%s] Scanning ", ts())
-	s.FinalMSG = fmt.Sprintf("[%s] Scanning\n", ts())
-	s.Start()
-	a.spinner = s
-}
-
-// stopScanning stops and clears the scanning spinner.
-func (a *app) stopScanning() {
-	if a.spinner != nil {
-		a.spinner.Stop()
-		a.spinner = nil
-	}
-}
-
-func readInput(ch chan<- string, done <-chan struct{}) {
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			return
-		}
-		select {
-		case ch <- strings.TrimSpace(line):
-		case <-done:
-			return
-		}
-	}
-}
-
-func (a *app) handleCopyCmd(card *detect.Card, mode string) {
+func (a *App) handleCopyCmd(card *detect.Card, mode string) {
 	a.mu.Lock()
 	invalid := a.cardInvalid
 	copiedAll := a.copiedModes["all"]
@@ -434,4 +322,9 @@ func (a *app) handleCopyCmd(card *detect.Card, mode string) {
 	}
 
 	a.copyFiltered(card, mode)
+}
+
+// newStdinReader creates a buffered reader for stdin.
+func newStdinReader() *bufio.Reader {
+	return bufio.NewReader(os.Stdin)
 }
