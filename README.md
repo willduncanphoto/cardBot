@@ -234,8 +234,7 @@ Config is stored at `~/.config/cardbot/config.json`:
     "path": "~/Pictures/CardBot"
   },
   "output": {
-    "color": true,
-    "quiet": false
+    "color": true
   },
   "advanced": {
     "buffer_size_kb": 256,

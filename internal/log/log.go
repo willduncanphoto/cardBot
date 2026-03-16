@@ -45,12 +45,7 @@ func (l *Logger) Printf(format string, args ...any) {
 		time.Now().Format("2006-01-02T15:04:05"),
 		fmt.Sprintf(format, args...))
 
-	if l.written >= maxSize {
-		l.rotate()
-	}
-
-	n, _ := l.f.WriteString(line)
-	l.written += int64(n)
+	l.writeLineLocked(line)
 }
 
 // Raw writes a pre-formatted line to the log (no timestamp added).
@@ -58,12 +53,7 @@ func (l *Logger) Raw(line string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if l.written >= maxSize {
-		l.rotate()
-	}
-
-	n, _ := l.f.WriteString(line + "\n")
-	l.written += int64(n)
+	l.writeLineLocked(line + "\n")
 }
 
 // Close flushes and closes the log file.
@@ -76,9 +66,31 @@ func (l *Logger) Close() {
 	}
 }
 
+// writeLineLocked writes a single line while holding l.mu.
+func (l *Logger) writeLineLocked(line string) {
+	if l.f == nil {
+		return
+	}
+
+	if l.written >= maxSize {
+		l.rotate()
+		if l.f == nil {
+			return
+		}
+	}
+
+	n, err := l.f.WriteString(line)
+	if err != nil {
+		return
+	}
+	l.written += int64(n)
+}
+
 // rotate renames the current log to .old and opens a fresh file.
 func (l *Logger) rotate() {
-	_ = l.f.Close()
+	if l.f != nil {
+		_ = l.f.Close()
+	}
 	_ = os.Rename(l.path, l.path+".old")
 	f, err := os.OpenFile(l.path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {

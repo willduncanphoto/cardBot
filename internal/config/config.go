@@ -38,7 +38,6 @@ type Naming struct {
 // Output settings.
 type Output struct {
 	Color bool `json:"color"`
-	Quiet bool `json:"quiet"`
 }
 
 // Advanced settings.
@@ -65,7 +64,6 @@ func Defaults() *Config {
 		},
 		Output: Output{
 			Color: true,
-			Quiet: false,
 		},
 		Advanced: Advanced{
 			BufferSizeKB: 256,

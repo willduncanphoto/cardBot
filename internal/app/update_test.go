@@ -1,40 +1,67 @@
 package app
 
 import (
+	"context"
 	"errors"
+	"net/http"
 	"testing"
+
+	"github.com/illwill/cardbot/internal/update"
 )
 
-func TestStartupUpdateMessages(t *testing.T) {
-	t.Parallel()
+func resetUpdateDeps() {
+	checkLatest = update.CheckLatest
+}
 
-	t.Run("no signal on error", func(t *testing.T) {
-		status, action := StartupUpdateMessages("", errors.New("boom"))
-		if status != "NO SIGNAL" {
-			t.Fatalf("status = %q, want %q", status, "NO SIGNAL")
-		}
-		if action != "" {
-			t.Fatalf("action = %q, want empty", action)
-		}
-	})
+func TestMaybeCheckForUpdate_UpdateAvailable(t *testing.T) {
+	defer resetUpdateDeps()
 
-	t.Run("update available", func(t *testing.T) {
-		status, action := StartupUpdateMessages("0.4.1", nil)
-		if status != "UPDATE AVAILABLE (0.4.1)" {
-			t.Fatalf("status = %q, want %q", status, "UPDATE AVAILABLE (0.4.1)")
-		}
-		if action != "Run: cardbot self-update" {
-			t.Fatalf("action = %q, want %q", action, "Run: cardbot self-update")
-		}
-	})
+	called := 0
+	checkLatest = func(context.Context, *http.Client, string, string, string) (update.CheckResult, error) {
+		called++
+		return update.CheckResult{Current: "0.4.1", Latest: "0.4.2", Update: true}, nil
+	}
 
-	t.Run("up to date", func(t *testing.T) {
-		status, action := StartupUpdateMessages("", nil)
-		if status != "Up to date" {
-			t.Fatalf("status = %q, want %q", status, "Up to date")
-		}
-		if action != "" {
-			t.Fatalf("action = %q, want empty", action)
-		}
-	})
+	latest, err := MaybeCheckForUpdate(nil, "0.4.1")
+	if err != nil {
+		t.Fatalf("err = %v, want nil", err)
+	}
+	if latest != "0.4.2" {
+		t.Fatalf("latest = %q, want 0.4.2", latest)
+	}
+	if called != 1 {
+		t.Fatalf("checkLatest called %d times, want 1", called)
+	}
+}
+
+func TestMaybeCheckForUpdate_UpToDate(t *testing.T) {
+	defer resetUpdateDeps()
+
+	checkLatest = func(context.Context, *http.Client, string, string, string) (update.CheckResult, error) {
+		return update.CheckResult{Current: "0.4.1", Latest: "0.4.1", Update: false}, nil
+	}
+
+	latest, err := MaybeCheckForUpdate(nil, "0.4.1")
+	if err != nil {
+		t.Fatalf("err = %v, want nil", err)
+	}
+	if latest != "" {
+		t.Fatalf("latest = %q, want empty", latest)
+	}
+}
+
+func TestMaybeCheckForUpdate_Error(t *testing.T) {
+	defer resetUpdateDeps()
+
+	checkLatest = func(context.Context, *http.Client, string, string, string) (update.CheckResult, error) {
+		return update.CheckResult{}, errors.New("boom")
+	}
+
+	latest, err := MaybeCheckForUpdate(nil, "0.4.1")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if latest != "" {
+		t.Fatalf("latest = %q, want empty", latest)
+	}
 }

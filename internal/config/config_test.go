@@ -216,9 +216,6 @@ func TestLoad_PartialConfig(t *testing.T) {
 	if cfg.Output.Color != defaults.Output.Color {
 		t.Errorf("Color = %v, want %v (default)", cfg.Output.Color, defaults.Output.Color)
 	}
-	if cfg.Output.Quiet != defaults.Output.Quiet {
-		t.Errorf("Quiet = %v, want %v (default)", cfg.Output.Quiet, defaults.Output.Quiet)
-	}
 	if cfg.Naming.Mode != defaults.Naming.Mode {
 		t.Errorf("Naming.Mode = %q, want %q (default)", cfg.Naming.Mode, defaults.Naming.Mode)
 	}

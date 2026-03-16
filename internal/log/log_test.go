@@ -148,3 +148,17 @@ func TestWrittenTracksSizeAcrossRestart(t *testing.T) {
 		t.Error("second session should have appended to the file")
 	}
 }
+
+func TestPrintfAndRaw_NoPanicWhenFileHandleNil(t *testing.T) {
+	t.Parallel()
+	logger := &Logger{path: filepath.Join(t.TempDir(), "test.log"), f: nil}
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("unexpected panic: %v", r)
+		}
+	}()
+
+	logger.Printf("hello")
+	logger.Raw("world")
+}

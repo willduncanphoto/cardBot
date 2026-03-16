@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/illwill/cardbot/internal/config"
 	cblog "github.com/illwill/cardbot/internal/log"
 	"github.com/illwill/cardbot/internal/update"
 )
@@ -18,11 +17,13 @@ const (
 	selfUpdateTimeout  = 60 * time.Second
 )
 
+var checkLatest = update.CheckLatest
+
 // MaybeCheckForUpdate checks for updates on every app startup.
-func MaybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logger, version string) (string, error) {
+func MaybeCheckForUpdate(logger *cblog.Logger, version string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), updateCheckTimeout)
 	defer cancel()
-	res, err := update.CheckLatest(ctx, nil, update.DefaultAPIBase, update.DefaultRepo, version)
+	res, err := checkLatest(ctx, nil, update.DefaultAPIBase, update.DefaultRepo, version)
 	if err != nil {
 		if logger != nil {
 			logger.Printf("Update check failed: %v", err)
@@ -31,21 +32,15 @@ func MaybeCheckForUpdate(cfg *config.Config, cfgPath string, logger *cblog.Logge
 	}
 
 	if res.Update {
+		if logger != nil {
+			logger.Printf("Update available: %s (current %s)", res.Latest, version)
+		}
 		return res.Latest, nil
 	}
+	if logger != nil {
+		logger.Printf("Up to date (%s)", version)
+	}
 	return "", nil
-}
-
-// StartupUpdateMessages returns user-facing startup lines for update-check outcome.
-// status is always non-empty; action is optional.
-func StartupUpdateMessages(latest string, err error) (status, action string) {
-	if err != nil {
-		return "NO SIGNAL", ""
-	}
-	if latest != "" {
-		return fmt.Sprintf("UPDATE AVAILABLE (%s)", latest), "Run: cardbot self-update"
-	}
-	return "Up to date", ""
 }
 
 // RunSelfUpdate performs a self-update to the latest version.
@@ -56,19 +51,19 @@ func RunSelfUpdate(version string) int {
 		return 1
 	}
 
-	fmt.Printf("[%s] Checking for updates…\n", ts())
+	fmt.Printf("[%s] Downloading update…\n", ts())
 	ctx, cancel := context.WithTimeout(context.Background(), selfUpdateTimeout)
 	defer cancel()
 
 	installed, err := update.SelfUpdate(ctx, nil, update.DefaultAPIBase, update.DefaultRepo, version, execPath)
 	if err == nil {
-		fmt.Printf("[%s] Updated successfully to %s\n", ts(), installed)
+		fmt.Printf("[%s] Updated to %s\n", ts(), installed)
 		fmt.Printf("[%s] Restart CardBot to use the new version.\n", ts())
 		return 0
 	}
 
 	if errors.Is(err, update.ErrAlreadyUpToDate) {
-		fmt.Printf("[%s] CardBot is already up to date (%s)\n", ts(), version)
+		fmt.Printf("[%s] Already up to date (%s)\n", ts(), version)
 		return 0
 	}
 

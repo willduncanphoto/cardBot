@@ -15,7 +15,7 @@ import (
 	"github.com/illwill/cardbot/internal/pick"
 )
 
-const version = "0.4.1"
+const version = "0.4.2"
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "self-update" {
@@ -127,7 +127,7 @@ func main() {
 	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 	s.Prefix = prefix + "Checking for updates "
 	s.Start()
-	latest, updateErr := app.MaybeCheckForUpdate(cfg, cfgPath, logger, version)
+	latest, updateErr := app.MaybeCheckForUpdate(logger, version)
 	time.Sleep(500 * time.Millisecond) // ensure user sees activity
 	s.Stop()
 
