@@ -122,6 +122,8 @@ func main() {
 	if latest, ok := app.MaybeCheckForUpdate(cfg, cfgPath, logger, version); ok {
 		a.Printf("[%s] Update available (%s)\n", app.Ts(), latest)
 		a.Printf("[%s] Run: cardbot self-update\n", app.Ts())
+	} else {
+		a.Printf("[%s] Up to date\n", app.Ts())
 	}
 
 	if *flagDryRun {
