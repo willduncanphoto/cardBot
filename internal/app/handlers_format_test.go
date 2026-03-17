@@ -7,7 +7,7 @@ func TestFormatDetectedVolume(t *testing.T) {
 
 	t.Run("with disk id", func(t *testing.T) {
 		got := formatDetectedVolume("/Volumes/NIKON Z 9", "disk0s2")
-		want := "\"/Volumes/NIKON Z 9\" [disk0s2] detected"
+		want := "\"/Volumes/NIKON Z 9\" (disk0s2) detected"
 		if got != want {
 			t.Fatalf("got %q, want %q", got, want)
 		}
@@ -23,7 +23,7 @@ func TestFormatDetectedVolume(t *testing.T) {
 
 	t.Run("trims whitespace", func(t *testing.T) {
 		got := formatDetectedVolume("  /Volumes/NIKON Z 9  ", "  disk0s2  ")
-		want := "\"/Volumes/NIKON Z 9\" [disk0s2] detected"
+		want := "\"/Volumes/NIKON Z 9\" (disk0s2) detected"
 		if got != want {
 			t.Fatalf("got %q, want %q", got, want)
 		}

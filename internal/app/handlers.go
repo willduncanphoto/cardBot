@@ -59,7 +59,7 @@ func formatDetectedVolume(path, diskID string) string {
 	if diskID == "" {
 		return fmt.Sprintf("\"%s\" detected", path)
 	}
-	return fmt.Sprintf("\"%s\" [%s] detected", path, diskID)
+	return fmt.Sprintf("\"%s\" (%s) detected", path, diskID)
 }
 
 func (a *App) printQueueNotice(card *detect.Card) {
@@ -140,8 +140,8 @@ func (a *App) displayCard(ctx context.Context, path string) {
 	if result != nil {
 		total = result.FileCount
 	}
-	fmt.Printf("\r[%s] Scanning %d files ✓\n", ts(), total)
-	fmt.Printf("[%s] Scan complete (%ds)\n", ts(), secs)
+	fmt.Printf("\r[%s] Scanning %d files (%ds) ✓\n", ts(), total, secs)
+	fmt.Printf("[%s] Scan completed\n", ts())
 	a.logf("Scan completed: %s — %d files in %ds", path, total, secs)
 	fmt.Println()
 
