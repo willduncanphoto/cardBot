@@ -146,10 +146,13 @@ func TestShowHardwareInfo(t *testing.T) {
 
 	t.Run("with hardware", func(t *testing.T) {
 		card := &detect.Card{}
-		card.SetHW(&detect.HardwareInfo{DeviceID: "disk4", Model: "CFexpress"})
+		card.SetHW(&detect.HardwareInfo{})
 		out := captureStdout(t, func() { a.showHardwareInfo(card) })
-		if !strings.Contains(out, "Device:") || !strings.Contains(out, "Model:") {
-			t.Fatalf("unexpected output:\n%s", out)
+		if strings.Contains(out, "Hardware info unavailable") {
+			t.Fatalf("expected hardware path, got:\n%s", out)
+		}
+		if !strings.Contains(out, "[a] Copy All") {
+			t.Fatalf("missing prompt after hardware info:\n%s", out)
 		}
 	})
 }
