@@ -4,11 +4,17 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/illwill/cardbot/internal/detect"
+)
+
+const (
+	minScanVisualDuration = 350 * time.Millisecond
+	scanLinePaceDelay     = 120 * time.Millisecond
 )
 
 func (a *App) handleCardEvent(card *detect.Card) {
@@ -25,16 +31,18 @@ func (a *App) handleCardEvent(card *detect.Card) {
 	if a.currentCard == nil {
 		a.currentCard = card
 		a.setPhaseLocked(phaseAnalyzing)
+		scanTS := ts()
+		fmt.Printf("[%s] Scanning started\n", scanTS)
 		hw := card.GetHW()
 		diskID := ""
 		if hw != nil {
 			diskID = hw.DiskID()
 		}
-		fmt.Printf("[%s] %s\n", ts(), formatDetectedVolume(card.Path, diskID))
+		fmt.Printf("[%s] %s\n", scanTS, formatDetectedVolume(card.Path, diskID))
 		a.logf("Card detected: %s", card.Path)
 		ctx, cancel := context.WithCancel(context.Background())
 		a.scanCancel = cancel
-		go a.displayCard(ctx, card.Path)
+		go a.displayCard(ctx, card.Path, scanTS)
 	} else {
 		a.cardQueue = append(a.cardQueue, card)
 		a.printQueueNotice(card)
@@ -75,15 +83,13 @@ func (a *App) printQueueNotice(card *detect.Card) {
 	a.logf("%s detected (%d card%s in queue)", card.Brand, len(a.cardQueue), plural)
 }
 
-func (a *App) displayCard(ctx context.Context, path string) {
+func (a *App) displayCard(ctx context.Context, path, scanTS string) {
 	// Card may have been removed or replaced before this goroutine runs.
 	if ctx.Err() != nil {
 		return
 	}
 	a.setPhase(phaseAnalyzing)
 
-	scanTS := ts()
-	fmt.Printf("[%s] Scanning", scanTS)
 	a.logf("Reading %s", path)
 	scanStart := time.Now()
 	newAnalyzer := a.newAnalyzer
@@ -135,15 +141,25 @@ func (a *App) displayCard(ctx context.Context, path string) {
 	}
 
 	elapsed := time.Since(scanStart)
-	secs := int(elapsed.Round(time.Second).Seconds())
+	if wait := minScanVisualDuration - elapsed; wait > 0 {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(wait):
+		}
+		elapsed = time.Since(scanStart)
+	}
 
 	total := 0
 	if result != nil {
 		total = result.FileCount
 	}
 	fmt.Printf("\r[%s] Scanning %d files ✓\n", scanTS, total)
-	fmt.Printf("[%s] Scan completed in %ds\n", scanTS, secs)
-	a.logf("Scan completed: %s — %d files in %ds", path, total, secs)
+	time.Sleep(scanLinePaceDelay)
+	completedTS := ts()
+	durStr := formatElapsed(elapsed)
+	fmt.Printf("[%s] Scan completed in %s\n", completedTS, durStr)
+	a.logf("Scan completed: %s — %d files in %s", path, total, durStr)
 	fmt.Println()
 
 	a.mu.Lock()
@@ -177,7 +193,7 @@ func (a *App) finishCard() {
 		ctx, cancel := context.WithCancel(context.Background())
 		a.scanCancel = cancel
 		a.mu.Unlock()
-		go a.displayCard(ctx, nextCard.Path)
+		go a.displayCard(ctx, nextCard.Path, ts())
 		return
 	}
 	a.mu.Unlock()
@@ -228,7 +244,7 @@ func (a *App) handleRemoval(path string) {
 		fmt.Printf("\n[%s] Card removed: %s\n", ts(), path)
 		a.logf("Card removed: %s", path)
 		if hasQueue {
-			go a.displayCard(nextCtx, nextCard.Path)
+			go a.displayCard(nextCtx, nextCard.Path, ts())
 		} else {
 			go func() {
 				time.Sleep(removalDelay)
@@ -342,6 +358,14 @@ func (a *App) handleCopyCmd(card *detect.Card, mode string) {
 	}
 
 	a.copyFiltered(card, mode)
+}
+
+func formatElapsed(d time.Duration) string {
+	if d < time.Second {
+		tenths := math.Round(d.Seconds()*10) / 10
+		return fmt.Sprintf("%.1fs", tenths)
+	}
+	return fmt.Sprintf("%ds", int(d.Round(time.Second).Seconds()))
 }
 
 // newStdinReader creates a buffered reader for stdin.
