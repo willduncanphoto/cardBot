@@ -4,7 +4,7 @@ A CLI tool for reading and copying camera memory cards.
 
 ## DISCLAIMER: Built with AI Coding Tools
 
-CardBot was built with the help of AI coding tools and many open source projects. There is no way that I could build this alone. There is no warranty. This is an experiment.
+CardBot was built with the help of AI coding tools and many open source projects. There is no warranty. This is an experiment in LLM slop.
 
 A special thanks goes out to **[Pi](https://shittycodingagent.ai)** — a terminal-based coding agent.
 
@@ -275,7 +275,7 @@ Run `cardbot --setup` to change rerun the config setup. Run `cardbot --reset` to
 - Checksum verification (xxhash)
 - Network destinations (SFTP, S3)
 - Camera datetime drift detection
-- Audio file transcription
+- Audio note file transcription
 
 ## Size
 
