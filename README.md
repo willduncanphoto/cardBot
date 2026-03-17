@@ -255,17 +255,42 @@ Config is stored at `~/.config/cardbot/config.json`:
 
 Run `cardbot --setup` to change rerun the config setup. Run `cardbot --reset` to clear all saved config.
 
-## Planned Stuff
+## Roadmap
 
-- Resume interrupted copies
-- ETA during copy
-- Linux support
-- Video and photo destinations
+| Version | Focus | Status |
+|---------|-------|--------|
+| **0.5.0** | Copy UI/UX — ETA, resume, preview, better progress | Planned |
+| **0.6.0** | Single-key input (raw terminal, no Enter required) | Planned |
+| **0.7.0** | Config profiles and batch operations | Planned |
+| **0.8.0** | Copyright metadata injection (EXIF/XMP) | Planned |
 
-## Maybe Stuff
+### 0.5.0 — Copy UI/UX
+- ETA during copy (time remaining estimate)
+- Resume interrupted copies (partial copy tracking)
+- Pre-copy preview (what will be copied before starting)
+- Better multi-line progress display
+- Post-copy summary (what was copied, skipped, average speed)
 
-- Windows
-- Custom filename workflow
+### 0.6.0 — Single-Key Input
+- Raw terminal mode (no Enter required)
+- Arrow key navigation for menus
+- Power user polish
+
+### 0.7.0 — Advanced Features
+- Configuration presets/profiles (wedding, portrait, personal)
+- Batch operations for multiple cards
+- Performance profiling and optimization
+
+### 0.8.0 — Copyright Injection
+- EXIF/XMP copyright metadata injection during copy
+- Configurable copyright presets
+- Smart date handling (copyright year matches capture year)
+- Selective injection (enable/disable per copy mode)
+
+### Maybe Someday
+- Windows support
+- Checksum verification (xxhash)
+- Network destinations (SFTP, S3)
 
 ## Size
 
