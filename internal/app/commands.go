@@ -21,7 +21,7 @@ const dryRunPreviewLimit = 200
 func (a *App) copyFiltered(card *detect.Card, mode string) {
 	destBase, err := config.ExpandPath(a.cfg.Destination.Path)
 	if err != nil {
-		fmt.Printf("\n[%s] Error: %s\n", ts(), friendlyErr(err))
+		fmt.Printf("\n[%s] Error: %s\n", ts(), FriendlyErr(err))
 		a.printPrompt()
 		return
 	}
@@ -96,13 +96,9 @@ func (a *App) copyFiltered(card *detect.Card, mode string) {
 	lastUpdate := time.Now()
 	previewPrinted := 0
 	previewHidden := 0
-	runner := a.runCopy
-	if runner == nil {
-		runner = defaultCopyRunner
-	}
 
 	go func() {
-		r, err := runner(ctx, opts, func(p cardcopy.Progress) {
+		r, err := a.runCopy(ctx, opts, func(p cardcopy.Progress) {
 			// In dry-run mode, print rename mappings (capped for large cards).
 			if isDryRun {
 				if p.SourceFile == "" {
@@ -184,7 +180,7 @@ func (a *App) copyFiltered(card *detect.Card, mode string) {
 
 			if copyErr != nil {
 				a.printMu.Lock()
-				fmt.Printf("\n[%s] Copy failed: %s\n", ts(), friendlyErr(copyErr))
+				fmt.Printf("\n[%s] Copy failed: %s\n", ts(), FriendlyErr(copyErr))
 				if result != nil && result.FilesCopied > 0 {
 					fmt.Printf("[%s] %d files copied before failure.\n", ts(), result.FilesCopied)
 				}
@@ -279,11 +275,7 @@ func (a *App) handleCopySuccess(card *detect.Card, mode, destBase string, result
 		elapsed,
 		speed)
 
-	writer := a.writeDotfile
-	if writer == nil {
-		writer = defaultDotfileWriter
-	}
-	dotErr := writer(dotfile.WriteOptions{
+	dotErr := a.writeDotfile(dotfile.WriteOptions{
 		CardPath:       card.Path,
 		Destination:    destBase,
 		Mode:           mode,
@@ -293,7 +285,7 @@ func (a *App) handleCopySuccess(card *detect.Card, mode, destBase string, result
 		CardbotVersion: a.version,
 	})
 	if dotErr != nil {
-		fmt.Printf("[%s] Warning: could not write .cardbot to card: %s\n", ts(), friendlyErr(dotErr))
+		fmt.Printf("[%s] Warning: could not write .cardbot to card: %s\n", ts(), FriendlyErr(dotErr))
 		a.logf("Dotfile write failed: %v", dotErr)
 	} else {
 		a.logf("Dotfile written to %s", card.Path)
@@ -315,7 +307,7 @@ func (a *App) runSpeedTest(card *detect.Card) {
 	fmt.Println()
 
 	if err != nil {
-		fmt.Printf("Speed test failed: %s\n", friendlyErr(err))
+		fmt.Printf("Speed test failed: %s\n", FriendlyErr(err))
 		a.logf("Speed test failed: %v", err)
 	} else {
 		fmt.Println()

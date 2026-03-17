@@ -141,7 +141,7 @@ func (d *Detector) scanVolumes() {
 			path := filepath.Join(mountBase, entry.Name())
 
 			// Check if this entry is a card directly (flat mount: /media/CARD, /mnt/CARD).
-			if d.isMemoryCard(path) {
+			if isMemoryCard(path) {
 				currentCards[path] = true
 				d.processCard(path, entry.Name())
 				continue
@@ -158,7 +158,7 @@ func (d *Detector) scanVolumes() {
 					continue
 				}
 				subPath := filepath.Join(path, subEntry.Name())
-				if d.isMemoryCard(subPath) {
+				if isMemoryCard(subPath) {
 					currentCards[subPath] = true
 					d.processCard(subPath, subEntry.Name())
 				}
@@ -203,10 +203,4 @@ func (d *Detector) processCard(path, name string) {
 		default:
 		}
 	}
-}
-
-func (d *Detector) isMemoryCard(path string) bool {
-	dcim := filepath.Join(path, "DCIM")
-	info, err := os.Stat(dcim)
-	return err == nil && info.IsDir()
 }

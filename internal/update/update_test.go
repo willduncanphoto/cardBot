@@ -14,22 +14,6 @@ import (
 	"time"
 )
 
-func TestShouldCheck(t *testing.T) {
-	now := time.Date(2026, 3, 13, 12, 0, 0, 0, time.UTC)
-	if !ShouldCheck("", now, 24*time.Hour) {
-		t.Fatal("empty last_check should trigger check")
-	}
-	if !ShouldCheck("not-a-time", now, 24*time.Hour) {
-		t.Fatal("malformed last_check should trigger check")
-	}
-	if ShouldCheck(now.Add(-1*time.Hour).Format(time.RFC3339), now, 24*time.Hour) {
-		t.Fatal("recent check should not trigger")
-	}
-	if !ShouldCheck(now.Add(-25*time.Hour).Format(time.RFC3339), now, 24*time.Hour) {
-		t.Fatal("stale check should trigger")
-	}
-}
-
 func TestCompareVersions(t *testing.T) {
 	tests := []struct {
 		a, b string

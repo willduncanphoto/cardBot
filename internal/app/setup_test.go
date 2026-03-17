@@ -156,7 +156,7 @@ func TestNamingDisplayLine(t *testing.T) {
 	t.Parallel()
 
 	t.Run("original", func(t *testing.T) {
-		got := namingDisplayLine(config.NamingOriginal, 3048)
+		got := namingDisplayLine(config.NamingOriginal)
 		want := "Camera original"
 		if got != want {
 			t.Fatalf("got %q, want %q", got, want)
@@ -164,7 +164,7 @@ func TestNamingDisplayLine(t *testing.T) {
 	})
 
 	t.Run("timestamp", func(t *testing.T) {
-		got := namingDisplayLine(config.NamingTimestamp, 3048)
+		got := namingDisplayLine(config.NamingTimestamp)
 		want := "Timestamp + sequence"
 		if got != want {
 			t.Fatalf("got %q, want %q", got, want)

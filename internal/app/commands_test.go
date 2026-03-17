@@ -38,7 +38,7 @@ func TestHandleCopySuccess_RealCopy_WritesDotfileAndMarksMode(t *testing.T) {
 	t.Parallel()
 
 	cardPath := t.TempDir()
-	a := &App{copiedModes: make(map[string]bool)}
+	a := &App{copiedModes: make(map[string]bool), writeDotfile: defaultDotfileWriter}
 	card := &detect.Card{Path: cardPath}
 	dest := t.TempDir()
 

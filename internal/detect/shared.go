@@ -124,3 +124,10 @@ func containsNDModel(s string) bool {
 	}
 	return false
 }
+
+// isMemoryCard reports whether the given mount path contains a DCIM directory.
+func isMemoryCard(path string) bool {
+	dcim := filepath.Join(path, "DCIM")
+	info, err := os.Stat(dcim)
+	return err == nil && info.IsDir()
+}

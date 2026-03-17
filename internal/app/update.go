@@ -47,7 +47,7 @@ func MaybeCheckForUpdate(logger *cblog.Logger, version string) (string, error) {
 func RunSelfUpdate(version string) int {
 	execPath, err := os.Executable()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: could not determine executable path: %s\n", friendlyErr(err))
+		fmt.Fprintf(os.Stderr, "Error: could not determine executable path: %s\n", FriendlyErr(err))
 		return 1
 	}
 
@@ -67,7 +67,7 @@ func RunSelfUpdate(version string) int {
 		return 0
 	}
 
-	fmt.Fprintf(os.Stderr, "Error: %s\n", friendlyErr(err))
+	fmt.Fprintf(os.Stderr, "Error: %s\n", FriendlyErr(err))
 	if isPermissionErr(err) {
 		fmt.Fprintf(os.Stderr, "Try: sudo %q self-update\n", execPath)
 	}

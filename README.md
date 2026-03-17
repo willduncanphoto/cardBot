@@ -115,25 +115,28 @@ Then insert a memory card.
 **Output example:**
 
 ```
-[2026-03-14T10:30:45] Starting CardBot 0.3.4...
-[2026-03-14T10:30:46] Waiting for card...
-[2026-03-14T10:30:48] Card detected
-[2026-03-14T10:30:48] Reading /Volumes/NIKON Z 9 ... 3051 files ✓ (0s)
+[2026-03-17T10:30:44] CardBot 0.4.7
+[2026-03-17T10:30:44] CardBot is up to date
+
+[2026-03-17T10:30:51] Scanning started
+[2026-03-17T10:30:51] "/Volumes/NIKON Z 9" (disk4s1) detected
+[2026-03-17T10:30:51] Scanning 3051 files ✓
+[2026-03-17T10:30:53] Scan completed in 2.3s
 
   Status:   New
   Path:     /Volumes/NIKON Z 9
   Storage:  96.4 GB / 476.9 GB (20%)
   Camera:   Nikon Z 9
   Starred:  1
-  Content:  2026-02-27      12.9 GB    418   NEF
-            2026-02-26      28.4 MB      1   NEF
+  Content:  2026-02-27      12.9 GB   418   NEF
+            2026-02-26      28.4 MB     1   NEF
 
   Total:    3048 photos, 0 videos, 96.0 GB
 
   Copy to:  ~/Pictures/CardBot
-  Naming:   Timestamp + sequence (xxxx = 0001-9999)
+  Naming:   Timestamp + sequence
 
-[a] Copy All  [s] Copy Selects  [e] Eject  [?] Help  >
+[a] Copy All  [e] Eject  [x] Exit  [?] Help  >
 ```
 
 ### Commands
@@ -149,7 +152,7 @@ Then insert a memory card.
 | `\` | Cancel Copy — cancel the copy in progress |
 | `?` | Help — show all commands |
 
-Press `?` for the full command list, including hidden commands. See [docs/OUTPUT.md](docs/OUTPUT.md) for the complete help screen.
+Press `?` to see all available commands.
 
 ### CLI Flags
 
@@ -236,6 +239,9 @@ Config is stored at `~/.config/cardbot/config.json`:
   "destination": {
     "path": "~/Pictures/CardBot"
   },
+  "naming": {
+    "mode": "original"
+  },
   "output": {
     "color": true
   },
@@ -243,9 +249,6 @@ Config is stored at `~/.config/cardbot/config.json`:
     "buffer_size_kb": 256,
     "exif_workers": 4,
     "log_file": "~/.cardbot/cardbot.log"
-  },
-  "update": {
-    "last_check": "2026-03-13T15:37:00Z"
   }
 }
 ```
@@ -267,8 +270,8 @@ Run `cardbot --setup` to change rerun the config setup. Run `cardbot --reset` to
 ## Size
 
 - Binary: ~3.2 MB (stripped)
-- Source: ~4,770 lines of Go across 40 files
-- Tests: ~2,290 lines, 144 tests across 9 packages
+- Source: ~5,400 lines of Go across 55 files
+- Tests: ~3,800 lines, 135 tests across 9 packages
 
 ## License
 
@@ -279,7 +282,6 @@ MIT License — see [LICENSE](LICENSE) for details.
 - **CID on Linux:** The SD Card Identification register (manufacturer ID, serial, manufacturing date) is only accessible with direct SD card slots. USB readers hide it.
 - **Hardware size vs filesystem size:** macOS reports the card's raw physical capacity alongside the formatted filesystem size — this is why a "512GB" card shows ~477GB usable.
 - **Speed test:** CardBot includes a hidden `[t]` command that runs a 256MB sequential read/write benchmark on the card. Results are synthetic — read speeds in particular may be inflated by the OS page cache.
-- **Renaming:** `Naming:   Timestamp + sequence (xxxx = 0001-9999)` Can we just show the example name and what the next number in the sequence is as an example vs the timestamp+sequence. Would look cleaner.
 
 ## DISCLAIMER: Built with AI Coding Tools
 

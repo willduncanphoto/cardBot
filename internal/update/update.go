@@ -16,7 +16,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -48,19 +47,6 @@ type CheckResult struct {
 }
 
 var semverRe = regexp.MustCompile(`^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?`)
-
-// ShouldCheck reports whether enough time has elapsed since the last update check.
-// Empty or malformed timestamps default to true.
-func ShouldCheck(lastCheck string, now time.Time, interval time.Duration) bool {
-	if strings.TrimSpace(lastCheck) == "" {
-		return true
-	}
-	last, err := time.Parse(time.RFC3339, lastCheck)
-	if err != nil {
-		return true
-	}
-	return now.Sub(last) >= interval
-}
 
 // PlatformAssetName returns the release asset name for the current platform.
 func PlatformAssetName(goos, goarch string) string {

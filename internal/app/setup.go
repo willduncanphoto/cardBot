@@ -101,8 +101,7 @@ func namingModeLabel(mode string) string {
 	return "Camera original"
 }
 
-func namingDisplayLine(mode string, fileCount int) string {
-	_ = fileCount // reserved for future per-date digit detection
+func namingDisplayLine(mode string) string {
 	if config.NormalizeNamingMode(mode) != config.NamingTimestamp {
 		return "Camera original"
 	}

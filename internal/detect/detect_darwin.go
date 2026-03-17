@@ -240,7 +240,7 @@ func (d *Detector) scanVolumes() bool {
 			continue
 		}
 
-		if d.isMemoryCard(path) {
+		if isMemoryCard(path) {
 			card := buildCard(path, vol.Name())
 			if card != nil {
 				d.mu.Lock()
@@ -257,12 +257,6 @@ func (d *Detector) scanVolumes() bool {
 		}
 	}
 	return found
-}
-
-func (d *Detector) isMemoryCard(path string) bool {
-	dcim := filepath.Join(path, "DCIM")
-	info, err := os.Stat(dcim)
-	return err == nil && info.IsDir()
 }
 
 //export diskAppearedCallback
@@ -285,7 +279,7 @@ func diskAppearedCallback(disk C.DADiskRef, context unsafe.Pointer) {
 	path := C.GoString(cPath)
 	C.free(unsafe.Pointer(cPath))
 
-	if !d.isMemoryCard(path) {
+	if !isMemoryCard(path) {
 		return
 	}
 

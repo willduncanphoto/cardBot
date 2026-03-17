@@ -50,8 +50,8 @@ func TestFriendlyErr(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if got := friendlyErr(assertErr(tt.in)); got != tt.want {
-			t.Fatalf("friendlyErr(%q) = %q, want %q", tt.in, got, tt.want)
+		if got := FriendlyErr(assertErr(tt.in)); got != tt.want {
+			t.Fatalf("FriendlyErr(%q) = %q, want %q", tt.in, got, tt.want)
 		}
 	}
 }

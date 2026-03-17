@@ -148,11 +148,7 @@ func (a *App) drainInput() {
 
 // Run starts the main event loop. It blocks until shutdown.
 func (a *App) Run() error {
-	newDetector := a.newDetector
-	if newDetector == nil {
-		newDetector = defaultDetectorFactory
-	}
-	a.detector = newDetector()
+	a.detector = a.newDetector()
 	if err := a.detector.Start(); err != nil {
 		return err
 	}

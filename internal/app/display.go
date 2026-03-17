@@ -78,11 +78,7 @@ func (a *App) printCardInfo(card *detect.Card, result *analyze.Result) {
 	// Print config info (moved from startup, cleaner format)
 	fmt.Println()
 	fmt.Printf("  Copy to:  %s\n", config.ContractPath(a.cfg.Destination.Path))
-	count := 0
-	if result != nil {
-		count = result.FileCount
-	}
-	fmt.Printf("  Naming:   %s\n", namingDisplayLine(a.cfg.Naming.Mode, count))
+	fmt.Printf("  Naming:   %s\n", namingDisplayLine(a.cfg.Naming.Mode))
 
 	if a.dryRun {
 		fmt.Println("  Mode:     dry-run (no files will be copied)")
@@ -154,8 +150,8 @@ func (a *App) showHardwareInfo(card *detect.Card) {
 	a.printPrompt()
 }
 
-// friendlyErr returns a short, user-facing message for common OS-level errors.
-func friendlyErr(err error) string {
+// FriendlyErr returns a short, user-facing message for common OS-level errors.
+func FriendlyErr(err error) string {
 	s := err.Error()
 	switch {
 	case strings.Contains(s, "no space left"):

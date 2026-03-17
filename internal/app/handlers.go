@@ -92,11 +92,7 @@ func (a *App) displayCard(ctx context.Context, path, scanTS string) {
 
 	a.logf("Reading %s", path)
 	scanStart := time.Now()
-	newAnalyzer := a.newAnalyzer
-	if newAnalyzer == nil {
-		newAnalyzer = defaultAnalyzerFactory
-	}
-	analyzer := newAnalyzer(path)
+	analyzer := a.newAnalyzer(path)
 	analyzer.SetWorkers(a.cfg.Advanced.ExifWorkers)
 	analyzer.OnProgress(func(count int) {
 		if count%100 == 0 {
@@ -126,7 +122,7 @@ func (a *App) displayCard(ctx context.Context, path, scanTS string) {
 			a.logf("Card invalid: no DCIM at %s", path)
 			a.printInvalidCardInfo(card)
 		} else {
-			fmt.Printf("\r[%s] Error scanning card: %s\n", ts(), friendlyErr(err))
+			fmt.Printf("\r[%s] Error scanning card: %s\n", ts(), FriendlyErr(err))
 			a.logf("Error analyzing card %s: %v", path, err)
 			a.finishCard()
 		}
@@ -325,7 +321,7 @@ func (a *App) ejectCard(card *detect.Card) {
 	fmt.Printf("\nEjecting %s...\n", card.Name)
 	a.logf("Ejecting %s", card.Path)
 	if err := a.detector.Eject(card.Path); err != nil {
-		fmt.Printf("Error: %s\n", friendlyErr(err))
+		fmt.Printf("Error: %s\n", FriendlyErr(err))
 		a.logf("Eject error: %v", err)
 		a.printPrompt()
 		return

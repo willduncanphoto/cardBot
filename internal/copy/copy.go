@@ -96,12 +96,12 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 			return nil
 		}
 		if d.IsDir() {
-			if strings.HasPrefix(d.Name(), ".") {
+			if isHidden(d.Name()) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		if strings.HasPrefix(d.Name(), ".") {
+		if isHidden(d.Name()) {
 			return nil
 		}
 
@@ -360,4 +360,9 @@ func sortFilesByCaptureTime(files []fileEntry) {
 		}
 		return files[i].captureTime.Before(files[j].captureTime)
 	})
+}
+
+// isHidden reports whether a filename should be skipped.
+func isHidden(name string) bool {
+	return strings.HasPrefix(name, ".")
 }

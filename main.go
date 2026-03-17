@@ -15,7 +15,7 @@ import (
 	"github.com/illwill/cardbot/internal/pick"
 )
 
-const version = "0.4.6"
+const version = "0.4.7"
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "self-update" {
@@ -64,7 +64,7 @@ func main() {
 	if cfgPath != "" {
 		cfg, cfgWarnings, err = config.Load(cfgPath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: %s — using defaults\n", errMsg(err))
+			fmt.Fprintf(os.Stderr, "Warning: %s — using defaults\n", app.FriendlyErr(err))
 			cfg = config.Defaults()
 		}
 	} else {
@@ -85,7 +85,7 @@ func main() {
 	}
 	if needsSetup {
 		if saveErr := app.RunSetup(cfg, cfgPath, promptDestination, app.PromptNamingMode); saveErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: could not save config: %s\n", errMsg(saveErr))
+			fmt.Fprintf(os.Stderr, "Warning: could not save config: %s\n", app.FriendlyErr(saveErr))
 		}
 		fmt.Println()
 	}
@@ -95,11 +95,11 @@ func main() {
 	if cfg.Advanced.LogFile != "" {
 		logPath, expandErr := config.ExpandPath(cfg.Advanced.LogFile)
 		if expandErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: could not expand log path: %s\n", errMsg(expandErr))
+			fmt.Fprintf(os.Stderr, "Warning: could not expand log path: %s\n", app.FriendlyErr(expandErr))
 		} else {
 			logger, err = cblog.Open(logPath)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: could not open log file: %s\n", errMsg(err))
+				fmt.Fprintf(os.Stderr, "Warning: could not open log file: %s\n", app.FriendlyErr(err))
 			} else {
 				defer logger.Close()
 			}
@@ -193,21 +193,4 @@ func promptDestinationReadline(defaultPath string) string {
 		return defaultPath
 	}
 	return line
-}
-
-// errMsg returns a short, user-facing message for common OS-level errors.
-func errMsg(err error) string {
-	s := err.Error()
-	switch {
-	case strings.Contains(s, "no space left"):
-		return "destination disk is full"
-	case strings.Contains(s, "permission denied"):
-		return "permission denied — check folder permissions"
-	case strings.Contains(s, "read-only file system"):
-		return "destination is read-only"
-	case strings.Contains(s, "input/output error"):
-		return "I/O error — card may be damaged"
-	default:
-		return s
-	}
 }

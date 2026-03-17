@@ -120,7 +120,7 @@ func (d *Detector) scanVolumes() {
 		}
 		path := filepath.Join("/Volumes", vol.Name())
 
-		if d.isMemoryCard(path) {
+		if isMemoryCard(path) {
 			currentCards[path] = true
 
 			d.mu.RLock()
@@ -159,10 +159,4 @@ func (d *Detector) scanVolumes() {
 		default:
 		}
 	}
-}
-
-func (d *Detector) isMemoryCard(path string) bool {
-	dcim := filepath.Join(path, "DCIM")
-	info, err := os.Stat(dcim)
-	return err == nil && info.IsDir()
 }
