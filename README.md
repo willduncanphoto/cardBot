@@ -2,6 +2,8 @@
 
 A CLI tool for camera memory cards.
 
+![alt text](screenshot.png)
+
 ## DISCLAIMER: Built with AI Coding Tools
 
 CardBot was built with the help of AI coding tools and many open source projects. There is no warranty. This is an experiment in LLM slop.
@@ -14,8 +16,6 @@ A special thanks goes out to **[Pi](https://shittycodingagent.ai)** — a termin
 ## What CardBot Does
 
 CardBot generates a concise overview a memory card and provides modern copy tools to makes offloading your work faster and safer.
-
-![alt text](screenshot.png)
 
 **Current capabilities:**
 - Detect camera memory cards on macOS
