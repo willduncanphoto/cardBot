@@ -320,6 +320,7 @@ Run `cardbot --setup` to re-run setup and change saved preferences. Run `cardbot
 | Version | Focus | Status |
 |---------|-------|--------|
 | **0.5.0** | Background auto-launch (daemon + LaunchAgent + status) | Current |
+| **0.5.1** | Bugfix follow-up from 0.5.0 testing | Next |
 | **0.6.0** | Copy operations improvements | Planned |
 | **0.8.0** | Copyright metadata injection | Planned |
 
