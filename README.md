@@ -33,7 +33,8 @@ curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/instal
 Install a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/install.sh | sh -s -- --version v0.5.2
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/install.sh | sh -s -- --version <version>
+# example: --version v0.5.2
 ```
 
 For manual binary install and source build instructions, see **[INSTALL.md](INSTALL.md)**.
@@ -118,6 +119,8 @@ For full daemon debugging details and expected debug output, see **[DEBUG.md](DE
 | `v` | Copy videos |
 | `e` | Eject card |
 | `x` | Exit current card |
+| `i` | Show card hardware info |
+| `t` | Run speed test |
 | `\` | Cancel active copy |
 | `?` | Help |
 
@@ -160,7 +163,16 @@ Set `daemon.debug` to `true` to enable verbose daemon/launcher debug logging.
 |---------|-------|--------|
 | **0.5.2** | Launcher diagnostics + uninstall workflow | Current |
 | **0.6.0** | Copy UX improvements | Next |
+| **0.7.0** | Homebrew support | Planned |
 | **0.8.0** | Copyright metadata injection | Planned |
+
+### 0.7.0 scope (Homebrew support)
+
+- Add Homebrew tap + `cardbot` formula
+- Use release binary assets in formula install flow
+- Automate formula version/SHA updates on tagged releases
+- Document `brew` install/upgrade/uninstall workflow
+- Improve `self-update` permission guidance for brew-managed installs
 
 ## License
 

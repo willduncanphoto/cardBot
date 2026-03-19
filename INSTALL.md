@@ -11,7 +11,8 @@ curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/instal
 Specific version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/install.sh | sh -s -- --version v0.5.2
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/install.sh | sh -s -- --version <version>
+# example: --version v0.5.2
 ```
 
 Install to custom path without sudo:
@@ -48,17 +49,31 @@ sh uninstall.sh --help
 
 ## Manual install from release assets
 
-### Apple Silicon (arm64)
+### macOS Apple Silicon (arm64)
 
 ```bash
 curl -fL -o cardbot https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-arm64
 install -m 755 cardbot /usr/local/bin/cardbot
 ```
 
-### Intel Mac (amd64)
+### macOS Intel (amd64)
 
 ```bash
 curl -fL -o cardbot https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-amd64
+install -m 755 cardbot /usr/local/bin/cardbot
+```
+
+### Linux amd64
+
+```bash
+curl -fL -o cardbot https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-linux-amd64
+install -m 755 cardbot /usr/local/bin/cardbot
+```
+
+### Linux arm64
+
+```bash
+curl -fL -o cardbot https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-linux-arm64
 install -m 755 cardbot /usr/local/bin/cardbot
 ```
 
@@ -66,9 +81,11 @@ install -m 755 cardbot /usr/local/bin/cardbot
 
 ```bash
 mkdir -p "$HOME/.local/bin"
-curl -fL -o "$HOME/.local/bin/cardbot" https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-arm64
+curl -fL -o "$HOME/.local/bin/cardbot" https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-<os>-<arch>
 chmod +x "$HOME/.local/bin/cardbot"
 ```
+
+Use one of: `darwin-arm64`, `darwin-amd64`, `linux-amd64`, `linux-arm64`.
 
 ---
 
