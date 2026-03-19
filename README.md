@@ -317,6 +317,7 @@ Run `cardbot --setup` to re-run setup and change saved preferences. Run `cardbot
 - 0.5.0 release notes draft: `docs/050_RELEASE_NOTES_DRAFT.md`
 - 0.5.1 sleep/wake QA runbook: `docs/051_SLEEP_WAKE_QA_RUNBOOK.md`
 - 0.5.1 permission hints QA runbook: `docs/051_PERMISSION_HINTS_QA_RUNBOOK.md`
+- 0.5.1 QA run log: `docs/051_QA_RUN_2026-03-19.md`
 
 ## Roadmap
 
