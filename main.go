@@ -334,13 +334,35 @@ func daemonLaunchHint(err error) string {
 	}
 	s := strings.ToLower(err.Error())
 
-	if strings.Contains(s, "not authorized to send apple events") || strings.Contains(s, "not authorised to send apple events") || strings.Contains(s, "automation") {
+	automationMarkers := []string{
+		"not authorized to send apple events",
+		"not authorised to send apple events",
+		"automation",
+		"-1743",
+		"erraeeventnotpermitted",
+	}
+	if containsAny(s, automationMarkers...) {
 		return "Grant Automation permission in macOS System Settings → Privacy & Security → Automation for your terminal app."
 	}
-	if strings.Contains(s, "operation not permitted") || strings.Contains(s, "permission denied") {
+
+	fullDiskAccessMarkers := []string{
+		"operation not permitted",
+		"permission denied",
+		" eperm",
+	}
+	if containsAny(s, fullDiskAccessMarkers...) {
 		return "Grant Full Disk Access to CardBot and your terminal app in macOS System Settings → Privacy & Security → Full Disk Access."
 	}
 	return ""
+}
+
+func containsAny(s string, parts ...string) bool {
+	for _, p := range parts {
+		if strings.Contains(s, p) {
+			return true
+		}
+	}
+	return false
 }
 
 func runInstallDaemonCommand() int {
