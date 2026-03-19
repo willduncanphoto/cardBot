@@ -23,7 +23,7 @@ import (
 	"github.com/illwill/cardbot/internal/pick"
 )
 
-const version = "0.5.1"
+const version = "0.5.2"
 
 func main() {
 	if len(os.Args) > 1 {

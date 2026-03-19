@@ -33,10 +33,24 @@ curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/instal
 Install a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/install.sh | sh -s -- --version v0.5.1
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/install.sh | sh -s -- --version v0.5.2
 ```
 
 For manual binary install and source build instructions, see **[INSTALL.md](INSTALL.md)**.
+
+### Uninstall (macOS/Linux)
+
+One-liner uninstaller:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/uninstall.sh | sh
+```
+
+Also remove config/log files:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/uninstall.sh | sh -s -- --purge
+```
 
 ## Usage
 
@@ -144,7 +158,7 @@ Set `daemon.debug` to `true` to enable verbose daemon/launcher debug logging.
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| **0.5.1** | QA fixes + daemon polish | Current |
+| **0.5.2** | Launcher diagnostics + uninstall workflow | Current |
 | **0.6.0** | Copy UX improvements | Next |
 | **0.8.0** | Copyright metadata injection | Planned |
 

@@ -11,7 +11,7 @@ curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/instal
 Specific version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/install.sh | sh -s -- --version v0.5.1
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/install.sh | sh -s -- --version v0.5.2
 ```
 
 Install to custom path without sudo:
@@ -24,6 +24,24 @@ Installer options:
 
 ```bash
 sh install.sh --help
+```
+
+Uninstall:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/uninstall.sh | sh
+```
+
+Uninstall and purge config/log files:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/uninstall.sh | sh -s -- --purge
+```
+
+Uninstaller options:
+
+```bash
+sh uninstall.sh --help
 ```
 
 ---
