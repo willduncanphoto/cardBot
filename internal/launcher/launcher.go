@@ -1,6 +1,7 @@
 package launcher
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
@@ -101,7 +102,9 @@ func launchWith(opts Options, run commandRunner) error {
 			// Set Ghostty's working directory explicitly so new windows don't land at root.
 			args = append(args, "--working-directory="+wd)
 		}
-		args = append(args, "-e", binary, mountPath)
+		// Pass mount path as a base64-encoded option value to avoid Ghostty treating
+		// a raw path-like argv token as a UI path/open target.
+		args = append(args, "-e", binary, encodeTargetPathArg(mountPath))
 		return runLogged("open", args...)
 	}
 
@@ -292,6 +295,10 @@ func ghosttyWorkingDirectory(configured string) string {
 		return ""
 	}
 	return home
+}
+
+func encodeTargetPathArg(path string) string {
+	return "--target-path-b64=" + base64.StdEncoding.EncodeToString([]byte(path))
 }
 
 func shQuote(s string) string {

@@ -101,8 +101,8 @@ func TestLaunchWith_GhosttyDefault_UsesOpenWithE(t *testing.T) {
 	if got.args[2] != "--args" || !strings.HasPrefix(got.args[3], "--working-directory=") || got.args[4] != "-e" {
 		t.Fatalf("args = %v, want '--args --working-directory=<home> -e ...'", got.args)
 	}
-	if got.args[5] != "/usr/local/bin/cardbot" || got.args[6] != "/Volumes/CARD" {
-		t.Fatalf("args = %v, want binary + mount path passed separately", got.args)
+	if got.args[5] != "/usr/local/bin/cardbot" || got.args[6] != encodeTargetPathArg("/Volumes/CARD") {
+		t.Fatalf("args = %v, want binary + encoded target-path arg", got.args)
 	}
 }
 
@@ -122,8 +122,8 @@ func TestLaunchWith_GhosttyDefault_PreservesTrailingSpacesInMountPath(t *testing
 	if err != nil {
 		t.Fatalf("launchWith error: %v", err)
 	}
-	if got.args[6] != mount {
-		t.Fatalf("mount arg = %q, want %q", got.args[6], mount)
+	if got.args[6] != encodeTargetPathArg(mount) {
+		t.Fatalf("target arg = %q, want %q", got.args[6], encodeTargetPathArg(mount))
 	}
 }
 
@@ -254,8 +254,8 @@ func TestLaunchWith_StripsMatchingQuotesFromBinaryAndMount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("launchWith error: %v", err)
 	}
-	if got.args[5] != "/usr/local/bin/cardbot" || got.args[6] != "/Volumes/NIKON Z 9" {
-		t.Fatalf("args = %v, expected normalized binary + mount path", got.args)
+	if got.args[5] != "/usr/local/bin/cardbot" || got.args[6] != encodeTargetPathArg("/Volumes/NIKON Z 9") {
+		t.Fatalf("args = %v, expected normalized binary + encoded mount path", got.args)
 	}
 }
 

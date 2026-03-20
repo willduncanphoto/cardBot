@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -45,12 +46,13 @@ func main() {
 
 	// --- CLI flags ---
 	var (
-		flagVersion = flag.Bool("version", false, "print version and exit")
-		flagDest    = flag.String("dest", "", "destination path for copied cards")
-		flagDryRun  = flag.Bool("dry-run", false, "scan cards but do not copy files")
-		flagReset   = flag.Bool("reset", false, "clear saved config and exit")
-		flagSetup   = flag.Bool("setup", false, "re-run first-time setup (destination, naming, daemon options)")
-		flagDaemon  = flag.Bool("daemon", false, "run as background daemon watching for cards")
+		flagVersion       = flag.Bool("version", false, "print version and exit")
+		flagDest          = flag.String("dest", "", "destination path for copied cards")
+		flagDryRun        = flag.Bool("dry-run", false, "scan cards but do not copy files")
+		flagReset         = flag.Bool("reset", false, "clear saved config and exit")
+		flagSetup         = flag.Bool("setup", false, "re-run first-time setup (destination, naming, daemon options)")
+		flagDaemon        = flag.Bool("daemon", false, "run as background daemon watching for cards")
+		flagTargetPathB64 = flag.String("target-path-b64", "", "internal: base64-encoded target card path")
 	)
 	flag.Parse()
 
@@ -143,6 +145,14 @@ func main() {
 
 	// --- Build app ---
 	targetPath := ""
+	if encoded := strings.TrimSpace(*flagTargetPathB64); encoded != "" {
+		decoded, decodeErr := base64.StdEncoding.DecodeString(encoded)
+		if decodeErr != nil {
+			fmt.Fprintf(os.Stderr, "Error: invalid --target-path-b64 value: %v\n", decodeErr)
+			os.Exit(1)
+		}
+		targetPath = string(decoded)
+	}
 	if args := flag.Args(); len(args) > 0 {
 		targetPath = args[0]
 	}
