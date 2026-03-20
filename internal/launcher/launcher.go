@@ -98,7 +98,14 @@ func launchWith(opts Options, run commandRunner) error {
 		// Passing a single shell-quoted string causes it to look for a binary
 		// whose name includes spaces (e.g. "/usr/local/bin/cardbot /Volumes/...").
 		// Use -na to force a fresh window when Ghostty is already running.
-		return runLogged("open", "-na", app, "--args", "-e", binary, mountPath)
+		args := []string{"-na", app, "--args"}
+		if home, err := os.UserHomeDir(); err == nil && strings.TrimSpace(home) != "" {
+			// Daemon processes launched by launchd often inherit cwd="/".
+			// Set Ghostty's working directory explicitly so new windows don't land at root.
+			args = append(args, "--working-directory="+home)
+		}
+		args = append(args, "-e", binary, mountPath)
+		return runLogged("open", args...)
 	}
 
 	debugf("launcher branch: generic app")
