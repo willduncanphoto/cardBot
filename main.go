@@ -157,6 +157,24 @@ func main() {
 		targetPath = args[0]
 	}
 
+	if !*flagDaemon && strings.TrimSpace(targetPath) == "" {
+		exePath, exeErr := os.Executable()
+		processName := "cardbot"
+		if exeErr == nil {
+			processName = filepath.Base(exePath)
+		}
+		hasOther, checkErr := instance.HasOtherProcess(processName, os.Getpid())
+		if checkErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not verify running instances: %v\n", checkErr)
+		} else if hasOther {
+			fmt.Printf("[%s] CardBot is already running — skipping duplicate instance\n", app.Ts())
+			if logger != nil {
+				logger.Printf("Duplicate interactive launch skipped: another %s process is already running", processName)
+			}
+			return
+		}
+	}
+
 	a := app.New(app.Config{
 		Cfg:        cfg,
 		Logger:     logger,
