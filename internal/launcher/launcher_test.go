@@ -127,6 +127,27 @@ func TestLaunchWith_GhosttyDefault_PreservesTrailingSpacesInMountPath(t *testing
 	}
 }
 
+func TestLaunchWith_GhosttyDefault_UsesConfiguredWorkingDirectory(t *testing.T) {
+	var got recordedCommand
+	run := func(name string, args ...string) error {
+		got = recordedCommand{name: name, args: append([]string{}, args...)}
+		return nil
+	}
+
+	err := launchWith(Options{
+		TerminalApp:      "Ghostty",
+		WorkingDirectory: "/Users/illwill/Code",
+		CardBotBinary:    "/usr/local/bin/cardbot",
+		MountPath:        "/Volumes/CARD",
+	}, run)
+	if err != nil {
+		t.Fatalf("launchWith error: %v", err)
+	}
+	if got.args[3] != "--working-directory=/Users/illwill/Code" {
+		t.Fatalf("args = %v, expected configured working directory arg", got.args)
+	}
+}
+
 func TestLaunchWith_CustomLaunchArgs_TemplatesResolved(t *testing.T) {
 	var got recordedCommand
 	run := func(name string, args ...string) error {
@@ -149,14 +170,14 @@ func TestLaunchWith_CustomLaunchArgs_TemplatesResolved(t *testing.T) {
 	if got.name != "open" {
 		t.Fatalf("command name = %q, want %q", got.name, "open")
 	}
-	if len(got.args) != 6 {
-		t.Fatalf("args = %v, want 6 args", got.args)
+	if len(got.args) != 7 {
+		t.Fatalf("args = %v, want 7 args", got.args)
 	}
 	if got.args[0] != "-na" || got.args[1] != "Ghostty" {
 		t.Fatalf("args = %v, want '-na Ghostty ...'", got.args)
 	}
-	if got.args[3] != "-e" || got.args[4] != "/opt/cardbot" || got.args[5] != "/Volumes/NIKON Z 9" {
-		t.Fatalf("args = %v, want '--args -e /opt/cardbot /Volumes/NIKON Z 9'", got.args)
+	if !strings.HasPrefix(got.args[3], "--working-directory=") || got.args[4] != "-e" || got.args[5] != "/opt/cardbot" || got.args[6] != "/Volumes/NIKON Z 9" {
+		t.Fatalf("args = %v, want '--working-directory=<home> -e /opt/cardbot /Volumes/NIKON Z 9'", got.args)
 	}
 }
 
@@ -183,7 +204,7 @@ func TestLaunchWith_GhosttyCustomLaunchArgs_StripsQuotedPlaceholders(t *testing.
 	if got.name != "open" {
 		t.Fatalf("command name = %q, want %q", got.name, "open")
 	}
-	if got.args[4] != "/usr/local/bin/cardbot" || got.args[5] != "/Volumes/NIKON Z 9" {
+	if got.args[5] != "/usr/local/bin/cardbot" || got.args[6] != "/Volumes/NIKON Z 9" {
 		t.Fatalf("args = %v, expected unquoted binary and mount path", got.args)
 	}
 }
@@ -210,10 +231,10 @@ func TestLaunchWith_GhosttyCustomLaunchArgs_LegacyCombinedCommandIsSplit(t *test
 	if got.name != "open" {
 		t.Fatalf("command name = %q, want %q", got.name, "open")
 	}
-	if len(got.args) != 6 {
-		t.Fatalf("args = %v, want 6 args", got.args)
+	if len(got.args) != 7 {
+		t.Fatalf("args = %v, want 7 args", got.args)
 	}
-	if got.args[3] != "-e" || got.args[4] != "/usr/local/bin/cardbot" || got.args[5] != "/Volumes/NIKON Z 9" {
+	if !strings.HasPrefix(got.args[3], "--working-directory=") || got.args[4] != "-e" || got.args[5] != "/usr/local/bin/cardbot" || got.args[6] != "/Volumes/NIKON Z 9" {
 		t.Fatalf("args = %v, expected legacy combined command to split into binary + mount", got.args)
 	}
 }

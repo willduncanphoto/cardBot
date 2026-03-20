@@ -11,12 +11,13 @@ import (
 
 // Options controls how a terminal is launched for a detected card.
 type Options struct {
-	TerminalApp   string
-	LaunchArgs    []string
-	CardBotBinary string
-	MountPath     string
-	Debugf        func(format string, args ...any)
-	Logf          func(format string, args ...any)
+	TerminalApp      string
+	WorkingDirectory string
+	LaunchArgs       []string
+	CardBotBinary    string
+	MountPath        string
+	Debugf           func(format string, args ...any)
+	Logf             func(format string, args ...any)
 }
 
 type commandRunner func(name string, args ...string) error
@@ -52,7 +53,7 @@ func launchWith(opts Options, run commandRunner) error {
 	}
 
 	app := normalizeTerminalApp(opts.TerminalApp)
-	debugf("launcher config: app=%q binary=%q mount=%q custom_args=%d", app, binary, mountPath, len(opts.LaunchArgs))
+	debugf("launcher config: app=%q binary=%q mount=%q working_dir=%q custom_args=%d", app, binary, mountPath, opts.WorkingDirectory, len(opts.LaunchArgs))
 
 	if len(opts.LaunchArgs) > 0 {
 		resolved := resolveLaunchArgs(opts.LaunchArgs, binary, mountPath)
@@ -64,12 +65,17 @@ func launchWith(opts Options, run commandRunner) error {
 			return runLogged("open", resolved...)
 		}
 		openAppFlag := "-a"
+		openArgs := []string{openAppFlag, app, "--args"}
 		if isGhosttyApp(app) {
 			// Ghostty on macOS requires -n to reliably open a fresh terminal window
 			// when Ghostty is already running.
 			openAppFlag = "-na"
+			openArgs[0] = openAppFlag
+			if wd := ghosttyWorkingDirectory(opts.WorkingDirectory); wd != "" {
+				openArgs = append(openArgs, "--working-directory="+wd)
+			}
 		}
-		openArgs := append([]string{openAppFlag, app, "--args"}, resolved...)
+		openArgs = append(openArgs, resolved...)
 		return runLogged("open", openArgs...)
 	}
 
@@ -99,10 +105,10 @@ func launchWith(opts Options, run commandRunner) error {
 		// whose name includes spaces (e.g. "/usr/local/bin/cardbot /Volumes/...").
 		// Use -na to force a fresh window when Ghostty is already running.
 		args := []string{"-na", app, "--args"}
-		if home, err := os.UserHomeDir(); err == nil && strings.TrimSpace(home) != "" {
+		if wd := ghosttyWorkingDirectory(opts.WorkingDirectory); wd != "" {
 			// Daemon processes launched by launchd often inherit cwd="/".
 			// Set Ghostty's working directory explicitly so new windows don't land at root.
-			args = append(args, "--working-directory="+home)
+			args = append(args, "--working-directory="+wd)
 		}
 		args = append(args, "-e", binary, mountPath)
 		return runLogged("open", args...)
@@ -280,6 +286,21 @@ func isSystemDefaultTerminal(app string) bool {
 
 func isGhosttyApp(app string) bool {
 	return strings.Contains(strings.ToLower(app), "ghostty")
+}
+
+func ghosttyWorkingDirectory(configured string) string {
+	configured = strings.TrimSpace(configured)
+	if configured != "" {
+		return configured
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	if strings.TrimSpace(home) == "" {
+		return ""
+	}
+	return home
 }
 
 func shQuote(s string) string {

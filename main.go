@@ -111,7 +111,7 @@ func main() {
 		promptDestinationFn := func(defaultPath string) string {
 			return promptDestinationWithIO(defaultPath, setupReader, os.Stdout)
 		}
-		if saveErr := app.RunSetup(cfg, cfgPath, promptDestinationFn, setupPrompter.PromptNamingMode, setupPrompter.PromptDaemonEnabled, setupPrompter.PromptDaemonStartAtLogin, setupPrompter.PromptDaemonTerminalApp); saveErr != nil {
+		if saveErr := app.RunSetup(cfg, cfgPath, promptDestinationFn, setupPrompter.PromptNamingMode, setupPrompter.PromptDaemonEnabled, setupPrompter.PromptDaemonStartAtLogin, setupPrompter.PromptDaemonTerminalApp, setupPrompter.PromptDaemonWorkingDirectory); saveErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: could not save config: %s\n", app.FriendlyErr(saveErr))
 		}
 		syncDaemonAutoStartFromConfig(cfg)
@@ -297,14 +297,16 @@ func runDaemon(cfg *config.Config, logger *cblog.Logger) {
 	}
 
 	appName := normalizeDaemonTerminalAppForLaunch(cfg.Daemon.TerminalApp)
+	workingDir := resolveDaemonWorkingDirectory(cfg.Daemon.WorkingDirectory)
 	fmt.Printf("[%s] Daemon terminal app: %s\n", time.Now().Format("2006-01-02T15:04:05"), daemonTerminalAppLabel(appName))
+	fmt.Printf("[%s] Daemon working directory: %s\n", time.Now().Format("2006-01-02T15:04:05"), daemonWorkingDirectoryLabel(cfg.Daemon.WorkingDirectory, workingDir))
 	if len(cfg.Daemon.LaunchArgs) > 0 {
 		fmt.Printf("[%s] Daemon custom launch args enabled\n", time.Now().Format("2006-01-02T15:04:05"))
 	}
 	if debugEnabled {
 		fmt.Printf("[%s] Daemon debug logging: enabled\n", time.Now().Format("2006-01-02T15:04:05"))
 	}
-	debugf("daemon startup: binary=%q terminal=%q custom_launch_args=%d", cardbotBinary, appName, len(cfg.Daemon.LaunchArgs))
+	debugf("daemon startup: binary=%q terminal=%q working_dir=%q custom_launch_args=%d", cardbotBinary, appName, workingDir, len(cfg.Daemon.LaunchArgs))
 
 	d := daemon.New(daemon.Config{
 		OnCardInserted: func(path string) {
@@ -325,12 +327,13 @@ func runDaemon(cfg *config.Config, logger *cblog.Logger) {
 
 			debugf("launch attempt: terminal=%q mount=%q", appName, path)
 			err := launcher.Launch(launcher.Options{
-				TerminalApp:   appName,
-				LaunchArgs:    cfg.Daemon.LaunchArgs,
-				CardBotBinary: cardbotBinary,
-				MountPath:     path,
-				Debugf:        debugf,
-				Logf:          logf,
+				TerminalApp:      appName,
+				WorkingDirectory: workingDir,
+				LaunchArgs:       cfg.Daemon.LaunchArgs,
+				CardBotBinary:    cardbotBinary,
+				MountPath:        path,
+				Debugf:           debugf,
+				Logf:             logf,
 			})
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "[%s] Launch failed: %v\n", time.Now().Format("2006-01-02T15:04:05"), err)
@@ -374,6 +377,34 @@ func daemonTerminalAppLabel(app string) string {
 		return "Default (macOS)"
 	}
 	return app
+}
+
+func resolveDaemonWorkingDirectory(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		raw = "~"
+	}
+	expanded, err := config.ExpandPath(raw)
+	if err != nil || strings.TrimSpace(expanded) == "" {
+		if home, homeErr := os.UserHomeDir(); homeErr == nil && strings.TrimSpace(home) != "" {
+			return home
+		}
+		return raw
+	}
+	return expanded
+}
+
+func daemonWorkingDirectoryLabel(configValue, resolved string) string {
+	if strings.TrimSpace(configValue) == "" {
+		configValue = "~"
+	}
+	if strings.TrimSpace(resolved) == "" {
+		return configValue
+	}
+	if config.ContractPath(resolved) == configValue {
+		return configValue
+	}
+	return fmt.Sprintf("%s (%s)", configValue, resolved)
 }
 
 // daemonPidPath returns the path for the daemon PID file.
@@ -554,6 +585,9 @@ func runDaemonDebugCommand(args []string) int {
 		if strings.TrimSpace(cfg.Daemon.TerminalApp) == "" {
 			cfg.Daemon.TerminalApp = "Terminal"
 		}
+		if strings.TrimSpace(cfg.Daemon.WorkingDirectory) == "" {
+			cfg.Daemon.WorkingDirectory = "~"
+		}
 		if !cfg.Daemon.Enabled {
 			cfg.Daemon.StartAtLogin = false
 		}
@@ -614,11 +648,12 @@ type daemonStatusReport struct {
 }
 
 type daemonStatusDaemonReport struct {
-	Enabled      bool     `json:"enabled"`
-	StartAtLogin bool     `json:"start_at_login"`
-	TerminalApp  string   `json:"terminal_app"`
-	LaunchArgs   []string `json:"launch_args"`
-	Debug        bool     `json:"debug"`
+	Enabled          bool     `json:"enabled"`
+	StartAtLogin     bool     `json:"start_at_login"`
+	TerminalApp      string   `json:"terminal_app"`
+	WorkingDirectory string   `json:"working_directory"`
+	LaunchArgs       []string `json:"launch_args"`
+	Debug            bool     `json:"debug"`
 }
 
 type daemonStatusSIGuardReport struct {
@@ -716,11 +751,12 @@ func collectDaemonStatusReport(opts daemonStatusOptions) daemonStatusReport {
 	}
 	terminalApp := normalizeDaemonTerminalAppForLaunch(cfg.Daemon.TerminalApp)
 	report.Daemon = daemonStatusDaemonReport{
-		Enabled:      cfg.Daemon.Enabled,
-		StartAtLogin: cfg.Daemon.StartAtLogin,
-		TerminalApp:  terminalApp,
-		LaunchArgs:   launchArgs,
-		Debug:        cfg.Daemon.Debug,
+		Enabled:          cfg.Daemon.Enabled,
+		StartAtLogin:     cfg.Daemon.StartAtLogin,
+		TerminalApp:      terminalApp,
+		WorkingDirectory: config.ContractPath(resolveDaemonWorkingDirectory(cfg.Daemon.WorkingDirectory)),
+		LaunchArgs:       launchArgs,
+		Debug:            cfg.Daemon.Debug,
 	}
 
 	// Check if a daemon is currently running via PID file.
@@ -837,6 +873,7 @@ func printDaemonStatusReport(report daemonStatusReport) {
 	fmt.Printf("Daemon enabled: %s\n", boolEnabled(report.Daemon.Enabled))
 	fmt.Printf("Start at login: %s\n", boolEnabled(report.Daemon.StartAtLogin))
 	fmt.Printf("Terminal app: %s\n", daemonTerminalAppLabel(report.Daemon.TerminalApp))
+	fmt.Printf("Working directory: %s\n", report.Daemon.WorkingDirectory)
 	fmt.Printf("Debug logging: %s\n", boolEnabled(report.Daemon.Debug))
 	if len(report.Daemon.LaunchArgs) == 0 {
 		fmt.Println("Launch args: (default)")
@@ -996,6 +1033,7 @@ func printSetupSummary(cfg *config.Config) {
 	if cfg.Daemon.Enabled {
 		fmt.Println("- Background auto-launch: enabled")
 		fmt.Printf("- Daemon terminal app: %s\n", daemonTerminalAppLabel(normalizeDaemonTerminalAppForLaunch(cfg.Daemon.TerminalApp)))
+		fmt.Printf("- Daemon working directory: %s\n", config.ContractPath(resolveDaemonWorkingDirectory(cfg.Daemon.WorkingDirectory)))
 	} else {
 		fmt.Println("- Background auto-launch: disabled")
 	}
@@ -1038,6 +1076,9 @@ func updateSavedDaemonPrefs(mutator func(cfg *config.Config)) {
 	}
 	if strings.TrimSpace(cfg.Daemon.TerminalApp) == "" {
 		cfg.Daemon.TerminalApp = "Terminal"
+	}
+	if strings.TrimSpace(cfg.Daemon.WorkingDirectory) == "" {
+		cfg.Daemon.WorkingDirectory = "~"
 	}
 
 	if err := config.Save(cfg, cfgPath); err != nil {

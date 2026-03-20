@@ -28,6 +28,9 @@ func TestDefaults(t *testing.T) {
 	if cfg.Daemon.TerminalApp != "Terminal" {
 		t.Errorf("Daemon.TerminalApp = %q, want %q", cfg.Daemon.TerminalApp, "Terminal")
 	}
+	if cfg.Daemon.WorkingDirectory != "~" {
+		t.Errorf("Daemon.WorkingDirectory = %q, want %q", cfg.Daemon.WorkingDirectory, "~")
+	}
 	if cfg.Daemon.LaunchArgs != nil {
 		t.Errorf("Daemon.LaunchArgs = %v, want nil", cfg.Daemon.LaunchArgs)
 	}
@@ -54,6 +57,7 @@ func TestSaveLoad_RoundTrip(t *testing.T) {
 	cfg.Daemon.Enabled = true
 	cfg.Daemon.StartAtLogin = true
 	cfg.Daemon.TerminalApp = "Ghostty"
+	cfg.Daemon.WorkingDirectory = "~/Code"
 	cfg.Daemon.LaunchArgs = []string{"-e", "cardbot {{mount_path}}"}
 	cfg.Daemon.Debug = true
 
@@ -82,6 +86,9 @@ func TestSaveLoad_RoundTrip(t *testing.T) {
 	}
 	if loaded.Daemon.TerminalApp != "Ghostty" {
 		t.Errorf("Daemon.TerminalApp = %q, want %q", loaded.Daemon.TerminalApp, "Ghostty")
+	}
+	if loaded.Daemon.WorkingDirectory != "~/Code" {
+		t.Errorf("Daemon.WorkingDirectory = %q, want %q", loaded.Daemon.WorkingDirectory, "~/Code")
 	}
 	if len(loaded.Daemon.LaunchArgs) != 2 {
 		t.Errorf("Daemon.LaunchArgs len = %d, want 2", len(loaded.Daemon.LaunchArgs))
@@ -260,6 +267,9 @@ func TestLoad_PartialConfig(t *testing.T) {
 	if cfg.Daemon.TerminalApp != defaults.Daemon.TerminalApp {
 		t.Errorf("Daemon.TerminalApp = %q, want %q (default)", cfg.Daemon.TerminalApp, defaults.Daemon.TerminalApp)
 	}
+	if cfg.Daemon.WorkingDirectory != defaults.Daemon.WorkingDirectory {
+		t.Errorf("Daemon.WorkingDirectory = %q, want %q (default)", cfg.Daemon.WorkingDirectory, defaults.Daemon.WorkingDirectory)
+	}
 	if len(cfg.Daemon.LaunchArgs) != len(defaults.Daemon.LaunchArgs) {
 		t.Errorf("Daemon.LaunchArgs len = %d, want %d (default)", len(cfg.Daemon.LaunchArgs), len(defaults.Daemon.LaunchArgs))
 	}
@@ -322,6 +332,25 @@ func TestLoad_DaemonTerminalAppDefaultedWhenEmpty(t *testing.T) {
 	}
 	if len(warnings) == 0 {
 		t.Fatal("expected warning for empty terminal_app")
+	}
+}
+
+func TestLoad_DaemonWorkingDirectoryDefaultedWhenEmpty(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"$schema":"cardbot-config-v1","daemon":{"working_directory":""}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, warnings, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Daemon.WorkingDirectory != "~" {
+		t.Fatalf("Daemon.WorkingDirectory = %q, want %q", cfg.Daemon.WorkingDirectory, "~")
+	}
+	if len(warnings) == 0 {
+		t.Fatal("expected warning for empty working_directory")
 	}
 }
 
