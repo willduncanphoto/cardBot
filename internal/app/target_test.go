@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -165,6 +166,41 @@ func TestTargetPath_InvalidPath_ShowsError(t *testing.T) {
 
 	// Give it time to attempt the target path and handle the error.
 	time.Sleep(500 * time.Millisecond)
+
+	a.sigChan <- os.Interrupt
+	<-done
+}
+
+func TestTargetPath_MissingDCIM_RetriesBeforeFailing(t *testing.T) {
+	cardPath := t.TempDir()
+
+	cfg := config.Defaults()
+	cfg.Output.Color = false
+	fd := newFakeDetector()
+
+	var attempts atomic.Int32
+	a := New(Config{
+		Cfg:        cfg,
+		TargetPath: cardPath,
+		newDetector: func() cardDetector { return fd },
+		newAnalyzer: func(_ string) cardAnalyzer {
+			attempt := attempts.Add(1)
+			if attempt < 3 {
+				return &fakeAnalyzer{result: nil, err: os.ErrNotExist}
+			}
+			return &fakeAnalyzer{result: &analyze.Result{FileCount: 5}}
+		},
+	})
+	a.detector = fd
+	t.Cleanup(a.stopScanning)
+
+	done := make(chan error, 1)
+	go func() { done <- a.Run() }()
+
+	waitForPhase(t, a, phaseReady, 4*time.Second)
+	if got := attempts.Load(); got < 3 {
+		t.Fatalf("expected at least 3 analyze attempts, got %d", got)
+	}
 
 	a.sigChan <- os.Interrupt
 	<-done

@@ -9,7 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -302,21 +304,21 @@ func runDaemon(cfg *config.Config, logger *cblog.Logger) {
 	if debugEnabled {
 		fmt.Printf("[%s] Daemon debug logging: enabled\n", time.Now().Format("2006-01-02T15:04:05"))
 	}
-	processName := filepath.Base(cardbotBinary)
-	debugf("daemon startup: binary=%q process=%q terminal=%q custom_launch_args=%d", cardbotBinary, processName, appName, len(cfg.Daemon.LaunchArgs))
+	debugf("daemon startup: binary=%q terminal=%q custom_launch_args=%d", cardbotBinary, appName, len(cfg.Daemon.LaunchArgs))
 
 	d := daemon.New(daemon.Config{
 		OnCardInserted: func(path string) {
 			debugf("card insert callback: mount=%q", path)
 
-			hasOther, checkErr := instance.HasOtherProcess(processName, os.Getpid())
+			// Check if another daemon instance is already running using PID file.
+			hasOtherDaemon, checkErr := daemonHasRunningInstance()
 			if checkErr != nil {
-				fmt.Fprintf(os.Stderr, "[%s] Warning: single-instance check failed (%v)\n", time.Now().Format("2006-01-02T15:04:05"), checkErr)
-				logf("Single-instance check failed: %v", checkErr)
-			} else if hasOther {
-				debugf("single-instance guard blocked launch for %q", path)
-				fmt.Printf("[%s] CardBot already running in another process — skipping auto-launch\n", time.Now().Format("2006-01-02T15:04:05"))
-				logf("Auto-launch skipped for %s: another cardbot process is running", path)
+				fmt.Fprintf(os.Stderr, "[%s] Warning: daemon instance check failed (%v)\n", time.Now().Format("2006-01-02T15:04:05"), checkErr)
+				logf("Daemon instance check failed: %v", checkErr)
+			} else if hasOtherDaemon {
+				debugf("daemon instance guard blocked launch for %q", path)
+				fmt.Printf("[%s] Another daemon is already running — skipping auto-launch\n", time.Now().Format("2006-01-02T15:04:05"))
+				logf("Auto-launch skipped for %s: another daemon is running", path)
 				return
 			}
 
@@ -371,6 +373,51 @@ func daemonTerminalAppLabel(app string) string {
 		return "Default (macOS)"
 	}
 	return app
+}
+
+// daemonPidPath returns the path for the daemon PID file.
+func daemonPidPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("resolving home directory: %w", err)
+	}
+	return filepath.Join(home, ".cardbot", "cardbot.pid"), nil
+}
+
+// daemonHasRunningInstance checks if another daemon instance is running.
+// Uses the PID file to determine if a daemon process exists.
+func daemonHasRunningInstance() (bool, error) {
+	pidPath, err := daemonPidPath()
+	if err != nil {
+		return false, fmt.Errorf("resolving PID path: %w", err)
+	}
+
+	pidData, err := os.ReadFile(pidPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil // No daemon running
+		}
+		return false, fmt.Errorf("reading PID file: %w", err)
+	}
+
+	pid, err := strconv.Atoi(strings.TrimSpace(string(pidData)))
+	if err != nil {
+		// Corrupted PID file; treat as no daemon running
+		return false, nil
+	}
+
+	// Check if process exists by sending signal 0.
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return false, nil
+	}
+	err = process.Signal(syscall.Signal(0))
+	if err != nil {
+		// ESRCH = no such process, or EPERM = permission denied but process exists
+		// In both cases, the process from the PID file is not running
+		return false, nil
+	}
+	return true, nil
 }
 
 func daemonLaunchHint(err error) string {
@@ -550,6 +597,7 @@ type daemonStatusReport struct {
 	ConfigWarnings              []string                  `json:"config_warnings,omitempty"`
 	Daemon                      daemonStatusDaemonReport  `json:"daemon"`
 	SingleInstanceGuard         daemonStatusSIGuardReport `json:"single_instance_guard"`
+	DaemonInstance              daemonStatusDIReport      `json:"daemon_instance"`
 	LaunchAgent                 daemonStatusLAReport      `json:"launch_agent"`
 	RecentLauncherExecRequested int                       `json:"recent_launcher_exec_requested,omitempty"`
 	RecentLauncherExec          []string                  `json:"recent_launcher_exec,omitempty"`
@@ -569,6 +617,13 @@ type daemonStatusSIGuardReport struct {
 	ProcessName     string `json:"process_name"`
 	HasOtherProcess bool   `json:"has_other_process"`
 	CheckError      string `json:"check_error,omitempty"`
+}
+
+type daemonStatusDIReport struct {
+	PIDPath       string `json:"pid_path,omitempty"`
+	Running       bool   `json:"running"`
+	RunningPID    int    `json:"running_pid,omitempty"`
+	CheckError    string `json:"check_error,omitempty"`
 }
 
 type daemonStatusLAReport struct {
@@ -659,6 +714,9 @@ func collectDaemonStatusReport(opts daemonStatusOptions) daemonStatusReport {
 		Debug:        cfg.Daemon.Debug,
 	}
 
+	// Check if a daemon is currently running via PID file.
+	report.DaemonInstance = collectDaemonInstanceStatus()
+
 	if opts.RecentLaunches > 0 {
 		report.RecentLauncherExecRequested = opts.RecentLaunches
 		logPath, err := config.ExpandPath(cfg.Advanced.LogFile)
@@ -707,6 +765,48 @@ func collectSingleInstanceGuardStatus(processName string, selfPID int, checker f
 	return report
 }
 
+func collectDaemonInstanceStatus() daemonStatusDIReport {
+	report := daemonStatusDIReport{}
+
+	pidPath, err := daemonPidPath()
+	if err != nil {
+		report.CheckError = fmt.Sprintf("resolving PID path: %v", err)
+		return report
+	}
+	report.PIDPath = pidPath
+
+	pidData, err := os.ReadFile(pidPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			report.Running = false
+			return report
+		}
+		report.CheckError = fmt.Sprintf("reading PID file: %v", err)
+		return report
+	}
+
+	pid, err := strconv.Atoi(strings.TrimSpace(string(pidData)))
+	if err != nil {
+		report.CheckError = "PID file contains invalid data"
+		return report
+	}
+
+	report.RunningPID = pid
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		report.Running = false
+		return report
+	}
+
+	err = process.Signal(syscall.Signal(0))
+	if err != nil {
+		report.Running = false
+		return report
+	}
+	report.Running = true
+	return report
+}
+
 func printDaemonStatusReport(report daemonStatusReport) {
 	fmt.Println("CardBot Daemon Status")
 	fmt.Println("────────────────────────────────────────")
@@ -741,6 +841,15 @@ func printDaemonStatusReport(report daemonStatusReport) {
 		fmt.Printf("Guard check: error (%s)\n", report.SingleInstanceGuard.CheckError)
 	} else {
 		fmt.Printf("Other CardBot process running: %s\n", boolYesNo(report.SingleInstanceGuard.HasOtherProcess))
+	}
+
+	// Daemon instance status via PID file.
+	if report.DaemonInstance.CheckError != "" {
+		fmt.Printf("Daemon instance: error (%s)\n", report.DaemonInstance.CheckError)
+	} else if report.DaemonInstance.Running {
+		fmt.Printf("Daemon running: yes (PID %d)\n", report.DaemonInstance.RunningPID)
+	} else {
+		fmt.Printf("Daemon running: no\n")
 	}
 
 	if report.RecentLauncherExecRequested > 0 {

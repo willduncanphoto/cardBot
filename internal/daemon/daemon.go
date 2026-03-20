@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -41,6 +43,10 @@ type Config struct {
 
 	// Now is an optional time provider for tests.
 	Now func() time.Time
+
+	// PIDPathFn returns the path for the daemon PID file.
+	// If nil, uses the default path (~/.cardbot/cardbot.pid).
+	PIDPathFn func() (string, error)
 }
 
 // Daemon is a long-running background process that watches for card insertions.
@@ -51,6 +57,7 @@ type Daemon struct {
 	recentlyProcessed map[string]time.Time
 	duplicateCooldown time.Duration
 	now               func() time.Time
+	pidPath           string
 	mu                sync.Mutex
 	sigChan           chan os.Signal
 }
@@ -73,6 +80,11 @@ func New(c Config) *Daemon {
 	if now == nil {
 		now = time.Now
 	}
+	pidPathFn := c.PIDPathFn
+	if pidPathFn == nil {
+		pidPathFn = daemonPidPath
+	}
+	pidPath, _ := pidPathFn() // Ignore error; Run() will handle it
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -84,8 +96,18 @@ func New(c Config) *Daemon {
 		recentlyProcessed: make(map[string]time.Time),
 		duplicateCooldown: cooldown,
 		now:               now,
+		pidPath:           pidPath,
 		sigChan:           sigChan,
 	}
+}
+
+// daemonPidPath returns the default path for the daemon PID file.
+func daemonPidPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("resolving home directory: %w", err)
+	}
+	return filepath.Join(home, ".cardbot", "cardbot.pid"), nil
 }
 
 func ts() string {
@@ -94,11 +116,29 @@ func ts() string {
 
 // Run starts the daemon event loop. It blocks until SIGINT/SIGTERM.
 func (d *Daemon) Run() error {
+	// Write PID file.
+	if d.pidPath != "" {
+		if err := os.MkdirAll(filepath.Dir(d.pidPath), 0755); err != nil {
+			fmt.Printf("[%s] Warning: could not create PID directory: %v\n", ts(), err)
+		} else if err := os.WriteFile(d.pidPath, []byte(strconv.Itoa(os.Getpid())), 0644); err != nil {
+			fmt.Printf("[%s] Warning: could not write PID file: %v\n", ts(), err)
+		}
+	}
+
+	// Ensure PID file is cleaned up on exit.
+	removePID := func() {
+		if d.pidPath != "" {
+			_ = os.Remove(d.pidPath)
+		}
+	}
+
 	detector := d.newDetector()
 	if err := detector.Start(); err != nil {
+		removePID()
 		return fmt.Errorf("starting detector: %w", err)
 	}
 	defer detector.Stop()
+	defer removePID()
 
 	fmt.Printf("[%s] CardBot daemon started — watching for cards...\n", ts())
 

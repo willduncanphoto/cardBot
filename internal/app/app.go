@@ -101,7 +101,7 @@ func New(c Config) *App {
 		copiedModes:  make(map[string]bool),
 		version:      c.Version,
 		phase:        phaseScanning,
-		targetPath:   c.TargetPath,
+		targetPath:   normalizeCardPath(c.TargetPath),
 		newDetector:  newDetector,
 		newAnalyzer:  newAnalyzer,
 		runCopy:      runCopy,

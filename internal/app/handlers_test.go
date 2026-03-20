@@ -108,6 +108,18 @@ func TestIsTracked(t *testing.T) {
 	}
 }
 
+func TestIsTracked_NormalizesPath(t *testing.T) {
+	t.Parallel()
+
+	a := &App{
+		currentCard: &detect.Card{Path: "/Volumes/NIKON Z 9"},
+	}
+
+	if !a.isTracked("/Volumes/NIKON Z 9/") {
+		t.Fatal("expected trailing-slash variant to be tracked")
+	}
+}
+
 func TestResumeScanningIfIdle(t *testing.T) {
 	cfg := config.Defaults()
 	a := New(Config{Cfg: cfg})
@@ -228,6 +240,23 @@ func TestHandleCardEvent_AlreadyTrackedAsCurrent_Ignored(t *testing.T) {
 	a.phase = phaseReady
 
 	a.handleCardEvent(&detect.Card{Path: "/card/current"})
+
+	a.mu.Lock()
+	qLen := len(a.cardQueue)
+	a.mu.Unlock()
+	if qLen != 0 {
+		t.Fatalf("already-tracked card should not be queued, got queue length %d", qLen)
+	}
+}
+
+func TestHandleCardEvent_AlreadyTrackedAsCurrent_WithTrailingSlash_Ignored(t *testing.T) {
+	t.Parallel()
+	cfg := config.Defaults()
+	a := New(Config{Cfg: cfg})
+	a.currentCard = &detect.Card{Path: "/Volumes/NIKON Z 9"}
+	a.phase = phaseReady
+
+	a.handleCardEvent(&detect.Card{Path: "/Volumes/NIKON Z 9/"})
 
 	a.mu.Lock()
 	qLen := len(a.cardQueue)

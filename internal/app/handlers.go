@@ -10,19 +10,31 @@ import (
 	"strings"
 	"time"
 
+	"github.com/illwill/cardbot/internal/analyze"
 	"github.com/illwill/cardbot/internal/detect"
 )
 
 const (
 	minScanVisualDuration = 350 * time.Millisecond
 	scanLinePaceDelay     = 120 * time.Millisecond
+
+	targetNoDCIMRetryDelay       = 350 * time.Millisecond
+	targetNoDCIMRetryMaxAttempts = 8
 )
 
 func (a *App) handleCardEvent(card *detect.Card) {
+	if card == nil {
+		return
+	}
+	card.Path = normalizeCardPath(card.Path)
+	if card.Path == "" {
+		return
+	}
+
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	// Ignore if already being processed or queued
+	// Ignore if already being processed or queued.
 	if a.isTracked(card.Path) {
 		return
 	}
@@ -51,11 +63,15 @@ func (a *App) handleCardEvent(card *detect.Card) {
 }
 
 func (a *App) isTracked(path string) bool {
-	if a.currentCard != nil && a.currentCard.Path == path {
+	path = normalizeCardPath(path)
+	if path == "" {
+		return false
+	}
+	if a.currentCard != nil && sameCardPath(a.currentCard.Path, path) {
 		return true
 	}
 	for _, c := range a.cardQueue {
-		if c.Path == path {
+		if sameCardPath(c.Path, path) {
 			return true
 		}
 	}
@@ -84,7 +100,46 @@ func (a *App) printQueueNotice(card *detect.Card) {
 	a.logf("%s detected (%d card%s in queue)", card.Brand, len(a.cardQueue), plural)
 }
 
+func (a *App) shouldRetryMissingDCIM(path string, attempt int) bool {
+	if attempt >= targetNoDCIMRetryMaxAttempts {
+		return false
+	}
+	if a.targetPath == "" {
+		return false
+	}
+	return sameCardPath(a.targetPath, path)
+}
+
+func (a *App) analyzeCard(ctx context.Context, path, scanTS string) (*analyze.Result, error) {
+	for attempt := 1; ; attempt++ {
+		analyzer := a.newAnalyzer(path)
+		analyzer.SetWorkers(a.cfg.Advanced.ExifWorkers)
+		analyzer.OnProgress(func(count int) {
+			if count%100 == 0 {
+				fmt.Printf("\r[%s] Scanning %d files", scanTS, count)
+			}
+		})
+
+		result, err := analyzer.Analyze(ctx)
+		if err == nil {
+			return result, nil
+		}
+		if !os.IsNotExist(err) || !a.shouldRetryMissingDCIM(path, attempt) {
+			return nil, err
+		}
+
+		a.logf("Target path not ready yet (missing DCIM), retrying %d/%d: %s", attempt, targetNoDCIMRetryMaxAttempts, path)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(targetNoDCIMRetryDelay):
+		}
+	}
+}
+
 func (a *App) displayCard(ctx context.Context, path, scanTS string) {
+	path = normalizeCardPath(path)
+
 	// Card may have been removed or replaced before this goroutine runs.
 	if ctx.Err() != nil {
 		return
@@ -93,15 +148,7 @@ func (a *App) displayCard(ctx context.Context, path, scanTS string) {
 
 	a.logf("Reading %s", path)
 	scanStart := time.Now()
-	analyzer := a.newAnalyzer(path)
-	analyzer.SetWorkers(a.cfg.Advanced.ExifWorkers)
-	analyzer.OnProgress(func(count int) {
-		if count%100 == 0 {
-			fmt.Printf("\r[%s] Scanning %d files", scanTS, count)
-		}
-	})
-
-	result, err := analyzer.Analyze(ctx)
+	result, err := a.analyzeCard(ctx, path, scanTS)
 
 	// Cancelled — card was removed or replaced during analysis.
 	if ctx.Err() != nil {
@@ -211,8 +258,13 @@ func (a *App) resumeScanningIfIdle() {
 }
 
 func (a *App) handleRemoval(path string) {
+	path = normalizeCardPath(path)
+	if path == "" {
+		return
+	}
+
 	a.mu.Lock()
-	wasCurrent := a.currentCard != nil && a.currentCard.Path == path
+	wasCurrent := a.currentCard != nil && sameCardPath(a.currentCard.Path, path)
 
 	if wasCurrent {
 		if a.scanCancel != nil {
@@ -253,7 +305,7 @@ func (a *App) handleRemoval(path string) {
 
 	// Check queue
 	for i, card := range a.cardQueue {
-		if card.Path == path {
+		if sameCardPath(card.Path, path) {
 			a.cardQueue = append(a.cardQueue[:i], a.cardQueue[i+1:]...)
 			a.mu.Unlock()
 			fmt.Printf("\n[%s] Queued card removed: %s\n", ts(), path)
@@ -374,6 +426,10 @@ func newStdinReader() *bufio.Reader {
 // immediately, bypassing the normal detector-driven scan-and-wait flow.
 // Used when the user invokes `cardbot /path/to/card`.
 func (a *App) launchTargetPath(path string) {
+	path = normalizeCardPath(path)
+	if path == "" {
+		return
+	}
 	a.stopScanning()
 
 	card := &detect.Card{

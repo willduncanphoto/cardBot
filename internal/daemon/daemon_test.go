@@ -2,6 +2,8 @@ package daemon
 
 import (
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -311,5 +313,95 @@ func TestDaemon_Cooldown_SuppressesRapidReinsert(t *testing.T) {
 	d.handleCard(card)
 	if calls != 2 {
 		t.Fatalf("calls = %d, want 2 (cooldown elapsed)", calls)
+	}
+}
+
+func TestDaemon_PIDFile_WrittenAndRemoved(t *testing.T) {
+	t.Parallel()
+
+	tmpDir, err := os.MkdirTemp("", "cardbot-daemon-pid-test")
+	if err != nil {
+		t.Fatalf("creating temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	pidPath := tmpDir + "/cardbot.pid"
+
+	fd := newFakeDetector()
+	d := New(Config{
+		NewDetector:    func() Detector { return fd },
+		OnCardInserted: func(path string) {},
+		PIDPathFn:      func() (string, error) { return pidPath, nil },
+	})
+
+	done := make(chan error, 1)
+	go func() { done <- d.Run() }()
+
+	// Wait for detector to start.
+	for !fd.started.Load() {
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// PID file should exist while daemon is running.
+	pidData, err := os.ReadFile(pidPath)
+	if err != nil {
+		t.Fatalf("PID file not found while daemon running: %v", err)
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(pidData)))
+	if err != nil || pid <= 0 {
+		t.Fatalf("PID file contains invalid data: %s", string(pidData))
+	}
+
+	// Shut down daemon.
+	d.sigChan <- os.Interrupt
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run() did not exit on signal")
+	}
+
+	// PID file should be removed after daemon exits.
+	if _, err := os.Stat(pidPath); !os.IsNotExist(err) {
+		t.Fatalf("PID file should be removed after daemon exits, stat error: %v", err)
+	}
+}
+
+func TestDaemon_PIDFile_UnavailablePath_NoError(t *testing.T) {
+	t.Parallel()
+
+	// Use a path that cannot be created.
+	pidPath := "/nonexistent/path/cardbot.pid"
+
+	fd := newFakeDetector()
+	d := New(Config{
+		NewDetector:    func() Detector { return fd },
+		OnCardInserted: func(path string) {},
+		PIDPathFn:      func() (string, error) { return pidPath, nil },
+	})
+
+	done := make(chan error, 1)
+	go func() { done <- d.Run() }()
+
+	// Wait for detector to start.
+	for !fd.started.Load() {
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// Daemon should still run despite PID file error.
+	_ = fd
+
+	d.sigChan <- os.Interrupt
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Run() error = %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run() did not exit on signal")
 	}
 }
