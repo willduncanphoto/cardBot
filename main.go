@@ -1001,6 +1001,11 @@ func syncDaemonAutoStartFromConfig(cfg *config.Config) {
 	}
 
 	if cfg.Daemon.Enabled && cfg.Daemon.StartAtLogin {
+		if st, err := launchagent.CurrentStatus(); err == nil && st.Installed && st.Loaded {
+			fmt.Printf("[%s] Start-at-login already enabled\n", app.Ts())
+			return
+		}
+
 		exe, err := os.Executable()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: could not determine executable path for launch agent install: %v\n", err)
@@ -1011,6 +1016,11 @@ func syncDaemonAutoStartFromConfig(cfg *config.Config) {
 			return
 		}
 		fmt.Printf("[%s] Start-at-login enabled\n", app.Ts())
+		return
+	}
+
+	if st, err := launchagent.CurrentStatus(); err == nil && !st.Installed {
+		fmt.Printf("[%s] Start-at-login already disabled\n", app.Ts())
 		return
 	}
 
