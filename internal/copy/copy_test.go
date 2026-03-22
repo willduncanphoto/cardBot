@@ -573,3 +573,136 @@ func TestCopy_DestNotWritable(t *testing.T) {
 		t.Error("expected error for non-writable destination")
 	}
 }
+
+func TestCopy_SkipsSymlinks(t *testing.T) {
+	t.Parallel()
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: make([]byte, 1000), mtime: date(2026, 3, 8)},
+	})
+	// Create a symlink inside DCIM pointing to the real file.
+	dcim := filepath.Join(card, "DCIM", "100NIKON")
+	symlink := filepath.Join(dcim, "LINK.NEF")
+	if err := os.Symlink(filepath.Join(dcim, "DSC_0001.NEF"), symlink); err != nil {
+		t.Skipf("symlinks not supported: %v", err)
+	}
+	dest := t.TempDir()
+
+	result, err := Run(context.Background(), Options{CardPath: card, DestBase: dest}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result.FilesCopied != 1 {
+		t.Errorf("FilesCopied = %d, want 1 (symlink should be skipped)", result.FilesCopied)
+	}
+
+	// The symlink target should NOT appear as a second copied file.
+	found := false
+	if walkErr := filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d != nil && d.Name() == "LINK.NEF" {
+			found = true
+		}
+		return nil
+	}); walkErr != nil {
+		t.Fatal(walkErr)
+	}
+	if found {
+		t.Error("symlink LINK.NEF should not have been copied")
+	}
+}
+
+func TestCopy_SkipsSymlinkDirs(t *testing.T) {
+	t.Parallel()
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: make([]byte, 1000), mtime: date(2026, 3, 8)},
+	})
+	// Create a symlink directory inside DCIM.
+	realDir := filepath.Join(card, "DCIM", "100NIKON")
+	symlinkDir := filepath.Join(card, "DCIM", "200LINK")
+	if err := os.Symlink(realDir, symlinkDir); err != nil {
+		t.Skipf("symlinks not supported: %v", err)
+	}
+	dest := t.TempDir()
+
+	result, err := Run(context.Background(), Options{CardPath: card, DestBase: dest}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Only the real file should be copied, not the symlinked directory's contents.
+	if result.FilesCopied != 1 {
+		t.Errorf("FilesCopied = %d, want 1 (symlink dir should be skipped)", result.FilesCopied)
+	}
+}
+
+func TestCopy_NoPartFilesAfterSuccess(t *testing.T) {
+	t.Parallel()
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: make([]byte, 5000), mtime: date(2026, 3, 8)},
+		"100NIKON/DSC_0002.JPG": {data: make([]byte, 3000), mtime: date(2026, 3, 8)},
+	})
+	dest := t.TempDir()
+
+	result, err := Run(context.Background(), Options{CardPath: card, DestBase: dest}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.FilesCopied != 2 {
+		t.Fatalf("FilesCopied = %d, want 2", result.FilesCopied)
+	}
+
+	// No .part files should remain after a successful copy.
+	var partFiles []string
+	if walkErr := filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && filepath.Ext(d.Name()) == ".part" {
+			partFiles = append(partFiles, path)
+		}
+		return nil
+	}); walkErr != nil {
+		t.Fatal(walkErr)
+	}
+	if len(partFiles) > 0 {
+		t.Errorf("found .part files after successful copy: %v", partFiles)
+	}
+}
+
+func TestCopy_PartFileCleanedOnError(t *testing.T) {
+	t.Parallel()
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: make([]byte, 1000), mtime: date(2026, 3, 8)},
+	})
+	dest := t.TempDir()
+
+	// Run once successfully to populate dest dirs.
+	_, _ = Run(context.Background(), Options{CardPath: card, DestBase: dest}, nil)
+
+	// Delete the destination files and source to force an error on re-run.
+	os.RemoveAll(dest)
+	os.MkdirAll(dest, 0755)
+	os.Remove(filepath.Join(card, "DCIM", "100NIKON", "DSC_0001.NEF"))
+
+	_, _ = Run(context.Background(), Options{CardPath: card, DestBase: dest}, nil)
+
+	// No .part files should remain after failure.
+	var partFiles []string
+	if walkErr := filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.IsDir() && filepath.Ext(d.Name()) == ".part" {
+			partFiles = append(partFiles, path)
+		}
+		return nil
+	}); walkErr != nil {
+		t.Fatal(walkErr)
+	}
+	if len(partFiles) > 0 {
+		t.Errorf("found .part files after failed copy: %v", partFiles)
+	}
+}

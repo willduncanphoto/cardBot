@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -102,6 +103,10 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 			return nil
 		}
 		if isHidden(d.Name()) {
+			return nil
+		}
+		// Skip symlinks — only copy real files from the card.
+		if d.Type()&fs.ModeSymlink != 0 {
 			return nil
 		}
 
@@ -299,7 +304,8 @@ func partialResult(files int, bytes int64, start time.Time, dest string) *Result
 	}
 }
 
-// copyFile copies a single file with size verification.
+// copyFile copies a single file with size verification and atomic rename.
+// Writes to a temporary .part file, syncs, then renames to the final path.
 // If the destination already exists with the correct size, it is skipped.
 // madeDir caches directories already created to avoid redundant MkdirAll syscalls.
 func copyFile(dst, src string, srcSize int64, buf []byte, madeDir map[string]bool) (err error) {
@@ -321,31 +327,42 @@ func copyFile(dst, src string, srcSize int64, buf []byte, madeDir map[string]boo
 	}
 	defer sf.Close()
 
-	df, err := os.Create(dst)
+	// Write to a temporary .part file to avoid exposing half-written files.
+	partPath := dst + ".part"
+	df, err := os.Create(partPath)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		if closeErr := df.Close(); err == nil {
-			err = closeErr
+		// On any error, close and remove the temp file.
+		if err != nil {
+			df.Close()
+			os.Remove(partPath)
 		}
 	}()
 
 	n, err := io.CopyBuffer(df, sf, buf)
 	if err != nil {
-		os.Remove(dst)
 		return err
 	}
 
 	if n != srcSize {
-		os.Remove(dst)
 		return fmt.Errorf("size mismatch: wrote %d, expected %d", n, srcSize)
 	}
 
-	// Flush to stable storage before reporting success.
+	// Flush to stable storage before rename.
 	if err := df.Sync(); err != nil {
-		os.Remove(dst)
 		return fmt.Errorf("sync: %w", err)
+	}
+
+	if err := df.Close(); err != nil {
+		return fmt.Errorf("close: %w", err)
+	}
+
+	// Atomic rename: .part → final path.
+	if err := os.Rename(partPath, dst); err != nil {
+		os.Remove(partPath)
+		return fmt.Errorf("rename: %w", err)
 	}
 
 	return nil
