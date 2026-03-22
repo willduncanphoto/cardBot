@@ -282,3 +282,15 @@ Set `daemon.debug` to `true` to enable verbose daemon/launcher debug logging.
 - Automate formula version/SHA updates on tagged releases
 - Document `brew` install/upgrade/uninstall workflow
 - Improve `self-update` permission guidance for brew-managed installs
+
+
+## CLI flags
+
+| Flag | Description |
+|------|-------------|
+| `--dest <path>` | Override destination path for this run |
+| `--dry-run` | Analyze only; do not copy |
+| `--daemon` | Run headless background watcher |
+| `--setup` | Re-run setup prompts |
+| `--reset` | Clear saved config |
+| `--version` | Print version |

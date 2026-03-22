@@ -2,7 +2,7 @@
 
 A CLI tool for camera memory cards.
 
-![CardBot screenshot](screenshot.png)
+![CardBot screenshot](screenshot.png) 
 
 ## What CardBot does
 
@@ -87,7 +87,6 @@ cardbot --self-update
 | **0.6.0** | General improvements | Next |
 | **0.7.0** | Homebrew support | Planned |
 | **0.8.0** | Copyright check | Planned |
-
 
 ## Uninstalling
 
