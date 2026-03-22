@@ -57,4 +57,3 @@ config.local.json
 
 # Internal documentation (not for public repo)
 agent/
-docs/
