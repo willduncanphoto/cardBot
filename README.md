@@ -18,12 +18,12 @@ A CLI tool for camera memory cards.
 | Platform | Status | Notes |
 |----------|--------|-------|
 | macOS | Supported | Primary platform |
-| Linux | It might work | Untested |
+| Linux | It might work?! | Untested |
 | Windows | Ugh | Someday, Maybe |
 
 ## Installation
 
-One-liner installer:
+The easy install:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/scripts/install.sh | sh
@@ -31,38 +31,23 @@ curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/script
 
 ## Usage
 
-Start interactive mode:
+Start CardBot:
 
 ```bash
 cardbot
 ```
 
-CardBot will automatically run the setup the first time you run it.
+Exit CardBot:
 
-To run the setup again (dest, naming prefs, startup and auto-detect in prefs):
+`Ctrl+C`
+
+CardBot will automatically run the setup if no config file is present.
+
+To run the setup again:
 
 ```bash
 cardbot --setup
 ```
-
-## Updates
-
-CardBot will notify you when updates are available. To run the update process:
-
-```zsh
-cardbot --self-update
-```
-
-## CLI flags
-
-| Flag | Description |
-|------|-------------|
-| `--dest <path>` | Override destination path for this run |
-| `--dry-run` | Analyze only; do not copy |
-| `--daemon` | Run headless background watcher |
-| `--setup` | Re-run setup prompts |
-| `--reset` | Clear saved config |
-| `--version` | Print version |
 
 ## Interactive commands
 
@@ -70,8 +55,8 @@ cardbot --self-update
 |-----|--------|
 | `a` | Copy all |
 | `s` | Copy selects (starred/picked) |
-| `p` | Copy photos |
-| `v` | Copy videos |
+| `p` | Copy photos only |
+| `v` | Copy videos only |
 | `e` | Eject card |
 | `x` | Exit current card |
 | `i` | Show card hardware info |
@@ -83,8 +68,8 @@ cardbot --self-update
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| **0.6.0** | Clean slate release | Current |
-| **0.7.0** | Homebrew support | Next |
+| **0.6.0** | General improvements | Next |
+| **0.7.0** | Homebrew support | Planned |
 | **0.8.0** | Copyright check | Planned |
 
 ## Uninstalling
