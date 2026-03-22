@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/illwill/cardbot/internal/analyze"
@@ -188,7 +189,7 @@ func TestPromptText(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := promptText(tt.invalid, tt.copiedAll)
-			if !contains(got, tt.contains) {
+			if !strings.Contains(got, tt.contains) {
 				t.Errorf("promptText() = %q, should contain %q", got, tt.contains)
 			}
 		})
@@ -217,17 +218,4 @@ func TestShouldResumeScanning(t *testing.T) {
 			}
 		})
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || (len(s) > 0 && containsHelper(s, substr)))
-}
-
-func containsHelper(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

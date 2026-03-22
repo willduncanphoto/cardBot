@@ -343,19 +343,19 @@ func runDaemon(cfg *config.Config, logger *cblog.Logger) {
 			return
 		}
 		msg := fmt.Sprintf(format, args...)
-		fmt.Printf("[%s] Debug: %s\n", time.Now().Format("2006-01-02T15:04:05"), msg)
+		fmt.Printf("[%s] Debug: %s\n", app.Ts(), msg)
 		logf("Debug: %s", msg)
 	}
 
 	appName := normalizeDaemonTerminalAppForLaunch(cfg.Daemon.TerminalApp)
 	workingDir := resolveDaemonWorkingDirectory(cfg.Destination.Path)
-	fmt.Printf("[%s] Daemon terminal app: %s\n", time.Now().Format("2006-01-02T15:04:05"), daemonTerminalAppLabel(appName))
-	fmt.Printf("[%s] Daemon working directory: %s\n", time.Now().Format("2006-01-02T15:04:05"), daemonWorkingDirectoryLabel(cfg.Destination.Path, workingDir))
+	fmt.Printf("[%s] Daemon terminal app: %s\n", app.Ts(), daemonTerminalAppLabel(appName))
+	fmt.Printf("[%s] Daemon working directory: %s\n", app.Ts(), daemonWorkingDirectoryLabel(cfg.Destination.Path, workingDir))
 	if len(cfg.Daemon.LaunchArgs) > 0 {
-		fmt.Printf("[%s] Daemon custom launch args enabled\n", time.Now().Format("2006-01-02T15:04:05"))
+		fmt.Printf("[%s] Daemon custom launch args enabled\n", app.Ts())
 	}
 	if debugEnabled {
-		fmt.Printf("[%s] Daemon debug logging: enabled\n", time.Now().Format("2006-01-02T15:04:05"))
+		fmt.Printf("[%s] Daemon debug logging: enabled\n", app.Ts())
 	}
 	processName := filepath.Base(cardbotBinary)
 	debugf("daemon startup: binary=%q process=%q terminal=%q working_dir=%q custom_launch_args=%d", cardbotBinary, processName, appName, workingDir, len(cfg.Daemon.LaunchArgs))
@@ -368,11 +368,11 @@ func runDaemon(cfg *config.Config, logger *cblog.Logger) {
 			// do not auto-launch a second interactive instance.
 			hasOther, checkErr := instance.HasOtherProcess(processName, os.Getpid())
 			if checkErr != nil {
-				fmt.Fprintf(os.Stderr, "[%s] Warning: single-instance check failed (%v)\n", time.Now().Format("2006-01-02T15:04:05"), checkErr)
+				fmt.Fprintf(os.Stderr, "[%s] Warning: single-instance check failed (%v)\n", app.Ts(), checkErr)
 				logf("Single-instance check failed: %v", checkErr)
 			} else if hasOther {
 				debugf("single-instance guard blocked launch for %q", path)
-				fmt.Printf("[%s] CardBot already running in another process — skipping auto-launch\n", time.Now().Format("2006-01-02T15:04:05"))
+				fmt.Printf("[%s] CardBot already running in another process — skipping auto-launch\n", app.Ts())
 				logf("Auto-launch skipped for %s: another cardbot process is running", path)
 				return
 			}
@@ -388,15 +388,15 @@ func runDaemon(cfg *config.Config, logger *cblog.Logger) {
 				Logf:             logf,
 			})
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "[%s] Launch failed: %v\n", time.Now().Format("2006-01-02T15:04:05"), err)
+				fmt.Fprintf(os.Stderr, "[%s] Launch failed: %v\n", app.Ts(), err)
 				if hint := daemonLaunchHint(err); hint != "" {
-					fmt.Fprintf(os.Stderr, "[%s] Hint: %s\n", time.Now().Format("2006-01-02T15:04:05"), hint)
+					fmt.Fprintf(os.Stderr, "[%s] Hint: %s\n", app.Ts(), hint)
 					logf("Launch hint for %s: %s", path, hint)
 				}
 				logf("Launch failed for %s: %v", path, err)
 				return
 			}
-			fmt.Printf("[%s] Launched %s for %s\n", time.Now().Format("2006-01-02T15:04:05"), appName, path)
+			fmt.Printf("[%s] Launched %s for %s\n", app.Ts(), appName, path)
 			logf("Launched terminal app %q for %s", appName, path)
 		},
 	})
@@ -1060,13 +1060,11 @@ func updateSavedDaemonPrefs(mutator func(cfg *config.Config)) {
 	}
 }
 
-
-
 // printVerboseStartup prints settings after the bootup checklist (verbose mode).
 func printVerboseStartup(cfg *config.Config, cfgPath, version, latest string, updateErr error) {
 	// Version/update status first
 	if updateErr != nil {
-		fmt.Println("  Version:     v%s (NO SIGNAL)")
+		fmt.Printf("  Version:     v%s (NO SIGNAL)\n", version)
 	} else if latest != "" {
 		fmt.Printf("  Version:     v%s | Update: v%s available\n", version, latest)
 	} else {
