@@ -1,0 +1,18 @@
+CardBot Daemon Status
+────────────────────────────────────────
+Version: 0.6.1
+PID: 12345
+Config path: ~/Library/Application Support/cardbot/config.json
+Daemon enabled: enabled
+Start at login: enabled
+Terminal app: Terminal
+Working directory: ~/Pictures/CardBot
+Debug logging: disabled
+Launch args: (default)
+Single-instance guard: enabled
+Guard process name: cardbot
+Other CardBot process running: no
+Daemon running: yes (PID 54321)
+LaunchAgent plist: ~/Library/LaunchAgents/com.cardbot.daemon.plist
+LaunchAgent installed: enabled
+LaunchAgent loaded: enabled

@@ -1,10 +1,21 @@
-.PHONY: build test clean qa-050 qa-051-sleepwake qa-051-permissions
+.PHONY: build test cover clean qa-050 qa-051-sleepwake qa-051-permissions
+
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)
+DATE    ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
 build:
-	go build -ldflags="-s -w" -o cardbot .
+	go build -ldflags="-s -w \
+		-X 'main.version=$(VERSION)' \
+		-X 'main.commit=$(COMMIT)' \
+		-X 'main.date=$(DATE)'" -o cardbot .
 
 test:
 	go test ./... -count=1 -race
+
+cover:
+	go test ./... -coverprofile=coverage.out
+	go tool cover -html=coverage.out
 
 qa-050:
 	./scripts/qa_050_smoke.sh

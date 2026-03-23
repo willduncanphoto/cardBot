@@ -1,0 +1,205 @@
+// Package daemon provides a headless background mode that watches for
+// camera card insertions and invokes a callback (typically launching a
+// terminal window with cardbot). It reuses the detect package for native
+// card detection but has no TUI, spinner, or stdin handling.
+package daemon
+
+import (
+	"fmt"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"strconv"
+	"sync"
+	"syscall"
+	"time"
+
+	"github.com/illwill/cardbot/detect"
+)
+
+// Detector is the consumer-side interface for card detection.
+// Matches the subset of detect.Detector that the daemon needs.
+type Detector interface {
+	Start() error
+	Stop()
+	Events() <-chan *detect.Card
+	Removals() <-chan string
+	Eject(path string) error
+	Remove(path string)
+}
+
+// Config holds the settings for creating a new Daemon.
+type Config struct {
+	// NewDetector creates a Detector. If nil, uses detect.NewDetector.
+	NewDetector func() Detector
+
+	// OnCardInserted is called when a new card is detected.
+	// Receives the mount path (e.g. "/Volumes/NIKON Z 9").
+	OnCardInserted func(path string)
+
+	// DuplicateCooldown suppresses rapid repeat launch attempts for the same path
+	// after a removal/re-appearance cycle (e.g. during sleep/wake churn).
+	DuplicateCooldown time.Duration
+
+	// Now is an optional time provider for tests.
+	Now func() time.Time
+
+	// PIDPathFn returns the path for the daemon PID file.
+	// If nil, uses the default path (~/.cardbot/cardbot.pid).
+	PIDPathFn func() (string, error)
+}
+
+// Daemon is a long-running background process that watches for card insertions.
+type Daemon struct {
+	newDetector       func() Detector
+	onCardInserted    func(path string)
+	tracked           map[string]bool
+	recentlyProcessed map[string]time.Time
+	duplicateCooldown time.Duration
+	now               func() time.Time
+	pidPath           string
+	mu                sync.Mutex
+	sigChan           chan os.Signal
+}
+
+// New creates a new Daemon instance.
+func New(c Config) *Daemon {
+	newDetector := c.NewDetector
+	if newDetector == nil {
+		newDetector = func() Detector { return detect.NewDetector() }
+	}
+	onCardInserted := c.OnCardInserted
+	if onCardInserted == nil {
+		onCardInserted = func(path string) {}
+	}
+	cooldown := c.DuplicateCooldown
+	if cooldown <= 0 {
+		cooldown = 5 * time.Second
+	}
+	now := c.Now
+	if now == nil {
+		now = time.Now
+	}
+	pidPathFn := c.PIDPathFn
+	if pidPathFn == nil {
+		pidPathFn = PidPath
+	}
+	pidPath, _ := pidPathFn() // Ignore error; Run() will handle it
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	return &Daemon{
+		newDetector:       newDetector,
+		onCardInserted:    onCardInserted,
+		tracked:           make(map[string]bool),
+		recentlyProcessed: make(map[string]time.Time),
+		duplicateCooldown: cooldown,
+		now:               now,
+		pidPath:           pidPath,
+		sigChan:           sigChan,
+	}
+}
+
+// PidPath returns the default path for the daemon PID file.
+func PidPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("resolving home directory: %w", err)
+	}
+	return filepath.Join(home, ".cardbot", "cardbot.pid"), nil
+}
+
+func ts() string {
+	return time.Now().Format("2006-01-02T15:04:05")
+}
+
+// Run starts the daemon event loop. It blocks until SIGINT/SIGTERM.
+func (d *Daemon) Run() error {
+	// Write PID file.
+	if d.pidPath != "" {
+		if err := os.MkdirAll(filepath.Dir(d.pidPath), 0755); err != nil {
+			fmt.Printf("[%s] Warning: could not create PID directory: %v\n", ts(), err)
+		} else if err := os.WriteFile(d.pidPath, []byte(strconv.Itoa(os.Getpid())), 0644); err != nil {
+			fmt.Printf("[%s] Warning: could not write PID file: %v\n", ts(), err)
+		}
+	}
+
+	// Ensure PID file is cleaned up on exit.
+	removePID := func() {
+		if d.pidPath != "" {
+			_ = os.Remove(d.pidPath)
+		}
+	}
+
+	detector := d.newDetector()
+	if err := detector.Start(); err != nil {
+		removePID()
+		return fmt.Errorf("starting detector: %w", err)
+	}
+	defer detector.Stop()
+	defer removePID()
+
+	fmt.Printf("[%s] CardBot daemon started — watching for cards...\n", ts())
+
+	for {
+		select {
+		case card := <-detector.Events():
+			d.handleCard(card)
+
+		case path := <-detector.Removals():
+			d.handleRemoval(path)
+
+		case <-d.sigChan:
+			fmt.Printf("[%s] Daemon shutting down\n", ts())
+			return nil
+		}
+	}
+}
+
+func (d *Daemon) handleCard(card *detect.Card) {
+	if card == nil || card.Path == "" {
+		return
+	}
+
+	d.mu.Lock()
+	if d.tracked[card.Path] {
+		d.mu.Unlock()
+		return
+	}
+
+	now := d.now()
+	for path, last := range d.recentlyProcessed {
+		if now.Sub(last) >= d.duplicateCooldown {
+			delete(d.recentlyProcessed, path)
+		}
+	}
+	if last, ok := d.recentlyProcessed[card.Path]; ok && now.Sub(last) < d.duplicateCooldown {
+		d.mu.Unlock()
+		fmt.Printf("[%s] Suppressing duplicate card event for %s (cooldown)\n", ts(), card.Path)
+		return
+	}
+
+	d.tracked[card.Path] = true
+	d.recentlyProcessed[card.Path] = now
+	d.mu.Unlock()
+
+	fmt.Printf("[%s] Card detected: %s (%s)\n", ts(), card.Name, card.Path)
+	d.onCardInserted(card.Path)
+}
+
+func (d *Daemon) handleRemoval(path string) {
+	if path == "" {
+		return
+	}
+
+	d.mu.Lock()
+	if !d.tracked[path] {
+		d.mu.Unlock()
+		return
+	}
+	delete(d.tracked, path)
+	d.mu.Unlock()
+
+	fmt.Printf("[%s] Card removed: %s\n", ts(), path)
+}

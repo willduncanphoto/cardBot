@@ -1,0 +1,10 @@
+
+  Config       ~/Library/Application Support/cardbot/config.json
+  Destination  ~/Pictures/CardBot
+  Naming       Camera original
+  Verify       size
+  Buffer       256 KB
+  Workers      4
+  Colors       enabled
+  Daemon       disabled
+

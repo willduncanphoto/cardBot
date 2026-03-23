@@ -1,0 +1,144 @@
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/illwill/cardbot/app"
+	"github.com/illwill/cardbot/cblog"
+	"github.com/illwill/cardbot/config"
+	"github.com/illwill/cardbot/daemon"
+	"github.com/illwill/cardbot/instance"
+	"github.com/illwill/cardbot/launchagent"
+	"github.com/illwill/cardbot/launcher"
+)
+
+// runDaemonCommand starts the background daemon that watches for card
+// insertions and launches a terminal window with cardbot targeting the
+// detected card.
+func runDaemonCommand(cfg *config.Config, logger *cblog.Logger) int {
+	if cfg == nil {
+		cfg = config.Defaults()
+	}
+
+	cardbotBinary, err := os.Executable()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: could not determine executable path: %v\n", err)
+		return 1
+	}
+
+	logf := func(format string, args ...any) {
+		if logger != nil {
+			logger.Printf(format, args...)
+		}
+	}
+	debugEnabled := cfg.Daemon.Debug
+	debugf := func(format string, args ...any) {
+		if !debugEnabled {
+			return
+		}
+		msg := fmt.Sprintf(format, args...)
+		fmt.Printf("[%s] Debug: %s\n", app.Ts(), msg)
+		logf("Debug: %s", msg)
+	}
+
+	appName := normalizeDaemonTerminalAppForLaunch(cfg.Daemon.TerminalApp)
+	workingDir := resolveDaemonWorkingDirectory(cfg.Destination.Path)
+	fmt.Printf("[%s] Daemon terminal app: %s\n", app.Ts(), daemonTerminalAppLabel(appName))
+	fmt.Printf("[%s] Daemon working directory: %s\n", app.Ts(), daemonWorkingDirectoryLabel(cfg.Destination.Path, workingDir))
+	if len(cfg.Daemon.LaunchArgs) > 0 {
+		fmt.Printf("[%s] Daemon custom launch args enabled\n", app.Ts())
+	}
+	if debugEnabled {
+		fmt.Printf("[%s] Daemon debug logging: enabled\n", app.Ts())
+	}
+	processName := filepath.Base(cardbotBinary)
+	debugf("daemon startup: binary=%q process=%q terminal=%q working_dir=%q custom_launch_args=%d", cardbotBinary, processName, appName, workingDir, len(cfg.Daemon.LaunchArgs))
+
+	d := daemon.New(daemon.Config{
+		OnCardInserted: func(path string) {
+			debugf("card insert callback: mount=%q", path)
+
+			// Strict single-instance guard: if any other cardbot process is running,
+			// do not auto-launch a second interactive instance.
+			hasOther, checkErr := instance.HasOtherProcess(processName, os.Getpid())
+			if checkErr != nil {
+				fmt.Fprintf(os.Stderr, "[%s] Warning: single-instance check failed (%v)\n", app.Ts(), checkErr)
+				logf("Single-instance check failed: %v", checkErr)
+			} else if hasOther {
+				debugf("single-instance guard blocked launch for %q", path)
+				fmt.Printf("[%s] CardBot already running in another process — skipping auto-launch\n", app.Ts())
+				logf("Auto-launch skipped for %s: another cardbot process is running", path)
+				return
+			}
+
+			debugf("launch attempt: terminal=%q mount=%q", appName, path)
+			err := launcher.Launch(launcher.Options{
+				TerminalApp:      appName,
+				WorkingDirectory: workingDir,
+				LaunchArgs:       cfg.Daemon.LaunchArgs,
+				CardBotBinary:    cardbotBinary,
+				MountPath:        path,
+				Debugf:           debugf,
+				Logf:             logf,
+			})
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "[%s] Launch failed: %v\n", app.Ts(), err)
+				if hint := daemonLaunchHint(err); hint != "" {
+					fmt.Fprintf(os.Stderr, "[%s] Hint: %s\n", app.Ts(), hint)
+					logf("Launch hint for %s: %s", path, hint)
+				}
+				logf("Launch failed for %s: %v", path, err)
+				return
+			}
+			fmt.Printf("[%s] Launched %s for %s\n", app.Ts(), appName, path)
+			logf("Launched terminal app %q for %s", appName, path)
+		},
+	})
+
+	if err := d.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return 1
+	}
+	return 0
+}
+
+func runInstallDaemonCommand() int {
+	exe, err := os.Executable()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: could not determine executable path: %v\n", err)
+		return 1
+	}
+
+	plist, err := launchagent.Install(exe)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return 1
+	}
+
+	updateSavedDaemonPrefs(func(cfg *config.Config) {
+		cfg.Daemon.Enabled = true
+		cfg.Daemon.StartAtLogin = true
+	})
+
+	fmt.Printf("Installed LaunchAgent: %s\n", plist)
+	fmt.Println("CardBot daemon will start at login.")
+	return 0
+}
+
+func runUninstallDaemonCommand() int {
+	plist, err := launchagent.Uninstall()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return 1
+	}
+
+	updateSavedDaemonPrefs(func(cfg *config.Config) {
+		cfg.Daemon.StartAtLogin = false
+	})
+
+	fmt.Printf("Uninstalled LaunchAgent: %s\n", plist)
+	fmt.Println("CardBot daemon will no longer start at login.")
+	return 0
+}
