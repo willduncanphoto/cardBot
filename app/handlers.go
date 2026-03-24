@@ -52,7 +52,7 @@ func (a *App) handleCardEvent(card *detect.Card) {
 		}
 		fmt.Printf("%s %s\n", a.TsPrefix(), formatDetectedVolume(card.Path, diskID))
 		a.logf("Card detected: %s", card.Path)
-		scanTS := ts()
+		scanTS := Ts()
 		ctx, cancel := context.WithCancel(a.ctx)
 		a.scanCancel = cancel
 		go a.displayCard(ctx, card.Path, scanTS)
@@ -93,7 +93,7 @@ func (a *App) printQueueNotice(card *detect.Card) {
 		plural = "s"
 	}
 	fmt.Printf("\n[%s] %s detected (%d card%s in queue)\n",
-		ts(),
+		Ts(),
 		card.Brand,
 		len(a.cardQueue),
 		plural)
@@ -166,11 +166,11 @@ func (a *App) displayCard(ctx context.Context, path, scanTS string) {
 			a.setPhaseLocked(phaseReady)
 			card := a.currentCard
 			a.mu.Unlock()
-			fmt.Printf("\r[%s] Card is invalid (no DCIM found)\n", ts())
+			fmt.Printf("\r[%s] Card is invalid (no DCIM found)\n", Ts())
 			a.logf("Card invalid: no DCIM at %s", path)
 			a.printInvalidCardInfo(card)
 		} else {
-			fmt.Printf("\r[%s] Error scanning card: %s\n", ts(), FriendlyErr(err))
+			fmt.Printf("\r[%s] Error scanning card: %s\n", Ts(), FriendlyErr(err))
 			a.logf("Error analyzing card %s: %v", path, err)
 			a.finishCard()
 		}
@@ -201,7 +201,7 @@ func (a *App) displayCard(ctx context.Context, path, scanTS string) {
 	fmt.Printf("\r%s Scanning %d files ✓\n", a.TsPrefix(), total)
 	time.Sleep(scanLinePaceDelay)
 	durStr := formatElapsed(elapsed)
-	fmt.Printf("%s Scan completed in %s\n", dimTS(ts()), durStr)
+	fmt.Printf("%s Scan completed in %s\n", dimTS(Ts()), durStr)
 	a.logf("Scan completed: %s — %d files in %s", path, total, durStr)
 	fmt.Println()
 
@@ -236,7 +236,7 @@ func (a *App) finishCard() {
 		ctx, cancel := context.WithCancel(a.ctx)
 		a.scanCancel = cancel
 		a.mu.Unlock()
-		go a.displayCard(ctx, nextCard.Path, ts())
+		go a.displayCard(ctx, nextCard.Path, Ts())
 		return
 	}
 	a.mu.Unlock()
@@ -289,10 +289,10 @@ func (a *App) handleRemoval(path string) {
 		}
 		a.mu.Unlock()
 
-		fmt.Printf("\n[%s] Card removed: %s\n", ts(), path)
+		fmt.Printf("\n[%s] Card removed: %s\n", Ts(), path)
 		a.logf("Card removed: %s", path)
 		if hasQueue {
-			go a.displayCard(nextCtx, nextCard.Path, ts())
+			go a.displayCard(nextCtx, nextCard.Path, Ts())
 		} else {
 			go func() {
 				time.Sleep(removalDelay)
@@ -307,7 +307,7 @@ func (a *App) handleRemoval(path string) {
 		if sameCardPath(card.Path, path) {
 			a.cardQueue = append(a.cardQueue[:i], a.cardQueue[i+1:]...)
 			a.mu.Unlock()
-			fmt.Printf("\n[%s] Queued card removed: %s\n", ts(), path)
+			fmt.Printf("\n[%s] Queued card removed: %s\n", Ts(), path)
 			a.logf("Queued card removed: %s", path)
 			return
 		}
@@ -377,7 +377,7 @@ func (a *App) ejectCard(card *detect.Card) {
 		return
 	}
 	a.detector.Remove(card.Path)
-	fmt.Printf("\n[%s] Card ejected: %s\n", ts(), card.Path)
+	fmt.Printf("\n[%s] Card ejected: %s\n", Ts(), card.Path)
 	a.logf("Card ejected: %s", card.Path)
 	a.finishCard()
 }
@@ -398,7 +398,7 @@ func (a *App) handleCopyCmd(card *detect.Card, mode string) {
 	a.mu.Unlock()
 
 	if ok, reason := canCopy(mode, phase, invalid, copiedAll, copiedMode, analyzeResult); !ok {
-		fmt.Printf("\n[%s] %s\n", ts(), reason)
+		fmt.Printf("\n[%s] %s\n", Ts(), reason)
 		a.printPrompt()
 		return
 	}
@@ -439,7 +439,7 @@ func (a *App) launchTargetPath(path string) {
 	a.setPhaseLocked(phaseAnalyzing)
 	a.mu.Unlock()
 
-	scanTS := ts()
+	scanTS := Ts()
 	fmt.Printf("%s Scanning ✓\n", a.TsPrefix())
 	fmt.Printf("%s \"%s\" (target)\n", tsIndent, path)
 	a.logf("Target path: %s", path)

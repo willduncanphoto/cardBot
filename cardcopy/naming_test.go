@@ -15,26 +15,8 @@ import (
 func TestSequenceDigits(t *testing.T) {
 	t.Parallel()
 	// Fixed at 4 digits for event/wedding work.
-	// Prevents loop on heavy days (1000+ shots).
-	tests := []struct {
-		count int
-		want  int
-	}{
-		{0, 4},
-		{1, 4},
-		{999, 4},
-		{1000, 4},
-		{9999, 4},
-		{10000, 4},
-		{250000, 4},
-	}
-
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("count_%d", tt.count), func(t *testing.T) {
-			if got := SequenceDigits(tt.count); got != tt.want {
-				t.Errorf("SequenceDigits(%d) = %d, want %d", tt.count, got, tt.want)
-			}
-		})
+	if SequenceDigits != 4 {
+		t.Errorf("SequenceDigits = %d, want 4", SequenceDigits)
 	}
 }
 
@@ -234,7 +216,7 @@ func TestCopy_TimestampNaming(t *testing.T) {
 	}
 }
 
-func TestCopy_TimestampNaming_Uses3Digits(t *testing.T) {
+func TestCopy_TimestampNaming_AlwaysUses4Digits(t *testing.T) {
 	t.Parallel()
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: []byte("a"), mtime: date(2026, 3, 8)},
@@ -247,7 +229,7 @@ func TestCopy_TimestampNaming_Uses3Digits(t *testing.T) {
 		DestBase:   dest,
 		NamingMode: config.NamingTimestamp,
 		AnalyzeResult: &analyze.Result{
-			FileCount: 3048, // Would have been 4-digit before, now 3-digit
+			FileCount: 3048,
 			FileDates: map[string]string{"100NIKON/DSC_0001.NEF": "2026-03-14"},
 			FileDateTimes: map[string]time.Time{
 				"100NIKON/DSC_0001.NEF": ts,

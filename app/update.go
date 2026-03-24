@@ -51,19 +51,19 @@ func RunSelfUpdate(version string) int {
 		return 1
 	}
 
-	fmt.Printf("[%s] Downloading update…\n", ts())
+	fmt.Printf("[%s] Downloading update…\n", Ts())
 	ctx, cancel := context.WithTimeout(context.Background(), selfUpdateTimeout)
 	defer cancel()
 
 	installed, err := update.SelfUpdate(ctx, nil, update.DefaultAPIBase, update.DefaultRepo, version, execPath)
 	if err == nil {
-		fmt.Printf("[%s] Updated to %s\n", ts(), installed)
-		fmt.Printf("[%s] Restart CardBot to use the new version.\n", ts())
+		fmt.Printf("[%s] Updated to %s\n", Ts(), installed)
+		fmt.Printf("[%s] Restart CardBot to use the new version.\n", Ts())
 		return 0
 	}
 
 	if errors.Is(err, update.ErrAlreadyUpToDate) {
-		fmt.Printf("[%s] Already up to date (%s)\n", ts(), version)
+		fmt.Printf("[%s] Already up to date (%s)\n", Ts(), version)
 		return 0
 	}
 

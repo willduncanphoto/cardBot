@@ -107,11 +107,6 @@ func Ts() string {
 	return time.Now().Format("2006-01-02T15:04:05")
 }
 
-// ts is an internal alias for Ts.
-func ts() string {
-	return Ts()
-}
-
 // tsIndent is whitespace matching the width of a "[2006-01-02T15:04:05]" timestamp.
 const tsIndent = "                     "
 
@@ -124,7 +119,7 @@ func dimTS(ts string) string {
 // If the current second matches the last printed timestamp, it returns
 // whitespace of the same width so subsequent lines stay aligned.
 func (a *App) TsPrefix() string {
-	now := ts()
+	now := Ts()
 	if now == a.lastTS {
 		return tsIndent
 	}
@@ -217,7 +212,7 @@ func (a *App) startScanningLocked() {
 		a.spinner.Stop()
 	}
 	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
-	s.Prefix = fmt.Sprintf("[%s] Scanning ", ts())
+	s.Prefix = fmt.Sprintf("[%s] Scanning ", Ts())
 	s.Start()
 	a.spinner = s
 	a.setPhaseLocked(phaseScanning)

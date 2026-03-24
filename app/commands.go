@@ -32,14 +32,14 @@ const dryRunPreviewLimit = 200
 func (a *App) copyFiltered(card *detect.Card, mode string) {
 	destBase, err := config.ExpandPath(a.cfg.Destination.Path)
 	if err != nil {
-		fmt.Printf("\n[%s] Error: %s\n", ts(), FriendlyErr(err))
+		fmt.Printf("\n[%s] Error: %s\n", Ts(), FriendlyErr(err))
 		a.printPrompt()
 		return
 	}
 
 	// Validate destination path.
 	if destBase == "" {
-		fmt.Printf("\n[%s] Error: no destination configured — run cardbot --setup\n", ts())
+		fmt.Printf("\n[%s] Error: no destination configured — run cardbot --setup\n", Ts())
 		a.printPrompt()
 		return
 	}
@@ -49,7 +49,7 @@ func (a *App) copyFiltered(card *detect.Card, mode string) {
 	// Warn if the card is write-protected — dotfile won't be written after copy.
 	// (Skip warning in dry-run since we're not writing anyway.)
 	if !isDryRun && cardIsReadOnly(card.Path) {
-		fmt.Printf("\n[%s] Warning: card appears to be write-protected — copy status will not be saved to card\n", ts())
+		fmt.Printf("\n[%s] Warning: card appears to be write-protected — copy status will not be saved to card\n", Ts())
 		a.logf("Card %s appears write-protected", card.Path)
 	}
 
@@ -59,10 +59,10 @@ func (a *App) copyFiltered(card *detect.Card, mode string) {
 		modeStr = "starred"
 	}
 	if isDryRun {
-		fmt.Printf("\n[%s] Dry-run: would copy %s files to %s\n", ts(), modeStr, a.cfg.Destination.Path)
+		fmt.Printf("\n[%s] Dry-run: would copy %s files to %s\n", Ts(), modeStr, a.cfg.Destination.Path)
 	} else {
-		fmt.Printf("\n[%s] Copying %s files to %s\n", ts(), modeStr, a.cfg.Destination.Path)
-		fmt.Printf("[%s] Press [\\] to cancel\n", ts())
+		fmt.Printf("\n[%s] Copying %s files to %s\n", Ts(), modeStr, a.cfg.Destination.Path)
+		fmt.Printf("[%s] Press [\\] to cancel\n", Ts())
 	}
 	a.logf("Copy %s starting: %s → %s", mode, card.Path, destBase)
 
@@ -142,7 +142,7 @@ func (a *App) copyFiltered(card *detect.Card, mode string) {
 			}
 			a.printMu.Lock()
 			fmt.Printf("\r[%s] Copying... %d/%d files  %s/%s (%d%%)    ",
-				ts(),
+				Ts(),
 				p.FilesDone, p.FilesTotal,
 				detect.FormatBytes(p.BytesDone),
 				detect.FormatBytes(p.BytesTotal),
@@ -174,14 +174,14 @@ func (a *App) copyFiltered(card *detect.Card, mode string) {
 				if cardRemovedDuringCopy {
 					a.printMu.Lock()
 					fmt.Printf("\n[%s] Copy stopped — card removed. %d files copied.\n",
-						ts(), copied)
+						Ts(), copied)
 					a.printMu.Unlock()
 					a.logf("Copy stopped: card removed. %d files copied.", copied)
 					a.finishCard()
 				} else {
 					a.printMu.Lock()
 					fmt.Printf("\n[%s] Copy cancelled — %d files copied.\n",
-						ts(), copied)
+						Ts(), copied)
 					a.printMu.Unlock()
 					a.logf("Copy cancelled. %d files copied.", copied)
 					a.drainInput()
@@ -192,9 +192,9 @@ func (a *App) copyFiltered(card *detect.Card, mode string) {
 
 			if copyErr != nil {
 				a.printMu.Lock()
-				fmt.Printf("\n[%s] Copy failed: %s\n", ts(), FriendlyErr(copyErr))
+				fmt.Printf("\n[%s] Copy failed: %s\n", Ts(), FriendlyErr(copyErr))
 				if result != nil && result.FilesCopied > 0 {
-					fmt.Printf("[%s] %d files copied before failure.\n", ts(), result.FilesCopied)
+					fmt.Printf("[%s] %d files copied before failure.\n", Ts(), result.FilesCopied)
 				}
 				a.printMu.Unlock()
 				a.logf("Copy failed: %v", copyErr)
@@ -258,13 +258,13 @@ func (a *App) handleCopySuccess(card *detect.Card, mode, destBase string, result
 
 	if isDryRun {
 		a.printMu.Lock()
-		fmt.Printf("[%s] Dry-run complete ✓\n", ts())
+		fmt.Printf("[%s] Dry-run complete ✓\n", Ts())
 		fmt.Printf("[%s] %d files, %s would be copied\n",
-			ts(),
+			Ts(),
 			result.FilesCopied,
 			detect.FormatBytes(result.BytesCopied))
 		if previewHidden > 0 {
-			fmt.Printf("[%s] ... +%d more files (preview capped at %d)\n", ts(), previewHidden, dryRunPreviewLimit)
+			fmt.Printf("[%s] ... +%d more files (preview capped at %d)\n", Ts(), previewHidden, dryRunPreviewLimit)
 		}
 		a.printMu.Unlock()
 		a.logf("Dry-run complete: %d files, %s would be copied", result.FilesCopied, detect.FormatBytes(result.BytesCopied))
@@ -272,9 +272,9 @@ func (a *App) handleCopySuccess(card *detect.Card, mode, destBase string, result
 	}
 
 	a.printMu.Lock()
-	fmt.Printf("\r[%s] Copy complete ✓                                          \n", ts())
+	fmt.Printf("\r[%s] Copy complete ✓                                          \n", Ts())
 	fmt.Printf("[%s] %d files, %s copied in %s (%.1f MB/s)\n",
-		ts(),
+		Ts(),
 		result.FilesCopied,
 		detect.FormatBytes(result.BytesCopied),
 		elapsed,
@@ -297,7 +297,7 @@ func (a *App) handleCopySuccess(card *detect.Card, mode, destBase string, result
 		CardbotVersion:     a.version,
 	})
 	if dotErr != nil {
-		fmt.Printf("[%s] Warning: could not write .cardbot to card: %s\n", ts(), FriendlyErr(dotErr))
+		fmt.Printf("[%s] Warning: could not write .cardbot to card: %s\n", Ts(), FriendlyErr(dotErr))
 		a.logf("Dotfile write failed: %v", dotErr)
 	} else {
 		a.logf("Dotfile written to %s", card.Path)
@@ -310,11 +310,11 @@ func (a *App) handleCopySuccess(card *detect.Card, mode, destBase string, result
 
 func (a *App) runSpeedTest(card *detect.Card) {
 	fmt.Println()
-	fmt.Printf("[%s] Speed test starting (256 MB)...\n", ts())
+	fmt.Printf("[%s] Speed test starting (256 MB)...\n", Ts())
 	a.logf("Speed test starting on %s", card.Path)
 
 	result, err := speedtest.Run(card.Path, func(phase string, mbps float64) {
-		fmt.Printf("\r[%s] %s... %.1f MB/s    ", ts(), phase, mbps)
+		fmt.Printf("\r[%s] %s... %.1f MB/s    ", Ts(), phase, mbps)
 	})
 	fmt.Println()
 

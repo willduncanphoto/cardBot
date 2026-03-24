@@ -2,6 +2,7 @@
 package cardcopy
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -100,12 +101,12 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 			return nil
 		}
 		if d.IsDir() {
-			if isHidden(d.Name()) {
+			if detect.IsHidden(d.Name()) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		if isHidden(d.Name()) {
+		if detect.IsHidden(d.Name()) {
 			return nil
 		}
 		// Skip symlinks — only copy real files from the card.
@@ -167,10 +168,7 @@ func Run(ctx context.Context, opts Options, onProgress ProgressFunc) (*Result, e
 
 	// Compute rename mappings for progress reporting and dry-run preview.
 	namingMode := isTimestampMode(opts.NamingMode)
-	seqDigits := SequenceDigits(len(files))
-	if opts.AnalyzeResult != nil && opts.AnalyzeResult.FileCount > 0 {
-		seqDigits = SequenceDigits(opts.AnalyzeResult.FileCount)
-	}
+	seqDigits := SequenceDigits
 	seqMax := sequenceMax(seqDigits)
 	seq := 1
 
@@ -396,11 +394,6 @@ func sortFilesByCaptureTime(files []fileEntry) {
 	})
 }
 
-// isHidden reports whether a filename should be skipped.
-func isHidden(name string) bool {
-	return strings.HasPrefix(name, ".")
-}
-
 // verifyBytes reads source and destination files simultaneously and compares
 // them byte-for-byte. Returns nil if identical, an error on any mismatch.
 // Uses the provided buffer (split in half) to avoid extra allocations.
@@ -437,10 +430,8 @@ func verifyBytes(src, dst string, buf []byte) error {
 		}
 
 		// Compare the bytes we read.
-		for i := 0; i < sn; i++ {
-			if srcBuf[i] != dstBuf[i] {
-				return fmt.Errorf("content mismatch detected")
-			}
+		if !bytes.Equal(srcBuf[:sn], dstBuf[:dn]) {
+			return fmt.Errorf("content mismatch detected")
 		}
 
 		// Both reached EOF — files match.

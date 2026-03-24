@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/evanoberholster/imagemeta"
+	"github.com/illwill/cardbot/detect"
 )
 
 // supportedExif lists extensions we attempt EXIF extraction on (uppercase, no dot).
@@ -199,12 +200,12 @@ func (a *Analyzer) Analyze(ctx context.Context) (*Result, error) {
 			return nil
 		}
 		if d.IsDir() {
-			if isHidden(d.Name()) {
+			if detect.IsHidden(d.Name()) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		if isHidden(d.Name()) {
+		if detect.IsHidden(d.Name()) {
 			return nil
 		}
 
@@ -485,11 +486,6 @@ func buildGroups(m map[string]*dateAccumulator) []DateGroup {
 		return groups[i].Date > groups[j].Date
 	})
 	return groups
-}
-
-// isHidden reports whether a filename should be skipped.
-func isHidden(name string) bool {
-	return strings.HasPrefix(name, ".")
 }
 
 // normalizeExt returns the uppercase extension without the leading dot.

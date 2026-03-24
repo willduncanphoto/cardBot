@@ -27,3 +27,24 @@ func TestFormatBytes(t *testing.T) {
 		}
 	}
 }
+
+func TestIsHidden(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		want bool
+	}{
+		{".DS_Store", true},
+		{"._resource", true},
+		{".Trashes", true},
+		{".hidden", true},
+		{"DSC_0001.NEF", false},
+		{"100NIKON", false},
+	}
+	for _, tt := range tests {
+		got := IsHidden(tt.name)
+		if got != tt.want {
+			t.Errorf("IsHidden(%q) = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}

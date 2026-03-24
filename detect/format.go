@@ -1,6 +1,15 @@
 package detect
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
+
+// IsHidden reports whether a filename should be skipped (dot-prefixed).
+// Shared by analyze and cardcopy during DCIM tree walks.
+func IsHidden(name string) bool {
+	return strings.HasPrefix(name, ".")
+}
 
 // FormatBytes converts bytes to human readable string.
 // This is in a platform-agnostic file (no build constraints) because it's a

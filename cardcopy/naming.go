@@ -9,13 +9,11 @@ import (
 	"github.com/illwill/cardbot/config"
 )
 
-// SequenceDigits returns the sequence padding (fixed at 4 for event work).
-// 4-digit prevents loop on heavy wedding days (1000+ shots).
-func SequenceDigits(totalFiles int) int {
-	_ = totalFiles // reserved for future per-date detection
-	return 4
-}
+// SequenceDigits is the fixed sequence padding width.
+// 4 digits (0001–9999) prevents rollover on heavy shoot days (1000+ shots).
+const SequenceDigits = 4
 
+// sequenceMax returns the maximum sequence number for the given digit width.
 func sequenceMax(digits int) int {
 	switch digits {
 	case 3:
