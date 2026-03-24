@@ -17,6 +17,18 @@ import (
 
 const dryRunPreviewLimit = 200
 
+// copyFiltered runs the copy operation for the given card and mode.
+//
+// During copy, this function takes over event handling from Run(). It runs its
+// own select loop that drains detector.Events(), detector.Removals(), and
+// inputChan concurrently with the main Run() loop. This means Run() will not
+// see any card/removal events while a copy is in progress — copyFiltered
+// handles them directly by calling handleCardEvent/handleRemoval.
+//
+// This is intentional: the copy loop needs to react to card removal (cancel
+// the copy) and new card insertions (queue them) while showing progress output
+// under printMu. If a new event source is added to the detector or Run() loop,
+// it must also be handled here to avoid silent event drops.
 func (a *App) copyFiltered(card *detect.Card, mode string) {
 	destBase, err := config.ExpandPath(a.cfg.Destination.Path)
 	if err != nil {
