@@ -73,8 +73,10 @@ cardbot --setup
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| **0.6.1** | General improvements | Next |
-| **0.7.0** | Copyright stuff | Planned |
+| **0.7.0** | Refactor go project | Complete |
+| **0.9.0** | Copy UI/UX | Next |
+| **0.10.0** | Copyright stuff | Planned |
+
 
 ## Uninstalling
 
