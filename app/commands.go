@@ -136,17 +136,10 @@ func (a *App) copyFiltered(card *detect.Card, mode string) {
 				return
 			}
 			lastUpdate = now
-			pct := int64(0)
-			if p.BytesTotal > 0 {
-				pct = (p.BytesDone * 100) / p.BytesTotal
-			}
 			a.printMu.Lock()
-			fmt.Printf("\r[%s] Copying... %d/%d files  %s/%s (%d%%)    ",
+			fmt.Printf("\r[%s] %s    ",
 				Ts(),
-				p.FilesDone, p.FilesTotal,
-				detect.FormatBytes(p.BytesDone),
-				detect.FormatBytes(p.BytesTotal),
-				pct)
+				cardcopy.FormatProgressLine(p))
 			a.printMu.Unlock()
 		})
 		doneCh <- copyOutcome{r, err}
@@ -273,25 +266,40 @@ func (a *App) handleCopySuccess(card *detect.Card, mode, destBase string, result
 
 	a.printMu.Lock()
 	fmt.Printf("\r[%s] Copy complete ✓                                          \n", Ts())
-	fmt.Printf("[%s] %d files, %s copied in %s (%.1f MB/s)\n",
-		Ts(),
-		result.FilesCopied,
-		detect.FormatBytes(result.BytesCopied),
-		elapsed,
-		speed)
+	if result.FilesSkipped > 0 && result.FilesCopied == 0 {
+		fmt.Printf("[%s] All %d files already copied. Nothing to do.\n",
+			Ts(),
+			result.FilesSkipped)
+	} else if result.FilesSkipped > 0 {
+		fmt.Printf("[%s] %d files, %s copied in %s (%.1f MB/s) — %d files skipped\n",
+			Ts(),
+			result.FilesCopied,
+			detect.FormatBytes(result.BytesCopied),
+			elapsed,
+			speed,
+			result.FilesSkipped)
+	} else {
+		fmt.Printf("[%s] %d files, %s copied in %s (%.1f MB/s)\n",
+			Ts(),
+			result.FilesCopied,
+			detect.FormatBytes(result.BytesCopied),
+			elapsed,
+			speed)
+	}
 	a.printMu.Unlock()
-	a.logf("Copy complete: %d files, %s in %s (%.1f MB/s)",
+	a.logf("Copy complete: %d files, %s in %s (%.1f MB/s), %d skipped",
 		result.FilesCopied,
 		detect.FormatBytes(result.BytesCopied),
 		elapsed,
-		speed)
+		speed,
+		result.FilesSkipped)
 
 	dotErr := a.writeDotfile(dotfile.WriteOptions{
 		CardPath:           card.Path,
 		Destination:        destBase,
 		Mode:               mode,
-		FilesCopied:        result.FilesCopied,
-		BytesCopied:        result.BytesCopied,
+		FilesCopied:        result.FilesCopied + result.FilesSkipped,
+		BytesCopied:        result.BytesCopied + result.BytesSkipped,
 		Verified:           true,
 		VerificationMethod: result.VerifyMethod,
 		CardbotVersion:     a.version,

@@ -372,9 +372,8 @@ func TestCopy_ElapsedTime(t *testing.T) {
 
 func TestCopy_SkipsExistingWithCorrectSize(t *testing.T) {
 	t.Parallel()
-	// FilesCopied counts files *processed* (including skips), not files newly written.
-	// This matches the progress callback semantics where the user sees "150/150 files"
-	// even on a re-copy where all 150 were skipped.
+	// With skip accounting, FilesCopied counts files actually written.
+	// FilesSkipped counts files that already existed with matching size.
 	data := []byte("original content here")
 	card := createTestCard(t, map[string]testFileSpec{
 		"100NIKON/DSC_0001.NEF": {data: data, mtime: date(2026, 3, 8)},
@@ -388,6 +387,9 @@ func TestCopy_SkipsExistingWithCorrectSize(t *testing.T) {
 	}
 	if result1.FilesCopied != 1 {
 		t.Fatalf("first copy: FilesCopied = %d, want 1", result1.FilesCopied)
+	}
+	if result1.FilesSkipped != 0 {
+		t.Fatalf("first copy: FilesSkipped = %d, want 0", result1.FilesSkipped)
 	}
 
 	// Tamper with the dest file content (but keep the same size) to prove it's skipped, not re-copied.
@@ -405,8 +407,11 @@ func TestCopy_SkipsExistingWithCorrectSize(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result2.FilesCopied != 1 {
-		t.Fatalf("second copy: FilesCopied = %d, want 1", result2.FilesCopied)
+	if result2.FilesCopied != 0 {
+		t.Fatalf("second copy: FilesCopied = %d, want 0 (skipped)", result2.FilesCopied)
+	}
+	if result2.FilesSkipped != 1 {
+		t.Fatalf("second copy: FilesSkipped = %d, want 1", result2.FilesSkipped)
 	}
 
 	// File should still have tampered content (was not overwritten).
@@ -813,5 +818,151 @@ func TestVerifyBytes_SizeMismatch(t *testing.T) {
 	buf := make([]byte, 16384)
 	if err := verifyBytes(src, dst, buf); err == nil {
 		t.Fatal("verifyBytes should detect size mismatch")
+	}
+}
+
+func TestCopy_SkipAccounting_AllSkipped(t *testing.T) {
+	t.Parallel()
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: make([]byte, 5000), mtime: date(2026, 3, 8)},
+		"100NIKON/DSC_0002.JPG": {data: make([]byte, 3000), mtime: date(2026, 3, 8)},
+	})
+	dest := t.TempDir()
+
+	// First copy.
+	r1, err := Run(context.Background(), Options{CardPath: card, DestBase: dest}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r1.FilesCopied != 2 || r1.FilesSkipped != 0 {
+		t.Fatalf("first: copied=%d skipped=%d, want 2/0", r1.FilesCopied, r1.FilesSkipped)
+	}
+
+	// Second copy — everything should be skipped.
+	r2, err := Run(context.Background(), Options{CardPath: card, DestBase: dest}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r2.FilesCopied != 0 {
+		t.Errorf("FilesCopied = %d, want 0", r2.FilesCopied)
+	}
+	if r2.FilesSkipped != 2 {
+		t.Errorf("FilesSkipped = %d, want 2", r2.FilesSkipped)
+	}
+	if r2.BytesCopied != 0 {
+		t.Errorf("BytesCopied = %d, want 0", r2.BytesCopied)
+	}
+	if r2.BytesSkipped != 8000 {
+		t.Errorf("BytesSkipped = %d, want 8000", r2.BytesSkipped)
+	}
+}
+
+func TestCopy_SkipAccounting_PartialSkip(t *testing.T) {
+	t.Parallel()
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: make([]byte, 5000), mtime: date(2026, 3, 8)},
+		"100NIKON/DSC_0002.JPG": {data: make([]byte, 3000), mtime: date(2026, 3, 8)},
+	})
+	dest := t.TempDir()
+
+	// Copy first file only by using a filter.
+	_, err := Run(context.Background(), Options{
+		CardPath: card,
+		DestBase: dest,
+		Filter: func(rel, ext string) bool {
+			return ext == "NEF"
+		},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Now copy all — DSC_0001.NEF should be skipped, DSC_0002.JPG should be copied.
+	r, err := Run(context.Background(), Options{CardPath: card, DestBase: dest}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.FilesCopied != 1 {
+		t.Errorf("FilesCopied = %d, want 1", r.FilesCopied)
+	}
+	if r.FilesSkipped != 1 {
+		t.Errorf("FilesSkipped = %d, want 1", r.FilesSkipped)
+	}
+	if r.BytesCopied != 3000 {
+		t.Errorf("BytesCopied = %d, want 3000", r.BytesCopied)
+	}
+	if r.BytesSkipped != 5000 {
+		t.Errorf("BytesSkipped = %d, want 5000", r.BytesSkipped)
+	}
+}
+
+func TestCopy_MidFileCancelCleansUp(t *testing.T) {
+	t.Parallel()
+	// Use a large-ish file so the tracking reader has time to check cancellation.
+	bigFile := make([]byte, 2*1024*1024) // 2 MB
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: bigFile, mtime: date(2026, 3, 8)},
+	})
+	dest := t.TempDir()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Cancel via progress callback after copy starts but before completion.
+	callCount := 0
+	result, err := Run(ctx, Options{CardPath: card, DestBase: dest}, func(p Progress) {
+		callCount++
+		if callCount >= 1 {
+			cancel()
+		}
+	})
+
+	if !errors.Is(err, context.Canceled) {
+		// Copy might complete before cancel propagates on fast systems.
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		return
+	}
+
+	if result == nil {
+		t.Fatal("expected partial result on cancel")
+	}
+
+	// No .part files should remain.
+	var partFiles []string
+	_ = filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return nil
+		}
+		if !d.IsDir() && filepath.Ext(d.Name()) == ".part" {
+			partFiles = append(partFiles, path)
+		}
+		return nil
+	})
+	if len(partFiles) > 0 {
+		t.Errorf("found .part files after mid-file cancel: %v", partFiles)
+	}
+}
+
+func TestCopy_ProgressIncludesETA(t *testing.T) {
+	t.Parallel()
+	card := createTestCard(t, map[string]testFileSpec{
+		"100NIKON/DSC_0001.NEF": {data: make([]byte, 1000), mtime: date(2026, 3, 8)},
+		"100NIKON/DSC_0002.NEF": {data: make([]byte, 2000), mtime: date(2026, 3, 8)},
+	})
+	dest := t.TempDir()
+
+	var lastProgress Progress
+	_, err := Run(context.Background(), Options{CardPath: card, DestBase: dest}, func(p Progress) {
+		lastProgress = p
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// SmoothedBPS should be populated by the final callback.
+	// (May be 0 on very fast copies, but should not be negative.)
+	if lastProgress.SmoothedBPS < 0 {
+		t.Errorf("SmoothedBPS = %f, should not be negative", lastProgress.SmoothedBPS)
 	}
 }
