@@ -311,11 +311,67 @@ func runInteractive() int {
 }
 
 func printLogo() {
-	fmt.Println("                         ▄")
-	fmt.Println(" █▀▀▀▀  ▄▄▄▄▄  ▄▄▄▄  ▄▄▄▄█  █▀▀▀█  ▄▄▄▄▄  ▄█▄")
-	fmt.Println(" █      ▄▄▄▄█  █     █   █  █▀▀▀▄  █   █   █")
-	fmt.Println(" █▄▄▄▄  █▄▄▄█  █     █▄▄▄█  █▄▄▄█  █▄▄▄█   █")
+	lines := []string{
+		"▄▀▀▀▀ ▄▀▀▀▄ █▀▀▀▄ █▀▀▀▄ █▀▀▀▄ ▄▀▀▀▄ ▀▀█▀▀",
+		"█     █▀▀▀█ █▀▀▀▄ █   █ █▀▀▀▄ █   █   █  ",
+		" ▀▀▀▀ ▀   ▀ ▀   ▀ ▀▀▀▀  ▀▀▀▀   ▀▀▀    ▀  ",
+	}
+
+	if supportsANSIColor() {
+		start := [3]int{255, 153, 255}
+		end := [3]int{36, 114, 200}
+		for _, line := range lines {
+			fmt.Println(colorizeGradient(line, start, end))
+		}
+		fmt.Println()
+		return
+	}
+
+	for _, line := range lines {
+		fmt.Println(line)
+	}
 	fmt.Println()
+}
+
+func supportsANSIColor() bool {
+	if os.Getenv("NO_COLOR") != "" {
+		return false
+	}
+	term := os.Getenv("TERM")
+	if term == "" || strings.EqualFold(term, "dumb") {
+		return false
+	}
+	fi, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
+}
+
+func colorizeGradient(line string, start, end [3]int) string {
+	runes := []rune(line)
+	if len(runes) == 0 {
+		return ""
+	}
+	if len(runes) == 1 {
+		return fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", start[0], start[1], start[2], line)
+	}
+
+	var sb strings.Builder
+	for i, r := range runes {
+		t := float64(i) / float64(len(runes)-1)
+		rc := lerp(start[0], end[0], t)
+		gc := lerp(start[1], end[1], t)
+		bc := lerp(start[2], end[2], t)
+		sb.WriteString(fmt.Sprintf("\033[38;2;%d;%d;%dm", rc, gc, bc))
+		sb.WriteRune(r)
+	}
+	sb.WriteString("\033[0m")
+	return sb.String()
+}
+
+func lerp(a, b int, t float64) int {
+	return a + int(float64(b-a)*t+0.5)
 }
 
 func printVersion() {
