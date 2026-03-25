@@ -239,6 +239,9 @@ func runInteractive() int {
 	const tsWidth = 21 // "[2006-01-02T15:04:05]" = 21 chars
 	indent := strings.Repeat(" ", tsWidth)
 
+	// Print logo header.
+	printLogo()
+
 	// Step 1: Starting CardBot.
 	ts1 := app.Ts()
 	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
@@ -276,8 +279,13 @@ func runInteractive() int {
 
 	// Update notification (both modes).
 	if latest != "" && updateErr == nil {
-		fmt.Printf("\nUPDATE AVAILABLE (v%s)\n", latest)
-		fmt.Printf("Run 'cardbot self-update'\n")
+		if ts2 == ts1 {
+			fmt.Printf("\n%s UPDATE AVAILABLE (v%s)\n%s Run 'cardbot self-update'\n",
+				indent, latest, indent)
+		} else {
+			fmt.Printf("\nUPDATE AVAILABLE (v%s)\n", latest)
+			fmt.Printf("Run 'cardbot self-update'\n")
+		}
 	}
 
 	// Sync last printed timestamp with app for dedup in scanning output.
@@ -300,6 +308,14 @@ func runInteractive() int {
 		return 1
 	}
 	return 0
+}
+
+func printLogo() {
+	fmt.Println("                         ▄")
+	fmt.Println(" █▀▀▀▀  ▄▄▄▄▄  ▄▄▄▄  ▄▄▄▄█  █▀▀▀█  ▄▄▄▄▄  ▄█▄")
+	fmt.Println(" █      ▄▄▄▄█  █     █   █  █▀▀▀▄  █   █   █")
+	fmt.Println(" █▄▄▄▄  █▄▄▄█  █     █▄▄▄█  █▄▄▄█  █▄▄▄█   █")
+	fmt.Println()
 }
 
 func printVersion() {
