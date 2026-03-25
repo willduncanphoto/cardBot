@@ -29,7 +29,7 @@ func (a *App) printCardHeader(card *detect.Card, bodies, lenses []string) {
 		fsutil.FormatBytes(card.TotalBytes),
 		pct)
 
-	// Gear: body line (colored), then one lens per line (default color).
+	// Gear: body and lens lines, all in brand color.
 	bodyLine := strings.Join(bodies, ", ")
 	if bodyLine == "" {
 		bodyLine = card.Brand
@@ -41,7 +41,7 @@ func (a *App) printCardHeader(card *detect.Card, bodies, lenses []string) {
 	}
 	fmt.Printf("  Gear:     %s%s%s\n", color, bodyLine, reset)
 	for _, lens := range lenses {
-		fmt.Printf("            %s\n", lens)
+		fmt.Printf("            %s%s%s\n", color, lens, reset)
 	}
 }
 
