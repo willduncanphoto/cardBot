@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	_ "embed"
 	"encoding/base64"
 	"flag"
 	"fmt"
@@ -23,10 +24,13 @@ import (
 
 // Set at build time via -ldflags.
 var (
-	version = "0.8.0"
+	version = "0.8.1"
 	commit  = "none"
 	date    = "unknown"
 )
+
+//go:embed CHANGELOG.md
+var changelogRaw string
 
 func main() {
 	if handled, code := tryRunSubcommand(os.Args[1:]); handled {
@@ -252,6 +256,24 @@ func runInteractive() int {
 	s.Stop()
 	fmt.Printf("\r\033[2m[%s]\033[0m Starting CardBot v%s ✓%s\n", ts1, version, clearEOL)
 
+	// What's new: show changelog on first run of a new version.
+	if cfg.Meta.LastSeenVersion == "" {
+		// First install — record version silently.
+		cfg.Meta.LastSeenVersion = version
+		if cfgPath != "" {
+			_ = config.Save(cfg, cfgPath)
+		}
+	} else if cfg.Meta.LastSeenVersion != version {
+		bullets := parseChangelogSection(changelogRaw, version)
+		if len(bullets) > 0 {
+			fprintChangelog(os.Stdout, indent, bullets)
+		}
+		cfg.Meta.LastSeenVersion = version
+		if cfgPath != "" {
+			_ = config.Save(cfg, cfgPath)
+		}
+	}
+
 	// Verbose mode: show settings before the update check.
 	if *flagVerbose {
 		fprintVerboseSettings(os.Stdout, cfg, cfgPath)
@@ -278,15 +300,10 @@ func runInteractive() int {
 		fmt.Printf("\r\033[2m[%s]\033[0m Checking for updates %s%s\n", ts2, updateMark, clearEOL)
 	}
 
-	// Update notification (both modes).
+	// Update notification.
 	if latest != "" && updateErr == nil {
-		if ts2 == ts1 {
-			fmt.Printf("\n%s UPDATE AVAILABLE (v%s)\n%s Run 'cardbot self-update'\n",
-				indent, latest, indent)
-		} else {
-			fmt.Printf("\nUPDATE AVAILABLE (v%s)\n", latest)
-			fmt.Printf("Run 'cardbot self-update'\n")
-		}
+		fmt.Printf("%s UPDATE AVAILABLE (v%s)\n", indent, latest)
+		fmt.Printf("%s Run 'cardbot self-update'\n", indent)
 	}
 
 	// Sync last printed timestamp with app for dedup in scanning output.

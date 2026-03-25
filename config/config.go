@@ -26,6 +26,12 @@ type Config struct {
 	Daemon      Daemon      `json:"daemon"`
 	Output      Output      `json:"output"`
 	Advanced    Advanced    `json:"advanced"`
+	Meta        Meta        `json:"meta,omitempty"`
+}
+
+// Meta holds internal tracking state (not user-editable settings).
+type Meta struct {
+	LastSeenVersion string `json:"last_seen_version,omitempty"`
 }
 
 // Destination settings.
