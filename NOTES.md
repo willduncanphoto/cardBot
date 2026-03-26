@@ -97,7 +97,7 @@ Requirements:
 
 ```bash
 git clone https://github.com/willduncanphoto/cardBot.git
-cd CardBot
+cd cardBot
 go build -o cardbot .
 ./cardbot --version
 ```
@@ -194,7 +194,7 @@ When `daemon.debug` is `true`:
 5. `cardbot daemon-debug off`
 
 
-# Uninstalling CardBot
+# Uninstalling cardBot
 
 ## Quick Teardown (instant)
 
@@ -250,7 +250,7 @@ sh scripts/uninstall.sh --install-dir ~/bin --purge
 
 ## After Uninstall
 
-- CardBot will no longer start at login.
+- cardBot will no longer start at login.
 - No background daemon will be running.
 - Config and logs are preserved unless `--purge` was used.
 - To reinstall, see the installation section at the top of this file.
@@ -275,9 +275,9 @@ Config file path is platform specific:
 
 ### First-run setup
 
-When you start CardBot without a config file, it prompts for:
+When you start cardBot without a config file, it prompts for:
 
-1. **Destination path** — where copied files go (default: `~/Pictures/CardBot`)
+1. **Destination path** — where copied files go (default: `~/Pictures/cardBot`)
 2. **Naming mode** — how files are organized:
    - `original` — preserves camera original filenames (default)
    - `timestamp` — renames files with datetime prefix

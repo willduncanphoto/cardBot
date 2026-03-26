@@ -1,4 +1,4 @@
-package launcher
+package launch
 
 import (
 	"os"
@@ -11,14 +11,14 @@ type recordedCommand struct {
 	args []string
 }
 
-func TestLaunchWith_SystemDefault_UsesOpenWithCommandScript(t *testing.T) {
+func TestOpenWith_SystemDefault_UsesOpenWithCommandScript(t *testing.T) {
 	var got recordedCommand
 	run := func(name string, args ...string) error {
 		got = recordedCommand{name: name, args: append([]string{}, args...)}
 		return nil
 	}
 
-	err := launchWith(Options{
+	err := openWith(Options{
 		TerminalApp:   "Default",
 		CardBotBinary: "/usr/local/bin/cardbot",
 		MountPath:     "/Volumes/NIKON Z 9",
@@ -50,14 +50,14 @@ func TestLaunchWith_SystemDefault_UsesOpenWithCommandScript(t *testing.T) {
 	}
 }
 
-func TestLaunchWith_TerminalApp_UsesAppleScript(t *testing.T) {
+func TestOpenWith_TerminalApp_UsesAppleScript(t *testing.T) {
 	var got recordedCommand
 	run := func(name string, args ...string) error {
 		got = recordedCommand{name: name, args: append([]string{}, args...)}
 		return nil
 	}
 
-	err := launchWith(Options{
+	err := openWith(Options{
 		TerminalApp:   "Terminal",
 		CardBotBinary: "/usr/local/bin/cardbot",
 		MountPath:     "/Volumes/NIKON Z 9",
@@ -80,14 +80,14 @@ func TestLaunchWith_TerminalApp_UsesAppleScript(t *testing.T) {
 	}
 }
 
-func TestLaunchWith_GhosttyDefault_UsesOpenWithE(t *testing.T) {
+func TestOpenWith_GhosttyDefault_UsesOpenWithE(t *testing.T) {
 	var got recordedCommand
 	run := func(name string, args ...string) error {
 		got = recordedCommand{name: name, args: append([]string{}, args...)}
 		return nil
 	}
 
-	err := launchWith(Options{
+	err := openWith(Options{
 		TerminalApp:   "Ghostty",
 		CardBotBinary: "/usr/local/bin/cardbot",
 		MountPath:     "/Volumes/CARD",
@@ -112,7 +112,7 @@ func TestLaunchWith_GhosttyDefault_UsesOpenWithE(t *testing.T) {
 	}
 }
 
-func TestLaunchWith_GhosttyDefault_PreservesTrailingSpacesInMountPath(t *testing.T) {
+func TestOpenWith_GhosttyDefault_PreservesTrailingSpacesInMountPath(t *testing.T) {
 	var got recordedCommand
 	run := func(name string, args ...string) error {
 		got = recordedCommand{name: name, args: append([]string{}, args...)}
@@ -120,7 +120,7 @@ func TestLaunchWith_GhosttyDefault_PreservesTrailingSpacesInMountPath(t *testing
 	}
 
 	mount := "/Volumes/NIKON Z 9  "
-	err := launchWith(Options{
+	err := openWith(Options{
 		TerminalApp:   "Ghostty",
 		CardBotBinary: "/usr/local/bin/cardbot",
 		MountPath:     mount,
@@ -133,14 +133,14 @@ func TestLaunchWith_GhosttyDefault_PreservesTrailingSpacesInMountPath(t *testing
 	}
 }
 
-func TestLaunchWith_GhosttyDefault_UsesConfiguredWorkingDirectory(t *testing.T) {
+func TestOpenWith_GhosttyDefault_UsesConfiguredWorkingDirectory(t *testing.T) {
 	var got recordedCommand
 	run := func(name string, args ...string) error {
 		got = recordedCommand{name: name, args: append([]string{}, args...)}
 		return nil
 	}
 
-	err := launchWith(Options{
+	err := openWith(Options{
 		TerminalApp:      "Ghostty",
 		WorkingDirectory: "/Users/illwill/Code",
 		CardBotBinary:    "/usr/local/bin/cardbot",
@@ -154,14 +154,14 @@ func TestLaunchWith_GhosttyDefault_UsesConfiguredWorkingDirectory(t *testing.T) 
 	}
 }
 
-func TestLaunchWith_CustomLaunchArgs_TemplatesResolved(t *testing.T) {
+func TestOpenWith_CustomLaunchArgs_TemplatesResolved(t *testing.T) {
 	var got recordedCommand
 	run := func(name string, args ...string) error {
 		got = recordedCommand{name: name, args: append([]string{}, args...)}
 		return nil
 	}
 
-	err := launchWith(Options{
+	err := openWith(Options{
 		TerminalApp:   "Ghostty",
 		CardBotBinary: "/opt/cardbot",
 		MountPath:     "/Volumes/NIKON Z 9",
@@ -187,14 +187,14 @@ func TestLaunchWith_CustomLaunchArgs_TemplatesResolved(t *testing.T) {
 	}
 }
 
-func TestLaunchWith_GhosttyCustomLaunchArgs_StripsQuotedPlaceholders(t *testing.T) {
+func TestOpenWith_GhosttyCustomLaunchArgs_StripsQuotedPlaceholders(t *testing.T) {
 	var got recordedCommand
 	run := func(name string, args ...string) error {
 		got = recordedCommand{name: name, args: append([]string{}, args...)}
 		return nil
 	}
 
-	err := launchWith(Options{
+	err := openWith(Options{
 		TerminalApp:   "Ghostty",
 		CardBotBinary: "/usr/local/bin/cardbot",
 		MountPath:     "/Volumes/NIKON Z 9",
@@ -215,14 +215,14 @@ func TestLaunchWith_GhosttyCustomLaunchArgs_StripsQuotedPlaceholders(t *testing.
 	}
 }
 
-func TestLaunchWith_GhosttyCustomLaunchArgs_LegacyCombinedCommandIsSplit(t *testing.T) {
+func TestOpenWith_GhosttyCustomLaunchArgs_LegacyCombinedCommandIsSplit(t *testing.T) {
 	var got recordedCommand
 	run := func(name string, args ...string) error {
 		got = recordedCommand{name: name, args: append([]string{}, args...)}
 		return nil
 	}
 
-	err := launchWith(Options{
+	err := openWith(Options{
 		TerminalApp:   "Ghostty",
 		CardBotBinary: "/usr/local/bin/cardbot",
 		MountPath:     "/Volumes/NIKON Z 9",
@@ -245,14 +245,14 @@ func TestLaunchWith_GhosttyCustomLaunchArgs_LegacyCombinedCommandIsSplit(t *test
 	}
 }
 
-func TestLaunchWith_StripsMatchingQuotesFromBinaryAndMount(t *testing.T) {
+func TestOpenWith_StripsMatchingQuotesFromBinaryAndMount(t *testing.T) {
 	var got recordedCommand
 	run := func(name string, args ...string) error {
 		got = recordedCommand{name: name, args: append([]string{}, args...)}
 		return nil
 	}
 
-	err := launchWith(Options{
+	err := openWith(Options{
 		TerminalApp:   "Ghostty",
 		CardBotBinary: "'/usr/local/bin/cardbot'",
 		MountPath:     "'/Volumes/NIKON Z 9'",
@@ -265,14 +265,14 @@ func TestLaunchWith_StripsMatchingQuotesFromBinaryAndMount(t *testing.T) {
 	}
 }
 
-func TestLaunchWith_EmptyTerminalApp_DefaultsToSystemDefault(t *testing.T) {
+func TestOpenWith_EmptyTerminalApp_DefaultsToSystemDefault(t *testing.T) {
 	var got recordedCommand
 	run := func(name string, args ...string) error {
 		got = recordedCommand{name: name, args: append([]string{}, args...)}
 		return nil
 	}
 
-	err := launchWith(Options{
+	err := openWith(Options{
 		TerminalApp:   "   ",
 		CardBotBinary: "/usr/local/bin/cardbot",
 		MountPath:     "/Volumes/CARD",
@@ -289,7 +289,7 @@ func TestLaunchWith_EmptyTerminalApp_DefaultsToSystemDefault(t *testing.T) {
 	t.Cleanup(func() { _ = os.Remove(got.args[0]) })
 }
 
-func TestLaunchWith_RequiresBinaryAndMountPath(t *testing.T) {
+func TestOpenWith_RequiresBinaryAndMountPath(t *testing.T) {
 	tests := []struct {
 		name string
 		opts Options
@@ -300,7 +300,7 @@ func TestLaunchWith_RequiresBinaryAndMountPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := launchWith(tt.opts, func(name string, args ...string) error { return nil })
+			err := openWith(tt.opts, func(name string, args ...string) error { return nil })
 			if err == nil {
 				t.Fatal("expected error")
 			}

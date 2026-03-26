@@ -6,9 +6,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/illwill/cardbot/app"
 	"github.com/illwill/cardbot/config"
-	"github.com/illwill/cardbot/launchagent"
+	"github.com/illwill/cardbot/launch"
+	"github.com/illwill/cardbot/term"
 )
 
 func normalizeDaemonTerminalAppForLaunch(name string) string {
@@ -87,7 +87,7 @@ func daemonLaunchHint(err error) string {
 		" eperm",
 	}
 	if containsAny(s, fullDiskAccessMarkers...) {
-		return "Grant Full Disk Access to CardBot and your terminal app in macOS System Settings → Privacy & Security → Full Disk Access."
+		return "Grant Full Disk Access to cardBot and your terminal app in macOS System Settings → Privacy & Security → Full Disk Access."
 	}
 	return ""
 }
@@ -109,24 +109,24 @@ func syncDaemonAutoStartFromConfig(cfg *config.Config) {
 			fmt.Fprintf(os.Stderr, "Warning: could not determine executable path for launch agent install: %v\n", err)
 			return
 		}
-		if _, err := launchagent.Install(exe); err != nil {
+		if _, err := launch.Install(exe); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: could not install launch agent: %v\n", err)
 			return
 		}
-		fmt.Printf("%s Start-at-login enabled\n", app.DimTS(app.Ts()))
+		fmt.Printf("%s Start-at-login enabled\n", term.DimTS(term.Ts()))
 		return
 	}
 
-	if st, err := launchagent.CurrentStatus(); err == nil && !st.Installed {
-		fmt.Printf("%s Start-at-login already disabled\n", app.DimTS(app.Ts()))
+	if st, err := launch.CurrentStatus(); err == nil && !st.Installed {
+		fmt.Printf("%s Start-at-login already disabled\n", term.DimTS(term.Ts()))
 		return
 	}
 
-	if _, err := launchagent.Uninstall(); err != nil {
+	if _, err := launch.Uninstall(); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: could not uninstall launch agent: %v\n", err)
 		return
 	}
-	fmt.Printf("%s Start-at-login disabled\n", app.DimTS(app.Ts()))
+	fmt.Printf("%s Start-at-login disabled\n", term.DimTS(term.Ts()))
 }
 
 func updateSavedDaemonPrefs(mutator func(cfg *config.Config)) {

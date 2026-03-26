@@ -14,7 +14,7 @@ func escapeAppleScriptPath(path string) string {
 func folderPickerScript(defaultPath string) string {
 	safe := escapeAppleScriptPath(defaultPath)
 	return fmt.Sprintf(
-		`POSIX path of (choose folder with prompt "Where should CardBot copy your work?" default location POSIX file "%s")`,
+		`POSIX path of (choose folder with prompt "Where should cardBot copy your work?" default location POSIX file "%s")`,
 		safe,
 	)
 }

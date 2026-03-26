@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/illwill/cardbot/cblog"
+	"github.com/illwill/cardbot/term"
 	"github.com/illwill/cardbot/update"
 )
 
@@ -45,27 +46,27 @@ func MaybeCheckForUpdate(logger *cblog.Logger, version string, checker updateChe
 func RunSelfUpdate(version string) int {
 	execPath, err := os.Executable()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: could not determine executable path: %s\n", FriendlyErr(err))
+		fmt.Fprintf(os.Stderr, "Error: could not determine executable path: %s\n", term.FriendlyErr(err))
 		return 1
 	}
 
-	fmt.Printf("%s Downloading update…\n", DimTS(Ts()))
+	fmt.Printf("%s Downloading update…\n", term.DimTS(term.Ts()))
 	ctx, cancel := context.WithTimeout(context.Background(), selfUpdateTimeout)
 	defer cancel()
 
 	installed, err := update.SelfUpdate(ctx, nil, update.DefaultAPIBase, update.DefaultRepo, version, execPath)
 	if err == nil {
-		fmt.Printf("%s Updated to %s\n", DimTS(Ts()), installed)
-		fmt.Printf("%s Restart CardBot to use the new version.\n", DimTS(Ts()))
+		fmt.Printf("%s Updated to %s\n", term.DimTS(term.Ts()), installed)
+		fmt.Printf("%s Restart cardBot to use the new version.\n", term.DimTS(term.Ts()))
 		return 0
 	}
 
 	if errors.Is(err, update.ErrAlreadyUpToDate) {
-		fmt.Printf("%s Already up to date (%s)\n", DimTS(Ts()), version)
+		fmt.Printf("%s Already up to date (%s)\n", term.DimTS(term.Ts()), version)
 		return 0
 	}
 
-	fmt.Fprintf(os.Stderr, "Error: %s\n", FriendlyErr(err))
+	fmt.Fprintf(os.Stderr, "Error: %s\n", term.FriendlyErr(err))
 	if isPermissionErr(err) {
 		fmt.Fprintf(os.Stderr, "Try: sudo %q self-update\n", execPath)
 	}

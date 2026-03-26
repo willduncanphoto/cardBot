@@ -50,7 +50,7 @@ func TestDaemon_StartsDetectorAndWaitsForSignal(t *testing.T) {
 
 	fd := newFakeDetector()
 	d := New(Config{
-		NewDetector:    func() Detector { return fd },
+		newDetector:    func() detector { return fd },
 		OnCardInserted: func(path string) {},
 	})
 
@@ -94,7 +94,7 @@ func TestDaemon_CallsOnCardInserted_WhenCardDetected(t *testing.T) {
 	var insertedPaths []string
 
 	d := New(Config{
-		NewDetector: func() Detector { return fd },
+		newDetector: func() detector { return fd },
 		OnCardInserted: func(path string) {
 			mu.Lock()
 			insertedPaths = append(insertedPaths, path)
@@ -149,7 +149,7 @@ func TestDaemon_TracksCards_NoDuplicateCallbacks(t *testing.T) {
 	callCount := 0
 
 	d := New(Config{
-		NewDetector: func() Detector { return fd },
+		newDetector: func() detector { return fd },
 		OnCardInserted: func(path string) {
 			mu.Lock()
 			callCount++
@@ -191,7 +191,7 @@ func TestDaemon_CardRemoval_AllowsReinsertCallback(t *testing.T) {
 	callCount := 0
 
 	d := New(Config{
-		NewDetector:       func() Detector { return fd },
+		newDetector:       func() detector { return fd },
 		DuplicateCooldown: 50 * time.Millisecond,
 		OnCardInserted: func(path string) {
 			mu.Lock()
@@ -238,7 +238,7 @@ func TestDaemon_DetectorStartError_ReturnsError(t *testing.T) {
 	fd.startErr = os.ErrPermission
 
 	d := New(Config{
-		NewDetector:    func() Detector { return fd },
+		newDetector:    func() detector { return fd },
 		OnCardInserted: func(path string) {},
 	})
 
@@ -257,7 +257,7 @@ func TestDaemon_MultipleCards_EachGetsCallback(t *testing.T) {
 	var paths []string
 
 	d := New(Config{
-		NewDetector: func() Detector { return fd },
+		newDetector: func() detector { return fd },
 		OnCardInserted: func(path string) {
 			mu.Lock()
 			paths = append(paths, path)
@@ -293,7 +293,7 @@ func TestDaemon_Cooldown_SuppressesRapidReinsert(t *testing.T) {
 	calls := 0
 	d := New(Config{
 		DuplicateCooldown: 5 * time.Second,
-		Now:               func() time.Time { return now },
+		now:               func() time.Time { return now },
 		OnCardInserted: func(path string) {
 			calls++
 		},
@@ -329,9 +329,9 @@ func TestDaemon_PIDFile_WrittenAndRemoved(t *testing.T) {
 
 	fd := newFakeDetector()
 	d := New(Config{
-		NewDetector:    func() Detector { return fd },
+		newDetector:    func() detector { return fd },
 		OnCardInserted: func(path string) {},
-		PIDPathFn:      func() (string, error) { return pidPath, nil },
+		pidPathFn:      func() (string, error) { return pidPath, nil },
 	})
 
 	done := make(chan error, 1)
@@ -378,9 +378,9 @@ func TestDaemon_PIDFile_UnavailablePath_NoError(t *testing.T) {
 
 	fd := newFakeDetector()
 	d := New(Config{
-		NewDetector:    func() Detector { return fd },
+		newDetector:    func() detector { return fd },
 		OnCardInserted: func(path string) {},
-		PIDPathFn:      func() (string, error) { return pidPath, nil },
+		pidPathFn:      func() (string, error) { return pidPath, nil },
 	})
 
 	done := make(chan error, 1)

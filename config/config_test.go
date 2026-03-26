@@ -13,8 +13,8 @@ func TestDefaults(t *testing.T) {
 	if cfg.Schema != schemaVersion {
 		t.Errorf("Schema = %q, want %q", cfg.Schema, schemaVersion)
 	}
-	if cfg.Destination.Path != "~/Pictures/CardBot" {
-		t.Errorf("Destination.Path = %q, want ~/Pictures/CardBot", cfg.Destination.Path)
+	if cfg.Destination.Path != "~/Pictures/cardBot" {
+		t.Errorf("Destination.Path = %q, want ~/Pictures/cardBot", cfg.Destination.Path)
 	}
 	if cfg.Naming.Mode != NamingOriginal {
 		t.Errorf("Naming.Mode = %q, want %q", cfg.Naming.Mode, NamingOriginal)
@@ -108,7 +108,7 @@ func TestLoad_MissingFile(t *testing.T) {
 		t.Errorf("unexpected warnings: %v", warnings)
 	}
 	// Should return defaults.
-	if cfg.Destination.Path != "~/Pictures/CardBot" {
+	if cfg.Destination.Path != "~/Pictures/cardBot" {
 		t.Errorf("expected defaults, got path %q", cfg.Destination.Path)
 	}
 }
@@ -127,7 +127,7 @@ func TestLoad_MalformedJSON(t *testing.T) {
 	if len(warnings) != 1 {
 		t.Fatalf("expected 1 warning, got %d", len(warnings))
 	}
-	if cfg.Destination.Path != "~/Pictures/CardBot" {
+	if cfg.Destination.Path != "~/Pictures/cardBot" {
 		t.Error("should return defaults for malformed JSON")
 	}
 }
@@ -408,7 +408,7 @@ func TestContractPath(t *testing.T) {
 
 func TestExpandContractRoundTrip(t *testing.T) {
 	t.Parallel()
-	original := "~/Pictures/CardBot"
+	original := "~/Pictures/cardBot"
 	expanded, err := ExpandPath(original)
 	if err != nil {
 		t.Fatal(err)

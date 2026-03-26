@@ -12,6 +12,7 @@ import (
 
 	"github.com/illwill/cardbot/analyze"
 	"github.com/illwill/cardbot/detect"
+	"github.com/illwill/cardbot/term"
 )
 
 const (
@@ -45,14 +46,14 @@ func (a *App) handleCardEvent(card *detect.Card) {
 		a.currentCard = card
 		a.setPhaseLocked(phaseAnalyzing)
 		fmt.Printf("%s Scanning ✓\n", a.TsPrefix())
-		hw := card.GetHW()
+		hw := card.HW()
 		diskID := ""
 		if hw != nil {
 			diskID = hw.DiskID()
 		}
 		fmt.Printf("%s %s\n", a.TsPrefix(), formatDetectedVolume(card.Path, diskID))
 		a.logf("Card detected: %s", card.Path)
-		scanTS := DimTS(Ts())
+		scanTS := term.DimTS(term.Ts())
 		ctx, cancel := context.WithCancel(a.ctx)
 		a.scanCancel = cancel
 		go a.displayCard(ctx, card.Path, scanTS)
@@ -170,7 +171,7 @@ func (a *App) displayCard(ctx context.Context, path, scanTS string) {
 			a.logf("Card invalid: no DCIM at %s", path)
 			a.printInvalidCardInfo(card)
 		} else {
-			fmt.Printf("\r%s Error scanning card: %s\n", a.TsPrefix(), FriendlyErr(err))
+			fmt.Printf("\r%s Error scanning card: %s\n", a.TsPrefix(), term.FriendlyErr(err))
 			a.logf("Error analyzing card %s: %v", path, err)
 			a.finishCard()
 		}
@@ -236,7 +237,7 @@ func (a *App) finishCard() {
 		ctx, cancel := context.WithCancel(a.ctx)
 		a.scanCancel = cancel
 		a.mu.Unlock()
-		go a.displayCard(ctx, nextCard.Path, DimTS(Ts()))
+		go a.displayCard(ctx, nextCard.Path, term.DimTS(term.Ts()))
 		return
 	}
 	a.mu.Unlock()
@@ -292,7 +293,7 @@ func (a *App) handleRemoval(path string) {
 		fmt.Printf("\n%s Card removed: %s\n", a.TsPrefix(), path)
 		a.logf("Card removed: %s", path)
 		if hasQueue {
-			go a.displayCard(nextCtx, nextCard.Path, DimTS(Ts()))
+			go a.displayCard(nextCtx, nextCard.Path, term.DimTS(term.Ts()))
 		} else {
 			go func() {
 				time.Sleep(removalDelay)
@@ -364,7 +365,7 @@ func (a *App) handleInput(input string) {
 	case actionHardwareInfo:
 		a.showHardwareInfo(card)
 	case actionCancelCopy:
-		fmt.Printf("\n%s No copy in progress.\n", DimTS(Ts()))
+		fmt.Printf("\n%s No copy in progress.\n", term.DimTS(term.Ts()))
 		a.printPrompt()
 	case actionUnknown:
 		fmt.Printf("\nUnknown command %q. Press [?] for help.\n", input)
@@ -376,7 +377,7 @@ func (a *App) ejectCard(card *detect.Card) {
 	fmt.Printf("\nEjecting %s...\n", card.Name)
 	a.logf("Ejecting %s", card.Path)
 	if err := a.detector.Eject(card.Path); err != nil {
-		fmt.Printf("Error: %s\n", FriendlyErr(err))
+		fmt.Printf("Error: %s\n", term.FriendlyErr(err))
 		a.logf("Eject error: %v", err)
 		a.printPrompt()
 		return
@@ -444,7 +445,7 @@ func (a *App) launchTargetPath(path string) {
 	a.setPhaseLocked(phaseAnalyzing)
 	a.mu.Unlock()
 
-	scanTS := DimTS(Ts())
+	scanTS := term.DimTS(term.Ts())
 	fmt.Printf("%s Scanning ✓\n", a.TsPrefix())
 	fmt.Printf("%s \"%s\" (target)\n", tsIndent, path)
 	a.logf("Target path: %s", path)

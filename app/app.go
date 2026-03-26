@@ -1,4 +1,4 @@
-// Package app contains the core CardBot application logic.
+// Package app contains the core cardBot application logic.
 package app
 
 import (
@@ -13,6 +13,7 @@ import (
 	"github.com/illwill/cardbot/cblog"
 	"github.com/illwill/cardbot/config"
 	"github.com/illwill/cardbot/detect"
+	"github.com/illwill/cardbot/term"
 )
 
 // UX delays — gives the user time to read each startup line before the next appears.
@@ -20,7 +21,7 @@ const (
 	removalDelay = 2 * time.Second // Pause after card removal so message is visible
 )
 
-// App is the main CardBot application.
+// App is the main cardBot application.
 type App struct {
 	ctx         context.Context
 	detector    cardDetector
@@ -109,29 +110,19 @@ func New(c Config) *App {
 	}
 }
 
-// Ts returns the current timestamp formatted for log output.
-func Ts() string {
-	return time.Now().Format("2006-01-02T15:04:05")
-}
-
 // tsIndent is whitespace matching the width of a "[2006-01-02T15:04:05]" timestamp.
 const tsIndent = "                     "
-
-// DimTS returns a dimmed timestamp string using ANSI escape codes.
-func DimTS(ts string) string {
-	return "\033[2m[" + ts + "]\033[0m"
-}
 
 // TsPrefix returns a bracketed timestamp prefix for the current second.
 // If the current second matches the last printed timestamp, it returns
 // whitespace of the same width so subsequent lines stay aligned.
 func (a *App) TsPrefix() string {
-	now := Ts()
+	now := term.Ts()
 	if now == a.lastTS {
 		return tsIndent
 	}
 	a.lastTS = now
-	return DimTS(now)
+	return term.DimTS(now)
 }
 
 // SetLastTS records a timestamp so that TsPrefix can deduplicate it.
@@ -219,7 +210,7 @@ func (a *App) startScanningLocked() {
 		a.spinner.Stop()
 	}
 	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
-	s.Prefix = fmt.Sprintf("%s Scanning ", DimTS(Ts()))
+	s.Prefix = fmt.Sprintf("%s Scanning ", term.DimTS(term.Ts()))
 	s.Start()
 	a.spinner = s
 	a.setPhaseLocked(phaseScanning)

@@ -1,6 +1,6 @@
 
   Config       ~/Library/Application Support/cardbot/config.json
-  Destination  ~/Pictures/CardBot
+  Destination  ~/Pictures/cardBot
   Naming       Camera original
   Verify       size
   Buffer       256 KB

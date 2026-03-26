@@ -1,4 +1,4 @@
-package launchagent
+package launch
 
 import (
 	"errors"
@@ -96,7 +96,7 @@ func TestInstallWith_BootstrapError(t *testing.T) {
 
 func TestUninstallWith_RemovesPlist(t *testing.T) {
 	home := t.TempDir()
-	plist := filepath.Join(home, "Library", "LaunchAgents", Label+".plist")
+	plist := filepath.Join(home, "Library", "LaunchAgents", label+".plist")
 	if err := os.MkdirAll(filepath.Dir(plist), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +153,7 @@ func TestStatusWith_NotInstalled(t *testing.T) {
 
 func TestStatusWith_InstalledAndLoaded(t *testing.T) {
 	home := t.TempDir()
-	plist := filepath.Join(home, "Library", "LaunchAgents", Label+".plist")
+	plist := filepath.Join(home, "Library", "LaunchAgents", label+".plist")
 	if err := os.MkdirAll(filepath.Dir(plist), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +179,7 @@ func TestStatusWith_InstalledAndLoaded(t *testing.T) {
 
 func TestStatusWith_InstalledNotLoaded(t *testing.T) {
 	home := t.TempDir()
-	plist := filepath.Join(home, "Library", "LaunchAgents", Label+".plist")
+	plist := filepath.Join(home, "Library", "LaunchAgents", label+".plist")
 	if err := os.MkdirAll(filepath.Dir(plist), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -205,7 +205,7 @@ func TestStatusWith_InstalledNotLoaded(t *testing.T) {
 
 func TestStatusWith_LaunchctlError(t *testing.T) {
 	home := t.TempDir()
-	plist := filepath.Join(home, "Library", "LaunchAgents", Label+".plist")
+	plist := filepath.Join(home, "Library", "LaunchAgents", label+".plist")
 	if err := os.MkdirAll(filepath.Dir(plist), 0o755); err != nil {
 		t.Fatal(err)
 	}

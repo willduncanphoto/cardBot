@@ -1,4 +1,4 @@
-package launchagent
+package launch
 
 import (
 	"errors"
@@ -10,19 +10,19 @@ import (
 	"strings"
 )
 
-const Label = "com.illwill.cardbot"
+const label = "com.illwill.cardbot"
 
 type commandRunner func(name string, args ...string) error
 type outputCommandRunner func(name string, args ...string) ([]byte, error)
 
-// Status describes the current LaunchAgent state for CardBot.
+// Status describes the current LaunchAgent state for cardBot.
 type Status struct {
 	PlistPath string
 	Installed bool
 	Loaded    bool
 }
 
-// Install creates/updates the CardBot LaunchAgent plist and loads it with launchctl.
+// Install creates/updates the cardBot LaunchAgent plist and loads it with launchctl.
 // Returns the plist path.
 func Install(binaryPath string) (string, error) {
 	if runtime.GOOS != "darwin" {
@@ -35,7 +35,7 @@ func Install(binaryPath string) (string, error) {
 	return installWith(binaryPath, home, os.Getuid(), runCommand)
 }
 
-// Uninstall unloads and removes the CardBot LaunchAgent plist.
+// Uninstall unloads and removes the cardBot LaunchAgent plist.
 // Returns the plist path.
 func Uninstall() (string, error) {
 	if runtime.GOOS != "darwin" {
@@ -48,7 +48,7 @@ func Uninstall() (string, error) {
 	return uninstallWith(home, os.Getuid(), runCommand)
 }
 
-// CurrentStatus reports whether CardBot's LaunchAgent plist is installed
+// CurrentStatus reports whether cardBot's LaunchAgent plist is installed
 // and currently loaded in launchd.
 func CurrentStatus() (Status, error) {
 	if runtime.GOOS != "darwin" {
@@ -83,7 +83,7 @@ func installWith(binaryPath, home string, uid int, run commandRunner) (string, e
 	if err := run("launchctl", "bootstrap", domain, plist); err != nil {
 		return "", fmt.Errorf("loading launch agent: %w", err)
 	}
-	if err := run("launchctl", "kickstart", "-k", fmt.Sprintf("%s/%s", domain, Label)); err != nil {
+	if err := run("launchctl", "kickstart", "-k", fmt.Sprintf("%s/%s", domain, label)); err != nil {
 		return "", fmt.Errorf("starting launch agent: %w", err)
 	}
 
@@ -116,7 +116,7 @@ func statusWith(home string, uid int, run outputCommandRunner) (Status, error) {
 		return st, nil
 	}
 
-	service := fmt.Sprintf("gui/%d/%s", uid, Label)
+	service := fmt.Sprintf("gui/%d/%s", uid, label)
 	_, err := run("launchctl", "print", service)
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -131,7 +131,7 @@ func statusWith(home string, uid int, run outputCommandRunner) (Status, error) {
 }
 
 func plistPath(home string) string {
-	return filepath.Join(home, "Library", "LaunchAgents", Label+".plist")
+	return filepath.Join(home, "Library", "LaunchAgents", label+".plist")
 }
 
 func renderPlist(binaryPath string) string {
@@ -152,7 +152,7 @@ func renderPlist(binaryPath string) string {
     <true/>
 </dict>
 </plist>
-`, Label, binaryPath)
+`, label, binaryPath)
 }
 
 func runCommand(name string, args ...string) error {

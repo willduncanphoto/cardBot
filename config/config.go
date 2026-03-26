@@ -18,7 +18,7 @@ const (
 	VerifyFull = "full"
 )
 
-// Config holds all CardBot configuration.
+// Config holds all cardBot configuration.
 type Config struct {
 	Schema      string      `json:"$schema"`
 	Destination Destination `json:"destination"`
@@ -71,7 +71,7 @@ func Defaults() *Config {
 	return &Config{
 		Schema: schemaVersion,
 		Destination: Destination{
-			Path: "~/Pictures/CardBot",
+			Path: "~/Pictures/cardBot",
 		},
 		Naming: Naming{
 			Mode: NamingOriginal,

@@ -15,7 +15,7 @@ func TestWriteRead_RoundTrip(t *testing.T) {
 
 	err := Write(WriteOptions{
 		CardPath:       card,
-		Destination:    "/Users/test/Pictures/CardBot",
+		Destination:    "/Users/test/Pictures/cardBot",
 		Mode:           "all",
 		FilesCopied:    150,
 		BytesCopied:    5000000,
@@ -37,8 +37,8 @@ func TestWriteRead_RoundTrip(t *testing.T) {
 	if entry.Timestamp.IsZero() {
 		t.Error("expected Timestamp to be set")
 	}
-	if entry.Destination != "/Users/test/Pictures/CardBot" {
-		t.Errorf("Destination = %q, want /Users/test/Pictures/CardBot", entry.Destination)
+	if entry.Destination != "/Users/test/Pictures/cardBot" {
+		t.Errorf("Destination = %q, want /Users/test/Pictures/cardBot", entry.Destination)
 	}
 	if entry.Mode != "all" {
 		t.Errorf("Mode = %q, want all", entry.Mode)

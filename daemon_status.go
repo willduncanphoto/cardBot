@@ -16,7 +16,7 @@ import (
 	"github.com/illwill/cardbot/config"
 	"github.com/illwill/cardbot/daemon"
 	"github.com/illwill/cardbot/instance"
-	"github.com/illwill/cardbot/launchagent"
+	"github.com/illwill/cardbot/launch"
 )
 
 type daemonStatusOptions struct {
@@ -177,7 +177,7 @@ func collectDaemonStatusReport(opts daemonStatusOptions) daemonStatusReport {
 		return report
 	}
 
-	st, err := launchagent.CurrentStatus()
+	st, err := launch.CurrentStatus()
 	if err != nil {
 		report.LaunchAgent.Error = err.Error()
 		return report
@@ -249,7 +249,7 @@ func collectDaemonInstanceStatus() daemonStatusDIReport {
 }
 
 func fprintDaemonStatusReport(w io.Writer, report daemonStatusReport) {
-	fmt.Fprintln(w, "CardBot Daemon Status")
+	fmt.Fprintln(w, "cardBot Daemon Status")
 	fmt.Fprintln(w, "────────────────────────────────────────")
 	fmt.Fprintf(w, "Version: %s\n", report.Version)
 	fmt.Fprintf(w, "PID: %d\n", report.PID)
@@ -282,7 +282,7 @@ func fprintDaemonStatusReport(w io.Writer, report daemonStatusReport) {
 	if report.SingleInstanceGuard.CheckError != "" {
 		fmt.Fprintf(w, "Guard check: error (%s)\n", report.SingleInstanceGuard.CheckError)
 	} else {
-		fmt.Fprintf(w, "Other CardBot process running: %s\n", boolYesNo(report.SingleInstanceGuard.HasOtherProcess))
+		fmt.Fprintf(w, "Other cardBot process running: %s\n", boolYesNo(report.SingleInstanceGuard.HasOtherProcess))
 	}
 
 	// Daemon instance status via PID file.

@@ -1,14 +1,14 @@
-# CardBot
+# cardBot
 
 A CLI tool for camera memory cards.
 
-![CardBot screenshot](screenshot.png) 
+![cardBot screenshot](screenshot.png) 
 
 ## DISCLAIMER - Built with AI
 
-CardBot was built with the assistance of AI coding tools. This project is an experiment in using large language models to prototype and build an application in Go, a programming language I have minimal experience with. That will likely show throughout the codebase. Use this software at your own risk. There is no warranty — but does anything really have a warranty anymore? It should be the fastest ingestion tool in the West, though. Enjoy.
+cardBot was built with the assistance of AI coding tools. This project is an experiment in using large language models to prototype and build an application in Go, a programming language I have minimal experience with. That will likely show throughout the codebase. Use this software at your own risk. There is no warranty — but does anything really have a warranty anymore? It should be the fastest ingestion tool in the West, though. Enjoy.
 
-## What CardBot does
+## What cardBot does
 
 - Detects camera memory cards on macOS
 - Generates an overview of card content (file count, type, dates, equipment data, etc.) 
@@ -26,7 +26,7 @@ CardBot was built with the assistance of AI coding tools. This project is an exp
 
 Recommended minimum: macOS 10.13 High Sierra (according to the clankers)
 
-## CardBot's Codebase
+## cardBot's Codebase
 
 - **~7 MB** installed binary (single static executable, no dependencies)
 - **~8,200** lines of Go source across 17 packages
@@ -42,17 +42,17 @@ curl -fsSL https://raw.githubusercontent.com/willduncanphoto/cardBot/main/script
 
 ## Usage
 
-Start CardBot:
+Start cardBot:
 
 ```bash
 cardbot
 ```
 
-Quit CardBot:
+Quit cardBot:
 
 `Ctrl+C`
 
-CardBot will automatically run the setup if no config file is present.
+cardBot will automatically run the setup if no config file is present.
 
 Update to the latest version:
 

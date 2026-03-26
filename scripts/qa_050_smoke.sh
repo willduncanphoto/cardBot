@@ -12,7 +12,7 @@ go build -o cardbot .
 
 echo "[qa-050] checking daemon-status text output"
 ./cardbot daemon-status >/tmp/cardbot-daemon-status.txt
-for key in "CardBot Daemon Status" "Single-instance guard" "LaunchAgent"; do
+for key in "cardBot Daemon Status" "Single-instance guard" "LaunchAgent"; do
   if ! grep -q "$key" /tmp/cardbot-daemon-status.txt; then
     echo "missing expected daemon-status key: $key" >&2
     exit 1

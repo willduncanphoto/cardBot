@@ -24,7 +24,7 @@ func TestFprintDaemonStatusReport_default(t *testing.T) {
 			Enabled:          true,
 			StartAtLogin:     true,
 			TerminalApp:      "Terminal",
-			WorkingDirectory: "~/Pictures/CardBot",
+			WorkingDirectory: "~/Pictures/cardBot",
 			LaunchArgs:       []string{},
 			Debug:            false,
 		},

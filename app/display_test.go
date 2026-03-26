@@ -8,30 +8,12 @@ import (
 	"github.com/illwill/cardbot/analyze"
 	"github.com/illwill/cardbot/config"
 	"github.com/illwill/cardbot/detect"
+	"github.com/illwill/cardbot/term"
 )
 
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
 	return captureStdoutFD(t, fn)
-}
-
-func TestFriendlyErr(t *testing.T) {
-	tests := []struct {
-		in   string
-		want string
-	}{
-		{"no space left on device", "destination disk is full"},
-		{"permission denied", "permission denied — check folder permissions"},
-		{"read-only file system", "destination is read-only"},
-		{"input/output error", "I/O error — card may be damaged"},
-		{"something else", "something else"},
-	}
-
-	for _, tt := range tests {
-		if got := FriendlyErr(assertErr(tt.in)); got != tt.want {
-			t.Fatalf("FriendlyErr(%q) = %q, want %q", tt.in, got, tt.want)
-		}
-	}
 }
 
 func TestCardIsReadOnly(t *testing.T) {
@@ -307,7 +289,7 @@ func TestTsPrefix_SameSecond_ReturnsIndent(t *testing.T) {
 
 func TestSetLastTS_SyncsWithTsPrefix(t *testing.T) {
 	a := New(Config{Cfg: config.Defaults()})
-	now := Ts()
+	now := term.Ts()
 	a.SetLastTS(now)
 	// TsPrefix should return indent since we set the same second.
 	got := a.TsPrefix()
@@ -326,23 +308,9 @@ func TestSetLastTS_DifferentSecond_ShowsTimestamp(t *testing.T) {
 	}
 }
 
-func TestDimTS(t *testing.T) {
-	got := DimTS("2026-03-22T12:00:00")
-	want := "\033[2m[2026-03-22T12:00:00]\033[0m"
-	if got != want {
-		t.Fatalf("DimTS = %q, want %q", got, want)
-	}
-}
-
 func TestTsIndent_Width(t *testing.T) {
 	// tsIndent must match the visible width of "[2006-01-02T15:04:05]" (21 chars).
 	if len(tsIndent) != 21 {
 		t.Fatalf("tsIndent length = %d, want 21", len(tsIndent))
 	}
 }
-
-type errString string
-
-func (e errString) Error() string { return string(e) }
-
-func assertErr(s string) error { return errString(s) }

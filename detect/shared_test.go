@@ -126,7 +126,7 @@ func TestBuildCard_QuickHardwarePrefill(t *testing.T) {
 	if !quickCalled {
 		t.Fatal("expected quickHardwareInfoFn to be called")
 	}
-	if got := card.GetHW(); got != quick {
+	if got := card.HW(); got != quick {
 		t.Fatalf("expected quick hardware prefill pointer, got %p want %p", got, quick)
 	}
 
@@ -134,7 +134,7 @@ func TestBuildCard_QuickHardwarePrefill(t *testing.T) {
 
 	deadline := time.After(500 * time.Millisecond)
 	for {
-		if got := card.GetHW(); got == full {
+		if got := card.HW(); got == full {
 			return
 		}
 		select {

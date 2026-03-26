@@ -1,4 +1,10 @@
-# CardBot Changelog
+# cardBot Changelog
+
+## 0.9.0
+
+- Fix cardBot naming conventions
+- Fix Go naming conventions
+- Clean up project structure
 
 ## 0.8.3
 
@@ -12,7 +18,7 @@
 
 ## 0.8.1
 
-- Add changelog output for after CardBot updates
+- Add changelog output for after cardBot updates
 
 ## 0.8.0
 

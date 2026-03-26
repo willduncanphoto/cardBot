@@ -1,10 +1,9 @@
-package launcher
+package launch
 
 import (
 	"encoding/base64"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"unicode"
@@ -21,14 +20,12 @@ type Options struct {
 	Logf             func(format string, args ...any)
 }
 
-type commandRunner func(name string, args ...string) error
-
-// Launch opens the configured terminal and runs cardbot for the given mount path.
-func Launch(opts Options) error {
-	return launchWith(opts, runCommand)
+// Open opens the configured terminal and runs cardbot for the given mount path.
+func Open(opts Options) error {
+	return openWith(opts, runCommand)
 }
 
-func launchWith(opts Options, run commandRunner) error {
+func openWith(opts Options, run commandRunner) error {
 	binary := stripMatchingQuotes(strings.TrimSpace(opts.CardBotBinary))
 	mountPath := stripMatchingQuotes(opts.MountPath)
 	if binary == "" {
@@ -342,17 +339,4 @@ func writeDefaultTerminalCommandScript(binary, mountPath string) (string, error)
 		return "", fmt.Errorf("chmod command script: %w", err)
 	}
 	return filepath.Clean(scriptPath), nil
-}
-
-func runCommand(name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		msg := strings.TrimSpace(string(out))
-		if msg == "" {
-			return fmt.Errorf("%s %s: %w", name, strings.Join(args, " "), err)
-		}
-		return fmt.Errorf("%s %s: %w: %s", name, strings.Join(args, " "), err, msg)
-	}
-	return nil
 }

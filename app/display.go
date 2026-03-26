@@ -11,7 +11,7 @@ import (
 	"github.com/illwill/cardbot/detect"
 	"github.com/illwill/cardbot/dotfile"
 	"github.com/illwill/cardbot/fsutil"
-	"github.com/illwill/cardbot/ui"
+	"github.com/illwill/cardbot/term"
 )
 
 // printCardHeader renders the shared header lines used by both printCardInfo
@@ -36,8 +36,8 @@ func (a *App) printCardHeader(card *detect.Card, bodies, lenses []string) {
 	}
 	color, reset := "", ""
 	if a.cfg.Output.Color {
-		color = ui.BrandColor(card.Brand)
-		reset = ui.Reset
+		color = term.BrandColor(card.Brand)
+		reset = term.Reset
 	}
 	fmt.Printf("  Gear:     %s%s%s\n", color, bodyLine, reset)
 	for _, lens := range lenses {
@@ -150,7 +150,7 @@ func (a *App) showHelp() {
 // showHardwareInfo displays hardware details for the current card.
 func (a *App) showHardwareInfo(card *detect.Card) {
 	fmt.Println()
-	hw := card.GetHW()
+	hw := card.HW()
 	if hw == nil {
 		fmt.Println("Hardware info unavailable")
 		fmt.Println()
@@ -160,23 +160,6 @@ func (a *App) showHardwareInfo(card *detect.Card) {
 	fmt.Println(detect.FormatHardwareInfo(hw))
 	fmt.Println()
 	a.printPrompt()
-}
-
-// FriendlyErr returns a short, user-facing message for common OS-level errors.
-func FriendlyErr(err error) string {
-	s := err.Error()
-	switch {
-	case strings.Contains(s, "no space left"):
-		return "destination disk is full"
-	case strings.Contains(s, "permission denied"):
-		return "permission denied — check folder permissions"
-	case strings.Contains(s, "read-only file system"):
-		return "destination is read-only"
-	case strings.Contains(s, "input/output error"):
-		return "I/O error — card may be damaged"
-	default:
-		return s
-	}
 }
 
 // cardIsReadOnly probes the card path for write access.

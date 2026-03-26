@@ -9,7 +9,7 @@ EXTRA_INSTALL_DIR=""
 
 usage() {
   cat <<'EOF'
-CardBot uninstaller
+cardBot uninstaller
 
 Usage:
   sh uninstall.sh [options]
@@ -128,7 +128,7 @@ remove_dir_if_empty() {
   rmdir "$d" >/dev/null 2>&1 || true
 }
 
-say "==> CardBot uninstaller"
+say "==> cardBot uninstaller"
 OS_RAW="$(uname -s)"
 CB_BIN="$(command -v cardbot 2>/dev/null || true)"
 
@@ -174,7 +174,7 @@ if [ -n "$EXTRA_INSTALL_DIR" ]; then
 fi
 
 if [ "$PURGE" -eq 1 ]; then
-  say "==> Purging CardBot config/log files"
+  say "==> Purging cardBot config/log files"
 
   # Config (macOS / Linux)
   remove_file "$HOME/Library/Application Support/cardbot/config.json"

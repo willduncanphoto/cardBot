@@ -49,7 +49,7 @@ type Result struct {
 // Options configures the copy operation.
 type Options struct {
 	CardPath      string                                // Source card mount point
-	DestBase      string                                // Base destination directory (e.g. ~/Pictures/CardBot)
+	DestBase      string                                // Base destination directory (e.g. ~/Pictures/cardBot)
 	BufferKB      int                                   // Copy buffer size in KB (default 256)
 	DryRun        bool                                  // If true, walk and report but don't copy
 	FileDates     map[string]string                     // EXIF dates: relative path from DCIM → "YYYY-MM-DD"

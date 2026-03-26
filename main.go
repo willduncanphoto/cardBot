@@ -19,12 +19,13 @@ import (
 	"github.com/illwill/cardbot/cblog"
 	"github.com/illwill/cardbot/config"
 	"github.com/illwill/cardbot/instance"
+	"github.com/illwill/cardbot/term"
 	"github.com/illwill/cardbot/update"
 )
 
 // Set at build time via -ldflags.
 var (
-	version = "0.8.3"
+	version = "0.9.0"
 	commit  = "none"
 	date    = "unknown"
 )
@@ -134,7 +135,7 @@ func runInteractive() int {
 	if cfgPath != "" {
 		cfg, cfgWarnings, err = config.Load(cfgPath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: %s — using defaults\n", app.FriendlyErr(err))
+			fmt.Fprintf(os.Stderr, "Warning: %s — using defaults\n", term.FriendlyErr(err))
 			cfg = config.Defaults()
 		}
 	} else {
@@ -163,7 +164,7 @@ func runInteractive() int {
 			return promptDestinationWithIO(defaultPath, setupReader, os.Stdout)
 		}
 		if saveErr := app.RunSetup(cfg, cfgPath, promptDestinationFn, setupPrompter.PromptNamingMode); saveErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: could not save config: %s\n", app.FriendlyErr(saveErr))
+			fmt.Fprintf(os.Stderr, "Warning: could not save config: %s\n", term.FriendlyErr(saveErr))
 		}
 		syncDaemonAutoStartFromConfig(cfg)
 		fprintSetupSummary(os.Stdout, cfg)
@@ -175,11 +176,11 @@ func runInteractive() int {
 	if cfg.Advanced.LogFile != "" {
 		logPath, expandErr := config.ExpandPath(cfg.Advanced.LogFile)
 		if expandErr != nil {
-			fmt.Fprintf(os.Stderr, "Warning: could not expand log path: %s\n", app.FriendlyErr(expandErr))
+			fmt.Fprintf(os.Stderr, "Warning: could not expand log path: %s\n", term.FriendlyErr(expandErr))
 		} else {
 			logger, err = cblog.Open(logPath)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: could not open log file: %s\n", app.FriendlyErr(err))
+				fmt.Fprintf(os.Stderr, "Warning: could not open log file: %s\n", term.FriendlyErr(err))
 			} else {
 				defer logger.Close()
 			}
@@ -215,7 +216,7 @@ func runInteractive() int {
 		if checkErr != nil {
 			fmt.Fprintf(os.Stderr, "Warning: could not verify running instances: %v\n", checkErr)
 		} else if hasOther {
-			fmt.Printf("%s CardBot is already running — skipping duplicate instance\n", app.DimTS(app.Ts()))
+			fmt.Printf("%s cardBot is already running — skipping duplicate instance\n", term.DimTS(term.Ts()))
 			if logger != nil {
 				logger.Printf("Duplicate interactive launch skipped: another %s process is already running", processName)
 			}
@@ -236,7 +237,7 @@ func runInteractive() int {
 
 	// Print any config warnings now that logging is ready.
 	for _, w := range cfgWarnings {
-		a.Printf("%s Warning: %s\n", app.DimTS(app.Ts()), w)
+		a.Printf("%s Warning: %s\n", term.DimTS(term.Ts()), w)
 	}
 
 	// Checklist bootup — shared by normal and verbose modes.
@@ -247,14 +248,14 @@ func runInteractive() int {
 	// Print logo header.
 	printLogo()
 
-	// Step 1: Starting CardBot.
-	ts1 := app.Ts()
+	// Step 1: Starting cardBot.
+	ts1 := term.Ts()
 	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
-	s.Prefix = fmt.Sprintf("%s Starting CardBot v%s ", app.DimTS(ts1), version)
+	s.Prefix = fmt.Sprintf("%s Starting cardBot v%s ", term.DimTS(ts1), version)
 	s.Start()
 	time.Sleep(300 * time.Millisecond)
 	s.Stop()
-	fmt.Printf("\r%s Starting CardBot v%s ✓%s\n", app.DimTS(ts1), version, clearEOL)
+	fmt.Printf("\r%s Starting cardBot v%s ✓%s\n", term.DimTS(ts1), version, clearEOL)
 
 	// What's new: show changelog on first run of a new version.
 	if cfg.Meta.LastSeenVersion == "" {
@@ -280,12 +281,12 @@ func runInteractive() int {
 	}
 
 	// Step 2: Checking for updates (network call runs during spinner).
-	ts2 := app.Ts()
+	ts2 := term.Ts()
 	s = spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 	if ts2 == ts1 {
 		s.Prefix = indent + " Checking for updates "
 	} else {
-		s.Prefix = fmt.Sprintf("%s Checking for updates ", app.DimTS(ts2))
+		s.Prefix = fmt.Sprintf("%s Checking for updates ", term.DimTS(ts2))
 	}
 	s.Start()
 	latest, updateErr := app.MaybeCheckForUpdate(logger, version, update.CheckLatest)
@@ -297,7 +298,7 @@ func runInteractive() int {
 	if ts2 == ts1 {
 		fmt.Printf("\r%s Checking for updates %s%s\n", indent, updateMark, clearEOL)
 	} else {
-		fmt.Printf("\r%s Checking for updates %s%s\n", app.DimTS(ts2), updateMark, clearEOL)
+		fmt.Printf("\r%s Checking for updates %s%s\n", term.DimTS(ts2), updateMark, clearEOL)
 	}
 
 	// Update notification.
@@ -314,7 +315,7 @@ func runInteractive() int {
 	}
 
 	if *flagDryRun {
-		a.Printf("%s Dry-run mode — no files will be copied\n", app.DimTS(app.Ts()))
+		a.Printf("%s Dry-run mode — no files will be copied\n", term.DimTS(term.Ts()))
 	}
 
 	if targetPath == "" {
@@ -326,111 +327,6 @@ func runInteractive() int {
 		return 1
 	}
 	return 0
-}
-
-func printLogo() {
-	leftPad := " "
-	logoLines := []string{
-		"▄▀▀▀▀ ▄▀▀▀▄ █▀▀▀▄ █▀▀▀▄ █▀▀▀▄ ▄▀▀▀▄ ▀▀█▀▀",
-		"█     █▀▀▀█ █▀▀▀▄ █   █ █▀▀▀▄ █   █   █  ",
-		" ▀▀▀▀ ▀   ▀ ▀   ▀ ▀▀▀▀  ▀▀▀▀   ▀▀▀    ▀  ",
-	}
-
-	start := [3]int{255, 153, 255}
-	end := [3]int{36, 114, 200}
-
-	fmt.Println()
-
-	colorMode := detectColorMode()
-
-	if colorMode == colorNone {
-		for _, line := range logoLines {
-			fmt.Println(leftPad + line)
-		}
-		return
-	}
-
-	for _, line := range logoLines {
-		fmt.Println(leftPad + colorizeGradient(line, start, end, colorMode))
-	}
-}
-
-type colorLevel int
-
-const (
-	colorNone      colorLevel = iota
-	color256                  // 256-color (Terminal.app, etc.)
-	colorTrueColor            // 24-bit truecolor (iTerm2, Ghostty, etc.)
-)
-
-func detectColorMode() colorLevel {
-	if os.Getenv("NO_COLOR") != "" {
-		return colorNone
-	}
-	term := os.Getenv("TERM")
-	if term == "" || strings.EqualFold(term, "dumb") {
-		return colorNone
-	}
-	fi, err := os.Stdout.Stat()
-	if err != nil || fi.Mode()&os.ModeCharDevice == 0 {
-		return colorNone
-	}
-
-	ct := os.Getenv("COLORTERM")
-	if strings.EqualFold(ct, "truecolor") || strings.EqualFold(ct, "24bit") {
-		return colorTrueColor
-	}
-	return color256
-}
-
-// rgbTo256 finds the closest xterm-256 color index for an RGB value.
-func rgbTo256(r, g, b int) int {
-	// Check if it's close to a grayscale value (232–255).
-	if r == g && g == b {
-		if r < 8 {
-			return 16
-		}
-		if r > 248 {
-			return 231
-		}
-		return 232 + int(float64(r-8)/247.0*24.0+0.5)
-	}
-	// Map to the 6×6×6 color cube (indices 16–231).
-	ri := int(float64(r)/255.0*5.0 + 0.5)
-	gi := int(float64(g)/255.0*5.0 + 0.5)
-	bi := int(float64(b)/255.0*5.0 + 0.5)
-	return 16 + 36*ri + 6*gi + bi
-}
-
-func colorizeGradient(line string, start, end [3]int, mode colorLevel) string {
-	runes := []rune(line)
-	if len(runes) == 0 {
-		return ""
-	}
-
-	var sb strings.Builder
-	for i, r := range runes {
-		var t float64
-		if len(runes) > 1 {
-			t = float64(i) / float64(len(runes)-1)
-		}
-		rc := lerp(start[0], end[0], t)
-		gc := lerp(start[1], end[1], t)
-		bc := lerp(start[2], end[2], t)
-
-		if mode == colorTrueColor {
-			sb.WriteString(fmt.Sprintf("\033[38;2;%d;%d;%dm", rc, gc, bc))
-		} else {
-			sb.WriteString(fmt.Sprintf("\033[38;5;%dm", rgbTo256(rc, gc, bc)))
-		}
-		sb.WriteRune(r)
-	}
-	sb.WriteString("\033[0m")
-	return sb.String()
-}
-
-func lerp(a, b int, t float64) int {
-	return a + int(float64(b-a)*t+0.5)
 }
 
 func printVersion() {
@@ -451,6 +347,6 @@ func runReset() int {
 		fmt.Fprintf(os.Stderr, "Error: could not remove config: %v\n", err)
 		return 1
 	}
-	fmt.Println("Config cleared. Please restart CardBot.")
+	fmt.Println("Config cleared. Please restart cardBot.")
 	return 0
 }

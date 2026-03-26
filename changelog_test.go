@@ -9,7 +9,7 @@ import (
 func TestParseChangelogSection(t *testing.T) {
 	t.Parallel()
 
-	raw := `# CardBot Changelog
+	raw := `# cardBot Changelog
 
 ## 0.9.0
 

@@ -20,9 +20,9 @@ func promptDestinationWithIO(defaultPath string, in *bufio.Reader, out io.Writer
 		out = os.Stdout
 	}
 
-	fmt.Fprintln(out, "Welcome to CardBot!")
+	fmt.Fprintln(out, "Welcome to cardBot!")
 	fmt.Fprintln(out)
-	fmt.Fprintln(out, "Where should CardBot copy your work?")
+	fmt.Fprintln(out, "Where should cardBot copy your work?")
 	fmt.Fprintln(out)
 
 	expanded, err := config.ExpandPath(defaultPath)

@@ -11,7 +11,7 @@ EXPLICIT_INSTALL_DIR=0
 
 usage() {
   cat <<'EOF'
-CardBot installer
+cardBot installer
 
 Usage:
   sh install.sh [options]
@@ -143,7 +143,7 @@ trap cleanup EXIT INT TERM
 BIN_PATH="${TMP_DIR}/${ASSET}"
 SUM_PATH="${TMP_DIR}/checksums.txt"
 
-say "==> CardBot installer"
+say "==> cardBot installer"
 say "Repo: ${REPO}"
 say "Version: ${VERSION}"
 say "Asset: ${ASSET}"

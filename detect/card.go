@@ -13,8 +13,8 @@ type Card struct {
 	Hardware   *HardwareInfo // Hardware-level info (may be nil if unavailable)
 }
 
-// GetHW returns the hardware info, safe for concurrent access.
-func (c *Card) GetHW() *HardwareInfo {
+// HW returns the hardware info, safe for concurrent access.
+func (c *Card) HW() *HardwareInfo {
 	c.hwMu.Lock()
 	defer c.hwMu.Unlock()
 	return c.Hardware

@@ -16,11 +16,11 @@ func TestPromptDestinationReadlineIO_UsesProvidedReader(t *testing.T) {
 	in := bufio.NewReader(strings.NewReader("~/Pictures/Ingest\n"))
 	var out bytes.Buffer
 
-	got := promptDestinationReadlineIO("~/Pictures/CardBot", in, &out)
+	got := promptDestinationReadlineIO("~/Pictures/cardBot", in, &out)
 	if got != "~/Pictures/Ingest" {
 		t.Fatalf("promptDestinationReadlineIO() = %q, want %q", got, "~/Pictures/Ingest")
 	}
-	if !strings.Contains(out.String(), "Destination [~/Pictures/CardBot]:") {
+	if !strings.Contains(out.String(), "Destination [~/Pictures/cardBot]:") {
 		t.Fatalf("missing destination prompt, got:\n%s", out.String())
 	}
 }
@@ -31,7 +31,7 @@ func TestSetupInput_SequentialAcrossDestinationAndPrompts(t *testing.T) {
 	in := bufio.NewReader(strings.NewReader("~/Pictures/Ingest\n2\n"))
 	var out bytes.Buffer
 
-	dest := promptDestinationReadlineIO("~/Pictures/CardBot", in, &out)
+	dest := promptDestinationReadlineIO("~/Pictures/cardBot", in, &out)
 	if dest != "~/Pictures/Ingest" {
 		t.Fatalf("destination = %q, want %q", dest, "~/Pictures/Ingest")
 	}
