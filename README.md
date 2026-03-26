@@ -7,7 +7,7 @@ A CLI tool for camera memory cards.
 ## What CardBot does
 
 - Detects camera memory cards on macOS
-- Generates an overview of card content (file count, type, dates, equiptment data, etc.) 
+- Generates an overview of card content (file count, type, dates, equipment data, etc.) 
 - Copy modes: all, selects (starred), photos only, videos only, etc
 - Rename files during copy operations
 - Tracks card copy status
@@ -60,15 +60,16 @@ cardbot --setup
 
 | Key | Action |
 |-----|--------|
-| `a` | Copy all |
+| `a` | Copy all files to destination |
 | `s` | Copy selects (starred/picked) |
 | `p` | Copy photos only |
 | `v` | Copy videos only |
+| `t` | Copy today's photos |
+| `y` | Copy yesterday's photos |
 | `e` | Eject card |
 | `x` | Exit current card |
 | `i` | Show card hardware info |
-| `t` | Run speed test |
-| `\` | Cancel active copy |
+| `\` | Cancel copy in progress |
 | `?` | Help |
 
 
@@ -76,9 +77,10 @@ cardbot --setup
 
 | Version | Focus | Status |
 |---------|-------|--------|
-| **0.9.0** | Card copy improvements | Current |
+| **0.7.0** | Code Refactor | Complete |
+| **0.8.0** | Card copy operations | Complete |
+| **0.9.0** | Card copy part deux | Next |
 | **0.10.0** | Copyright check and injection | Planned |
-| **0.11.0** | Automatic Card Detection | Planned |
 
 
 ## Uninstalling

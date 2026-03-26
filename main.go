@@ -24,7 +24,7 @@ import (
 
 // Set at build time via -ldflags.
 var (
-	version = "0.8.2"
+	version = "0.8.3"
 	commit  = "none"
 	date    = "unknown"
 )

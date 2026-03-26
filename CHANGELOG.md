@@ -1,5 +1,9 @@
 # CardBot Changelog
 
+## 0.8.3
+
+- Minor fixes
+
 ## 0.8.2
 
 - Changelog shown on first run after update
