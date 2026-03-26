@@ -5,20 +5,20 @@
 Latest release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/cardBot/main/scripts/install.sh | sh
 ```
 
 Specific version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/scripts/install.sh | sh -s -- --version <version>
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/cardBot/main/scripts/install.sh | sh -s -- --version <version>
 # example: --version v0.7.3
 ```
 
 Install to custom path without sudo:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/scripts/install.sh | sh -s -- --install-dir "$HOME/.local/bin" --no-sudo
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/cardBot/main/scripts/install.sh | sh -s -- --install-dir "$HOME/.local/bin" --no-sudo
 ```
 
 Installer options:
@@ -30,13 +30,13 @@ sh scripts/install.sh --help
 Uninstall:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/scripts/uninstall.sh | sh
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/cardBot/main/scripts/uninstall.sh | sh
 ```
 
 Uninstall and purge config/log files:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/willduncanphoto/CardBot/main/scripts/uninstall.sh | sh -s -- --purge
+curl -fsSL https://raw.githubusercontent.com/willduncanphoto/cardBot/main/scripts/uninstall.sh | sh -s -- --purge
 ```
 
 Uninstaller options:
@@ -52,28 +52,28 @@ sh scripts/uninstall.sh --help
 ### macOS Apple Silicon (arm64)
 
 ```bash
-curl -fL -o cardbot https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-arm64
+curl -fL -o cardbot https://github.com/willduncanphoto/cardBot/releases/latest/download/cardbot-darwin-arm64
 install -m 755 cardbot /usr/local/bin/cardbot
 ```
 
 ### macOS Intel (amd64)
 
 ```bash
-curl -fL -o cardbot https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-darwin-amd64
+curl -fL -o cardbot https://github.com/willduncanphoto/cardBot/releases/latest/download/cardbot-darwin-amd64
 install -m 755 cardbot /usr/local/bin/cardbot
 ```
 
 ### Linux amd64
 
 ```bash
-curl -fL -o cardbot https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-linux-amd64
+curl -fL -o cardbot https://github.com/willduncanphoto/cardBot/releases/latest/download/cardbot-linux-amd64
 install -m 755 cardbot /usr/local/bin/cardbot
 ```
 
 ### Linux arm64
 
 ```bash
-curl -fL -o cardbot https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-linux-arm64
+curl -fL -o cardbot https://github.com/willduncanphoto/cardBot/releases/latest/download/cardbot-linux-arm64
 install -m 755 cardbot /usr/local/bin/cardbot
 ```
 
@@ -81,7 +81,7 @@ install -m 755 cardbot /usr/local/bin/cardbot
 
 ```bash
 mkdir -p "$HOME/.local/bin"
-curl -fL -o "$HOME/.local/bin/cardbot" https://github.com/willduncanphoto/CardBot/releases/latest/download/cardbot-<os>-<arch>
+curl -fL -o "$HOME/.local/bin/cardbot" https://github.com/willduncanphoto/cardBot/releases/latest/download/cardbot-<os>-<arch>
 chmod +x "$HOME/.local/bin/cardbot"
 ```
 
@@ -96,7 +96,7 @@ Requirements:
 - Git
 
 ```bash
-git clone https://github.com/willduncanphoto/CardBot.git
+git clone https://github.com/willduncanphoto/cardBot.git
 cd CardBot
 go build -o cardbot .
 ./cardbot --version
@@ -303,29 +303,3 @@ Important daemon fields:
 `launch_args` — extra arguments passed to the terminal app when launching (advanced use only).
 
 Set `daemon.debug` to `true` to enable verbose daemon/launcher debug logging.
-
-### 0.7.0 changes
-
-- Structural refactor: packages have clear boundaries (detect, analyze,
-  cardcopy, dotfile, daemon, launcher, config, cblog, instance, launchagent,
-  pick, speedtest, update, ui)
-- Consumer-defined interfaces for testability (cardDetector, cardAnalyzer,
-  factory/runner function types)
-- Explicit state machine with phase transition table
-- Dotfile v2 schema with per-mode copy entries
-- Verify mode: byte-level read-back verification (`advanced.verify_mode: "full"`)
-- Timestamp naming mode (`naming.mode: "timestamp"`)
-- Hardened CLI subcommand routing
-- Code review cleanup: shared `detect.IsHidden()`, `SequenceDigits` constant,
-  `bytes.Equal` in verify, removed dead aliases, relocated helpers
-
-### 0.7.x updates (0.7.1–0.7.3)
-
-- 0.7.1: Release version bump.
-- 0.7.2:
-  - UI polish: update-available notice aligned with startup log indentation.
-  - UI polish: refreshed ASCII CardBot logo spacing for cleaner terminal output.
-  - Docs refresh: README cleanup and public roadmap update.
-- 0.7.3:
-  - UI: ANSI truecolor gradient logo (magenta → blue), with monochrome fallback.
-  - UI: color detection via NO_COLOR, TERM, and TTY check.
