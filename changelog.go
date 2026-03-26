@@ -38,14 +38,15 @@ func parseChangelogSection(raw, version string) []string {
 	return bullets
 }
 
-// fprintChangelog renders changelog bullets in a box-drawing frame.
-func fprintChangelog(w io.Writer, indent string, bullets []string) {
+// fprintChangelog renders changelog bullets in a left-aligned block.
+func fprintChangelog(w io.Writer, bullets []string) {
 	if len(bullets) == 0 {
 		return
 	}
-	fmt.Fprintf(w, "%s ┌ What's new\n", indent)
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "  What's new")
 	for _, b := range bullets {
-		fmt.Fprintf(w, "%s │ · %s\n", indent, b)
+		fmt.Fprintf(w, "  · %s\n", b)
 	}
-	fmt.Fprintf(w, "%s └\n", indent)
+	fmt.Fprintln(w)
 }

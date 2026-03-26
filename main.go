@@ -24,7 +24,7 @@ import (
 
 // Set at build time via -ldflags.
 var (
-	version = "0.8.1"
+	version = "0.8.2"
 	commit  = "none"
 	date    = "unknown"
 )
@@ -266,7 +266,7 @@ func runInteractive() int {
 	} else if cfg.Meta.LastSeenVersion != version {
 		bullets := parseChangelogSection(changelogRaw, version)
 		if len(bullets) > 0 {
-			fprintChangelog(os.Stdout, indent, bullets)
+			fprintChangelog(os.Stdout, bullets)
 		}
 		cfg.Meta.LastSeenVersion = version
 		if cfgPath != "" {

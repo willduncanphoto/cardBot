@@ -87,20 +87,17 @@ func TestFprintChangelog(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
-	fprintChangelog(&buf, "  ", []string{"Feature A", "Feature B"})
+	fprintChangelog(&buf, []string{"Feature A", "Feature B"})
 
 	out := buf.String()
-	if !strings.Contains(out, "┌ What's new") {
+	if !strings.Contains(out, "What's new") {
 		t.Fatalf("missing header\n%s", out)
 	}
-	if !strings.Contains(out, "│ · Feature A") {
+	if !strings.Contains(out, "· Feature A") {
 		t.Fatalf("missing bullet A\n%s", out)
 	}
-	if !strings.Contains(out, "│ · Feature B") {
+	if !strings.Contains(out, "· Feature B") {
 		t.Fatalf("missing bullet B\n%s", out)
-	}
-	if !strings.Contains(out, "└") {
-		t.Fatalf("missing footer\n%s", out)
 	}
 }
 
@@ -108,7 +105,7 @@ func TestFprintChangelog_Empty(t *testing.T) {
 	t.Parallel()
 
 	var buf bytes.Buffer
-	fprintChangelog(&buf, "  ", nil)
+	fprintChangelog(&buf, nil)
 	if buf.Len() != 0 {
 		t.Fatalf("expected no output for empty bullets, got %q", buf.String())
 	}

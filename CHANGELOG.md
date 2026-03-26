@@ -1,9 +1,13 @@
 # CardBot Changelog
 
+## 0.8.2
+
+- What's new shown on first run after upgrade
+- Update notice aligned with startup output
+
 ## 0.8.1
 
-- What's new: shows changelog on first run after upgrade
-- Update notice aligned with startup output
+- What's new changelog (internal build)
 
 ## 0.8.0
 
