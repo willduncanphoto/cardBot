@@ -5,7 +5,8 @@ A CLI tool for camera memory cards.
 ![CardBot screenshot](screenshot.png) 
 
 ## DISCLAIMER - Built with AI
-CardBot is built with the assistance of AI coding tools. This project is an experiment in using large language models to prototype and build an application in Go, a programming language I've had minimal experience with. That fact will likely show throughout the codebase. Use this software at your own risk. There is no warranty but does anything really have a warranty anymore? It should be the fastest ingestion tool in the West though. Enjoy.
+
+CardBot was built with the assistance of AI coding tools. This project is an experiment in using large language models to prototype and build an application in Go, a programming language I have minimal experience with. That will likely show throughout the codebase. Use this software at your own risk. There is no warranty — but does anything really have a warranty anymore? It should be the fastest ingestion tool in the West, though. Enjoy.
 
 ## What CardBot does
 
